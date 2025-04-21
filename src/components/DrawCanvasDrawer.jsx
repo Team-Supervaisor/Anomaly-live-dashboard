@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import ToolBar from "./tool-bar"
 import { ChevronDown, X, PencilIcon, Trash2 } from "lucide-react"
-import OverlayAddStore from "./OverlayAddStore";
+
 
 const tagOptions = [
   { id: "cashier", title: "Cashier", color: "#FFD6C3" },
@@ -11,11 +11,7 @@ const tagOptions = [
   { id: "table", title: "Table", color: "#D4E5FC" },
   { id: "entry gate", title: "Entry Gate", color: "#BAE5AF91" },
 ];
-const visibilityOptions = [
-  { id: "low", title: "Low" },
-  { id: "medium", title: "Medium" },
-  { id: "high", title: "High" },
-]
+
 
 const cursorMap = {
   pointer: "cursor-pointer",
@@ -45,12 +41,14 @@ const tagBorderStyles = {
 
 
 
-export default function DrawingCanvas({ errorMessage, setErrorMessage, successMessage, showStatusModal, setShowStatusModal, handleClose, isSuccess, isOpen, onClose, onSaveShapes, instruction_data, shapes, setShapes, backgroundImage, setBackgroundImage, planogramWidth, planogramLength, setUploadImage, nextId, setNextId, clickPosition, setClickPosition}) {
+export default function DrawingCanvas( ) {
   const canvasRef = useRef(null)
   const [fillColor, setFillColor] = useState("#000000")
   const [ctx, setCtx] = useState(null)
   const [hoveredShape, setHoveredShape] = useState(null);
   const [selectedTool, setSelectedTool] = useState("rectangle")
+  const [shapes, setShapes] = useState([])
+    const [nextId, setNextId] = useState(1)
   const [drawingState, setDrawingState] = useState({
     isDrawing: false,
     startX: 0,
@@ -76,34 +74,12 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
     visibility: "",
   })
   // Track all selected instructions to manage availability
-  const [selectedInstructions, setSelectedInstructions] = useState({})
-  // Track available instructions for each shape
-  const [availableInstructions, setAvailableInstructions] = useState({})
 
   const canvasWidth = window.innerWidth * 0.95;
   const canvasHeight = window.innerHeight * 0.88;
   const [isOpenSpaceMode, setIsOpenSpaceMode] = useState(false);
 
-  // Initialize available instructions when instruction_data changes
-  useEffect(() => {
-    if (instruction_data) {
-      const initialAvailable = {}
-      // For each shape, set all instructions as initially available
-      shapes.forEach(shape => {
-        initialAvailable[shape.id] = instruction_data.map(item => item.id)
-      })
-      setAvailableInstructions(initialAvailable)
-    }
-  }, [instruction_data, shapes.length])
-
-  // useEffect(() => {
-  //   if (backgroundImage && canvasRef.current) {
-  //     const canvas = canvasRef.current;
-  //     const ctx = canvas.getContext("2d");
-  //     ctx.clearRect(0, 0, canvas.width, canvas.height);
-  //     ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
-  //   }
-  // }, [backgroundImage]);
+ 
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -120,36 +96,36 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
     }
   }, [])
 
-  const drawRulers = (ctx) => {
-    if(!ctx || !planogramLength || !planogramWidth) return
-    ctx.font = "10px Arial";
-    ctx.fillStyle = "black";
-    ctx.strokeStyle = "gray";
 
-    // X-axis (top)
-    const xStep = canvasWidth / planogramWidth;
-    const xIncrement = Math.floor(planogramWidth / 5);
-    for (let i = xIncrement; i <= planogramWidth; i += xIncrement) {
-      const x = i * xStep - 510;
-      ctx.beginPath();
-      ctx.moveTo(x, -250);
-      ctx.lineTo(x, -240);
-      ctx.stroke();
-      ctx.fillText(`${i}ft`, x-7, -230);
-    }
+  //   if(!ctx || !planogramLength || !planogramWidth) return
+  //   ctx.font = "10px Arial";
+  //   ctx.fillStyle = "black";
+  //   ctx.strokeStyle = "gray";
 
-    // Y-axis (left)
-    const yStep = canvasHeight / planogramLength;
-    const yIncrement = Math.floor(planogramLength / 5);
-    for (let i = yIncrement; i <= planogramLength; i += yIncrement) {
-      const y = i * yStep - 250;
-      ctx.beginPath();
-      ctx.moveTo(-500, y-10);
-      ctx.lineTo(-490, y-10);
-      ctx.stroke();
-      ctx.fillText(`${i}ft`, -487, y -5);
-    }
-  };
+  //   // X-axis (top)
+  //   const xStep = canvasWidth / planogramWidth;
+  //   const xIncrement = Math.floor(planogramWidth / 5);
+  //   for (let i = xIncrement; i <= planogramWidth; i += xIncrement) {
+  //     const x = i * xStep - 510;
+  //     ctx.beginPath();
+  //     ctx.moveTo(x, -250);
+  //     ctx.lineTo(x, -240);
+  //     ctx.stroke();
+  //     ctx.fillText(`${i}ft`, x-7, -230);
+  //   }
+
+  //   // Y-axis (left)
+  //   const yStep = canvasHeight / planogramLength;
+  //   const yIncrement = Math.floor(planogramLength / 5);
+  //   for (let i = yIncrement; i <= planogramLength; i += yIncrement) {
+  //     const y = i * yStep - 250;
+  //     ctx.beginPath();
+  //     ctx.moveTo(-500, y-10);
+  //     ctx.lineTo(-490, y-10);
+  //     ctx.stroke();
+  //     ctx.fillText(`${i}ft`, -487, y -5);
+  //   }
+  // };
 
 
   useEffect(() => {
@@ -162,16 +138,9 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
     ctx.save();
     ctx.translate(canvasWidth / 2, canvasHeight / 2);
 
-    if (backgroundImage && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-
-      ctx.clearRect(-500, -250, canvas.width, canvas.height);
-      ctx.drawImage(backgroundImage, -500, -250, canvas.width, canvas.height);
-    }
+ 
 
 
-      // First draw open space rectangles (they go behind)
   shapes.forEach((shape) => {
     if (shape.type === "rectangle" && shape.isOpenSpace) {
       // Create clipping region from non-open space shapes
@@ -198,24 +167,24 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
       ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
 
 
-      // if (shape.name) {
-      //   ctx.fillStyle = "#000000";
-      //   ctx.font = "14px Arial";
-      //   const textWidth = ctx.measureText(shape.name).width;
-      //   const textHeight = 14;
-      //   const centerX = shape.x + shape.width / 2;
-      //   const centerY = shape.y + shape.height / 2;
+      if (shape.name) {
+        ctx.fillStyle = "#000000";
+        ctx.font = "14px Arial";
+        const textWidth = ctx.measureText(shape.name).width;
+        const textHeight = 14;
+        const centerX = shape.x + shape.width / 2;
+        const centerY = shape.y + shape.height / 2;
         
-      //   // Save context before drawing text
-      //   ctx.save();
-      //   // Draw text above the clipping mask
-      //   ctx.restore();
-      //   ctx.fillText(
-      //     shape.name,
-      //     centerX - textWidth / 2,
-      //     centerY + textHeight / 2
-      //   );
-      // }
+        // Save context before drawing text
+        ctx.save();
+        // Draw text above the clipping mask
+        ctx.restore();
+        ctx.fillText(
+          shape.name,
+          centerX - textWidth / 2,
+          centerY + textHeight / 2
+        );
+      }
       
       ctx.restore();
     }
@@ -401,57 +370,57 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
       ctx.stroke();
       ctx.setLineDash([]);
     }
-    drawRulers(ctx);
+    // drawRulers(ctx);
 
-    if(clickPosition){
-      const { x: canvasX, y: canvasY } = clickPosition;
-      console.log(canvasX, canvasY)
-      const size = 5; // Length of half the plus lines
+    // if(clickPosition){
+    //   const { x: canvasX, y: canvasY } = clickPosition;
+    //   console.log(canvasX, canvasY)
+    //   const size = 5; // Length of half the plus lines
 
-      ctx.strokeStyle = "red";
-      ctx.lineWidth = 2;
+    //   ctx.strokeStyle = "red";
+    //   ctx.lineWidth = 2;
   
-      // Vertical line
-      ctx.beginPath();
-      ctx.moveTo(canvasX, canvasY - size);
-      ctx.lineTo(canvasX, canvasY + size);
-      ctx.stroke();
+    //   // Vertical line
+    //   ctx.beginPath();
+    //   ctx.moveTo(canvasX, canvasY - size);
+    //   ctx.lineTo(canvasX, canvasY + size);
+    //   ctx.stroke();
   
-      // Horizontal line
-      ctx.beginPath();
-      ctx.moveTo(canvasX - size, canvasY);
-      ctx.lineTo(canvasX + size, canvasY);
-      ctx.stroke();
-    }
+    //   // Horizontal line
+    //   ctx.beginPath();
+    //   ctx.moveTo(canvasX - size, canvasY);
+    //   ctx.lineTo(canvasX + size, canvasY);
+    //   ctx.stroke();
+    // }
 
     // Rest of your existing drawing code...
     ctx.restore();
-  }, [shapes, ctx, drawingState, selectedShape, backgroundImage, isOpenSpaceMode]);
+  }, [shapes, ctx, drawingState, selectedShape]);
 
   // Update available instructions when selectedInstructions change
-  useEffect(() => {
-    if (!instruction_data) return;
+  // useEffect(() => {
+  //   if (!instruction_data) return;
     
-    // Create a new object for available instructions
-    const newAvailable = {};
+  //   // Create a new object for available instructions
+  //   const newAvailable = {};
     
-    shapes.forEach(shape => {
-      // Get all instruction IDs
-      const allInstructionIds = instruction_data.map(item => item.id);
+  //   shapes.forEach(shape => {
+  //     // Get all instruction IDs
+  //     const allInstructionIds = instruction_data.map(item => item.id);
       
-      // Filter out instructions that are selected by other shapes
-      const availableForShape = allInstructionIds.filter(id => {
-        // Include if it's this shape's current selection
-        if (selectedInstructions[shape.id] === id) return true;
-        // Or if it's not selected by any other shape
-        return !Object.values(selectedInstructions).includes(id);
-      });
+  //     // Filter out instructions that are selected by other shapes
+  //     const availableForShape = allInstructionIds.filter(id => {
+  //       // Include if it's this shape's current selection
+  //       if (selectedInstructions[shape.id] === id) return true;
+  //       // Or if it's not selected by any other shape
+  //       return !Object.values(selectedInstructions).includes(id);
+  //     });
       
-      newAvailable[shape.id] = availableForShape;
-    });
+  //     newAvailable[shape.id] = availableForShape;
+  //   });
     
-    setAvailableInstructions(newAvailable);
-  }, [selectedInstructions, shapes, instruction_data]);
+  //   setAvailableInstructions(newAvailable);
+  // }, [selectedInstructions, shapes, instruction_data]);
 
   const getCustomCoordinates = (e) => {
     const rect = canvasRef.current?.getBoundingClientRect()
@@ -523,7 +492,7 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
       y: centerY + canvasHeight / 2,
       shapeId: clickedShape.id,
       name: clickedShape.name || "",
-      instruction: clickedShape.instruction || "",
+      // instruction: clickedShape.instruction || "",
     })
   }
 
@@ -555,9 +524,9 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
           y: centerY + canvasHeight / 2,
           shapeId: clickedShape.id,
           name: clickedShape.name || "",
-          instruction: clickedShape.instruction || "",
-          tag: clickedShape.tag || "",
-        visibility: clickedShape.visibility || "",
+          // instruction: clickedShape.instruction || "",
+          // tag: clickedShape.tag || "",
+        // visibility: clickedShape.visibility || "",
         })
       } else if(clickedShape && clickedShape.type === "circle"){
         setSelectedShape(clickedShape)
@@ -575,9 +544,9 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
           y: centerY + canvasHeight / 2,
           shapeId: clickedShape.id,
           name: clickedShape.name || "",
-          instruction: clickedShape.instruction || "",
-          tag: clickedShape.tag || "",
-          visibility: clickedShape.visibility || "",
+          // instruction: clickedShape.instruction || "",
+          // tag: clickedShape.tag || "",
+          // visibility: clickedShape.visibility || "",
         })
       }
       else {
@@ -638,36 +607,36 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
   };
   
 
-  const addStartPoint = (e) => {
-    if(clickPosition) {
-      erasePlusAt(clickPosition.x, clickPosition.y, 5);
-    }
-    const { x: canvasX, y: canvasY } = getCustomCoordinates(e)
-    const size = 5; // Length of half the plus lines
+  // const addStartPoint = (e) => {
+  //   if(clickPosition) {
+  //     erasePlusAt(clickPosition.x, clickPosition.y, 5);
+  //   }
+  //   const { x: canvasX, y: canvasY } = getCustomCoordinates(e)
+  //   const size = 5; // Length of half the plus lines
 
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 2;
+  //   ctx.strokeStyle = "red";
+  //   ctx.lineWidth = 2;
 
-    // Vertical line
-    ctx.beginPath();
-    ctx.moveTo(canvasX + 500, canvasY + 250 - size);
-    ctx.lineTo(canvasX + 500, canvasY + 250 + size);
-    ctx.stroke();
+  //   // Vertical line
+  //   ctx.beginPath();
+  //   ctx.moveTo(canvasX + 500, canvasY + 250 - size);
+  //   ctx.lineTo(canvasX + 500, canvasY + 250 + size);
+  //   ctx.stroke();
 
-    // Horizontal line
-    ctx.beginPath();
-    ctx.moveTo(canvasX + 500 - size, canvasY + 250);
-    ctx.lineTo(canvasX + 500 + size, canvasY + 250);
-    ctx.stroke();
+  //   // Horizontal line
+  //   ctx.beginPath();
+  //   ctx.moveTo(canvasX + 500 - size, canvasY + 250);
+  //   ctx.lineTo(canvasX + 500 + size, canvasY + 250);
+  //   ctx.stroke();
 
-    setClickPosition({ x: canvasX, y: canvasY });
-  }
+  //   setClickPosition({ x: canvasX, y: canvasY });
+  // }
 
   const handleCanvasClick = (e) => {
-    if(selectedTool === "start-point"){
-      addStartPoint(e);
-      return;
-    }
+    // if(selectedTool === "start-point"){
+    //   addStartPoint(e);
+    //   return;
+    // }
     if (selectedTool !== "delete") return;
 
     const { x: canvasX, y: canvasY } = getCustomCoordinates(e)
@@ -749,46 +718,46 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
     }
   }
 
-  const drawCircle = (e) => {
+  // const drawCircle = (e) => {
 
-    const { x: canvasX, y: canvasY } = getCustomCoordinates(e)
+  //   const { x: canvasX, y: canvasY } = getCustomCoordinates(e)
 
-    const radius = Math.sqrt(
-      Math.pow(canvasX - drawingState.startX, 2) +
-      Math.pow(canvasY - drawingState.startY, 2)
-    );
-    if(radius > 5){
-      const newCircle = {
-        id: nextId,
-        type: "circle",
-        x: drawingState.startX,
-        y: drawingState.startY,
-        radius: radius,
-        isColored: false,
-      }
+  //   const radius = Math.sqrt(
+  //     Math.pow(canvasX - drawingState.startX, 2) +
+  //     Math.pow(canvasY - drawingState.startY, 2)
+  //   );
+  //   if(radius > 5){
+  //     const newCircle = {
+  //       id: nextId,
+  //       type: "circle",
+  //       x: drawingState.startX,
+  //       y: drawingState.startY,
+  //       radius: radius,
+  //       isColored: false,
+  //     }
 
-      setShapes([...shapes, newCircle]);
+  //     setShapes([...shapes, newCircle]);
 
-        // Add entry in availableInstructions for the new shape
-      if (instruction_data) {
-        setAvailableInstructions(prev => ({
-          ...prev,
-          [nextId]: instruction_data
-            .map(item => item.id)
-            .filter(id => !Object.values(selectedInstructions).includes(id))
-        }));
-      }
+  //       // Add entry in availableInstructions for the new shape
+  //     if (instruction_data) {
+  //       setAvailableInstructions(prev => ({
+  //         ...prev,
+  //         [nextId]: instruction_data
+  //           .map(item => item.id)
+  //           .filter(id => !Object.values(selectedInstructions).includes(id))
+  //       }));
+  //     }
       
-      setNextId(nextId + 1)
-    }
-    setDrawingState({
-      isDrawing: false,
-      startX: 0,
-      startY: 0,
-      currentX: 0,
-      currentY: 0,
-    })
-  }
+  //     setNextId(nextId + 1)
+  //   }
+  //   setDrawingState({
+  //     isDrawing: false,
+  //     startX: 0,
+  //     startY: 0,
+  //     currentX: 0,
+  //     currentY: 0,
+  //   })
+  // }
 
   const stopDrawing = (e) => {
     if (!ctx || !drawingState.isDrawing || !canvasRef.current || (selectedTool !== "rectangle" && selectedTool !== "walls" && selectedTool !== "circle")) return;
@@ -827,21 +796,21 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
         height: height,
         vertices: vertices,
         isColored: false,
-        isBricked: selectedTool === "walls",
-        isOpenSpace: isOpenSpaceMode, // Add this property
+        // isBricked: selectedTool === "walls",
+        // isOpenSpace: isOpenSpaceMode, // Add this property
       };
 
       setShapes([...shapes, newRectangle]);
 
       // Add entry in availableInstructions for the new shape
-      if (instruction_data) {
-        setAvailableInstructions(prev => ({
-          ...prev,
-          [nextId]: instruction_data
-            .map(item => item.id)
-            .filter(id => !Object.values(selectedInstructions).includes(id))
-        }));
-      }
+      // if (instruction_data) {
+      //   setAvailableInstructions(prev => ({
+      //     ...prev,
+      //     [nextId]: instruction_data
+      //       .map(item => item.id)
+      //       .filter(id => !Object.values(selectedInstructions).includes(id))
+      //   }));
+      // }
       
       setNextId(nextId + 1)
     }
@@ -898,30 +867,30 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
     setTextInput({ isActive: false, x: 0, y: 0, text: "" });
   }
 
-  const handleInstructionChange = (e) => {
-    const newInstructionId = e.target.value;
-    const shapeId = shapeDialog.shapeId;
+  // const handleInstructionChange = (e) => {
+  //   const newInstructionId = e.target.value;
+  //   const shapeId = shapeDialog.shapeId;
     
-    // Update the shapeDialog state
-    setShapeDialog({ 
-      ...shapeDialog, 
-      instruction: newInstructionId 
-    });
+  //   // Update the shapeDialog state
+  //   setShapeDialog({ 
+  //     ...shapeDialog, 
+  //     instruction: newInstructionId 
+  //   });
     
-    // Update the selectedInstructions tracking
-    setSelectedInstructions(prev => {
-      const newSelected = { ...prev };
+  //   // Update the selectedInstructions tracking
+  //   setSelectedInstructions(prev => {
+  //     const newSelected = { ...prev };
       
-      // If empty/none selected, remove from tracking
-      if (!newInstructionId) {
-        delete newSelected[shapeId];
-      } else {
-        newSelected[shapeId] = newInstructionId;
-      }
+  //     // If empty/none selected, remove from tracking
+  //     if (!newInstructionId) {
+  //       delete newSelected[shapeId];
+  //     } else {
+  //       newSelected[shapeId] = newInstructionId;
+  //     }
       
-      return newSelected;
-    });
-  };
+  //     return newSelected;
+  //   });
+  // };
 
   const handleTagChange = (e) => {
     setShapeDialog({ 
@@ -947,11 +916,11 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
         return {
           ...shape,
           name: shapeDialog.name || "N/A",
-          instruction: shapeDialog.instruction || "N/A",
-          tag: shapeDialog.tag || "",
-          visibility: shapeDialog.visibility || "",
+          // instruction: shapeDialog.instruction || "N/A",
+          // tag: shapeDialog.tag || "",
+          // visibility: shapeDialog.visibility || "",
           // Apply color based on visibility if selected
-          color: selectedTagOption ? selectedTagOption.color : shape.color,
+          // color: selectedTagOption ? selectedTagOption.color : shape.color,
           isColored: selectedTagOption ? true : shape.isColored,
         }
       }
@@ -992,11 +961,10 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
     setShapes([])
     setSelectedShape(null)
     setShapeDialog({ ...shapeDialog, isOpen: false })
-    setSelectedInstructions({})
-    setAvailableInstructions({})
+
     setSelectedTool("rectangle")
-    setBackgroundImage(null)
-    setUploadImage(null)
+    // setBackgroundImage(null)
+    // setUploadImage(null)
   }
 
   const logRectanglesWithVertices = () => {
@@ -1072,60 +1040,35 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
     // }
 
 
-    if (onSaveShapes) {
-      onSaveShapes({
-        // shapes: scaledRectangles,
-        // circles: circlesData,
-        snapshot: canvasSnapshot,
-        image: backgroundImage,
-      });
-      onClose();
-    }
+    // if (onSaveShapes) {
+    //   onSaveShapes({
+    //     // shapes: scaledRectangles,
+    //     // circles: circlesData,
+    //     snapshot: canvasSnapshot,
+    //     image: backgroundImage,
+    //   });
+    //   onClose();
+    // }
   };
 
 
-  const isIntersecting = (openSpaceRect, structureRect) => {
-    // Normalize rectangle coordinates for proper intersection testing
-    const rect1 = {
-      x: openSpaceRect.width < 0 ? openSpaceRect.x + openSpaceRect.width : openSpaceRect.x,
-      y: openSpaceRect.height < 0 ? openSpaceRect.y + openSpaceRect.height : openSpaceRect.y,
-      width: Math.abs(openSpaceRect.width),
-      height: Math.abs(openSpaceRect.height)
-    };
-  
-    const rect2 = {
-      x: structureRect.width < 0 ? structureRect.x + structureRect.width : structureRect.x,
-      y: structureRect.height < 0 ? structureRect.y + structureRect.height : structureRect.y,
-      width: Math.abs(structureRect.width),
-      height: Math.abs(structureRect.height)
-    };
-  
-    // Check if rect1 (open space) overlaps with rect2 (structure)
-    // Using a small threshold to avoid edge-only intersections
-    const threshold = 2; // 2 pixels threshold
-    return (
-      rect1.x < (rect2.x + rect2.width - threshold) &&
-      (rect1.x + rect1.width - threshold) > rect2.x &&
-      rect1.y < (rect2.y + rect2.height - threshold) &&
-      (rect1.y + rect1.height - threshold) > rect2.y
-    );
-  };
+ 
   // Get the filtered instruction options for the current shape
-  const getFilteredInstructions = () => {
-    if (!instruction_data || !shapeDialog.shapeId) return [];
+  // const getFilteredInstructions = () => {
+  //   if (!instruction_data || !shapeDialog.shapeId) return [];
     
-    const currentShapeId = shapeDialog.shapeId;
-    const availableIds = availableInstructions[currentShapeId] || [];
+  //   const currentShapeId = shapeDialog.shapeId;
+  //   const availableIds = availableInstructions[currentShapeId] || [];
     
-    // Always include currently selected instruction if any
-    if (shapeDialog.instruction && !availableIds.includes(shapeDialog.instruction)) {
-      availableIds.push(shapeDialog.instruction);
-    }
+  //   // Always include currently selected instruction if any
+  //   if (shapeDialog.instruction && !availableIds.includes(shapeDialog.instruction)) {
+  //     availableIds.push(shapeDialog.instruction);
+  //   }
     
-    return instruction_data.filter(option => 
-      availableIds.includes(option.id)
-    );
-  };
+  //   return instruction_data.filter(option => 
+  //     availableIds.includes(option.id)
+  //   );
+  // };
 
   return (
     <div className="relative w-full h-[calc(100vh-1rem)] flex flex-col items-center ">
@@ -1145,12 +1088,12 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
         />
-        <button
+        {/* <button
           className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"
           onClick={onClose}
         >
           <X size={18} />
-        </button>
+        </button> */}
 
         {textInput.isActive && (
           <div
@@ -1395,12 +1338,12 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
         
         )}
       </div>
-      {planogramLength !== 0 && planogramWidth !== 0 && <div>
+      {/* {planogramLength !== 0 && planogramWidth !== 0 && <div>
         <div className="bg-white p-2 mt-4 rounded shadow-md z-10 flex items-center mb-6">
           <label className="text-sm font-medium text-gray-700 mr-2">ScaleX: 1ft = {Math.floor(1000 / planogramWidth)}px</label>
           <label className="text-sm font-medium text-gray-700 mr-2">ScaleY: 1ft = {Math.floor(1000 / planogramLength)}px</label>
         </div>
-      </div>}
+      </div>} */}
 
       <ToolBar
         selectedTool={selectedTool}
@@ -1425,7 +1368,7 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
         </div>
       </>
       )}
-      <OverlayAddStore 
+      {/* <OverlayAddStore 
         message={errorMessage}
         setErrorMessage={setErrorMessage}
         successMessage={successMessage}
@@ -1437,7 +1380,7 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
           }
         }}
         isSuccess={isSuccess}
-      />
+      /> */}
     </div>
   );
 }
