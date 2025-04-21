@@ -5,7 +5,6 @@ import { useAppContext } from '../context';
 
 const LoginModal = () => {
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(''); // Add error state
     const navigate = useNavigate();
@@ -16,7 +15,7 @@ const LoginModal = () => {
         e.preventDefault();
         setError('');
         
-        if (email.trim() === 'admin' && password === 'admin') {
+        if (email.trim() === 'admin') {
             setLoading(true);
             await new Promise(resolve => setTimeout(resolve, 1000));
             
@@ -91,54 +90,34 @@ useEffect(() => {
             </div>
             </div>
             <div className="flex flex-col">
-            <span className="font-bold text-xl text-black">Store Visit Tracking</span>
+            <span className="font-bold text-xl text-black">Anomaly Live Dashboard</span>
             <span className="text-gray-500">Supervaisor.ai</span>
             </div>
             </div>
     
 
 
-            <h2 className="text-3xl  mb-2 text-black font-bold">Login to Dashboard</h2>
-            <p className="text-lg text-gray-600 mb-16">Fill details below to login</p>
+            <h2 className="text-3xl  mb-2 text-black font-bold">Enter Camera Url</h2>
+            <p className="text-lg text-gray-600 mb-16">Fill details below to begin</p>
 
             <form onSubmit={handleSubmit} className="space-y-6" autocomplete="off">
               <div>
                 <label className="block text-black font-semibold mb-2 ">
-                  Username
+                  Camera url
                 </label>
                 <input
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none  text-black"
-                  placeholder="Enter your username"
+                  placeholder="Enter camera url"
                     autocomplete="off"
                   required
                 />
               </div>
-              <div>
-                <label className="block text-black font-semibold mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none  text-black"
-                  placeholder="Enter your password"
-                  autoFocus="off"
-                  required
-                />
-              </div>
+             
 
-              <div className="flex flex-col space-y-4">
-            <p className='text-[#4F4FDC] cursor-pointer'>Forgot Password?</p>
-            {error && (
-                <p className="text-red-500 text-sm bg-red-50 p-3 rounded-lg border border-red-200 transition-opacity duration-300">
-                    {error}
-                </p>
-            )}
-            </div>
+             
               
               <button
             type="submit"
@@ -152,10 +131,10 @@ useEffect(() => {
               >
                 {loading ? (
               <span className="flex items-center justify-center">
-                Authenticating...
+                Starting...
               </span>
             ) : (
-              'Login'
+              'Start Tracking'
             )}
               </button>
             </form>
