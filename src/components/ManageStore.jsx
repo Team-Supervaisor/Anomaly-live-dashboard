@@ -501,23 +501,23 @@ export default function ManageStore() {
     // Create new mappings without modifying original INSTRUCTIONS_DATA
     const newMappings = [];
     
-    for(var i = 0; i < data.shapes.length; i++) {
-      const shape = data.shapes[i];
-      if(!shape.instructionData) continue;
-      if(shape.instructionData.type !== "section") continue;
+    // for(var i = 0; i < data.shapes.length; i++) {
+    //   const shape = data.shapes[i];
+    //   if(!shape.instructionData) continue;
+    //   if(shape.instructionData.type !== "section") continue;
       
-      const title = shape.instructionData.title;
-      newMappings.push({
-        instructionTitle: title,
-        shapeName: shape.name
-      });
-    }
+    //   const title = shape.instructionData.title;
+    //   newMappings.push({
+    //     instructionTitle: title,
+    //     shapeName: shape.name
+    //   });
+    // }
     
-    setMappedInstructions(newMappings);
-    setRectangleData(data.shapes);
-    setOpenSpaceData(data.openSpaces);
-    setCircleData(data.circles);
-    setSnapshot(data.snapshot);
+    // setMappedInstructions(newMappings);
+    // setRectangleData(data.shapes);
+    // setOpenSpaceData(data.openSpaces);
+    // setCircleData(data.circles);
+    // setSnapshot(data.snapshot);
   };
 
   const handleRowClick = (store) => {
@@ -615,20 +615,20 @@ export default function ManageStore() {
       return;
     }
     console.log("clickPosition", clickPosition);
-    if (image && !clickPosition) {
-      setShowStatusModal(true);
-      setErrorMessage("Please click on the image to set the start point")
-      return;
-    }
+    // if (image && !clickPosition) {
+    //   setShowStatusModal(true);
+    //   setErrorMessage("Please click on the image to set the start point")
+    //   return;
+    // }
 
 
     console.log("rectangleData", rectangleData.length);
     // console.log("clickPosition", clickPosition);
-    if (rectangleData.length > 0 && !clickPosition) {
-      setShowStatusModal(true);
-      setErrorMessage("Please click on the image to set the start point");
-      return;
-    }
+    // if (rectangleData.length > 0 && !clickPosition) {
+    //   setShowStatusModal(true);
+    //   setErrorMessage("Please click on the image to set the start point");
+    //   return;
+    // }
     setLoading(true);
     const combinedShapes = {
       regularShapes: rectangleData,

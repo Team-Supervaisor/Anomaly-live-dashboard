@@ -80,8 +80,8 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
   // Track available instructions for each shape
   const [availableInstructions, setAvailableInstructions] = useState({})
 
-  const canvasWidth = 1000
-  const canvasHeight = 500
+  const canvasWidth = window.innerWidth * 0.95;
+  const canvasHeight = window.innerHeight * 0.88;
   const [isOpenSpaceMode, setIsOpenSpaceMode] = useState(false);
 
   // Initialize available instructions when instruction_data changes
@@ -999,65 +999,37 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
     setUploadImage(null)
   }
 
+  const logRectanglesWithVertices = () => {
+    const regularRectangles = shapes.filter(
+      (shape) => shape.type === "rectangle" && !shape.isOpenSpace
+    );
+  
+    const rectangleData = {};
+  
+    regularRectangles.forEach((rect) => {
+      rectangleData[rect.name || `Region ${rect.id}`] = {
+        vertices: rect.vertices,
+      };
+    });
+  
+    console.log("Rectangle Vertices Data:", rectangleData);
+  };
+
   const saveShapes = () => {
+    logRectanglesWithVertices();
     const canvas = canvasRef.current;
     const canvasSnapshot = canvas.toDataURL("image/png");
     const regularRectangles = shapes.filter(shape => 
       shape.type === "rectangle" && !shape.isOpenSpace
     );
 
-    const circles = shapes.filter(shape => shape.type === "circle");
+    // const circles = shapes.filter(shape => shape.type === "circle");
 
-    const openSpaceRectangles = shapes.filter(shape => 
-      shape.type === "rectangle" && shape.isOpenSpace
-    );
+    // const openSpaceRectangles = shapes.filter(shape => 
+    //   shape.type === "rectangle" && shape.isOpenSpace
+    // );
     
-    // Get rectangles
-
-    
-    // Calculate pixel to meter conversion factors
-    // const pixelsPerMeterWidth = canvasWidth / (planogramWidth * 0.3048);  // pixels per meter
-    // const pixelsPerMeterHeight = canvasHeight / (planogramLength * 0.3048);
-    
-    // Calculate total area in square meters
-    // let totalDrawnArea = 0;
-    // rectangles.forEach(rect => {
-    //   const widthInPixels = Math.abs(rect.width);
-    //   const heightInPixels = Math.abs(rect.height);
-      
-    //   // Convert pixel dimensions to meters
-    //   const widthInMeters = widthInPixels / pixelsPerMeterWidth;
-    //   const heightInMeters = heightInPixels / pixelsPerMeterHeight;
-      
-    //   // Add area in square meters
-    //   totalDrawnArea += widthInMeters * heightInMeters;
-    // });
-    
-    // setCanvasArea(totalDrawnArea);
-
-    // console.log(`Canvas dimensions: ${canvasWidth}px × ${canvasHeight}px`);
-    // console.log(`Store dimensions: ${planogramWidth}ft × ${planogramLength}ft`);
-    // console.log(`Total drawn area: ${totalDrawnArea.toFixed(2)}m², User area: ${userArea.toFixed(2)}m²`);
-
-    // // If drawn area is smaller than user area, scale up
-    // let scaledRectangles;
-    // if (totalDrawnArea < userArea) {
-    //   const scalingFactor = Math.sqrt(userArea / totalDrawnArea);
-    //   console.log(`Scaling up by factor of ${scalingFactor}`);
-      
-    //   scaledRectangles = rectangles.map(rect => ({
-    //     id: rect.id,
-    //     vertices: rect.vertices.map(vertex => [
-    //       vertex[0] * scalingFactor,
-    //       vertex[1] * scalingFactor
-    //     ]),
-    //     name: rect.name,
-    //     instructionData: rect.instruction && instruction_data.find(item => 
-    //       item.id === rect.instruction
-    //     )
-    //   }));
-    // } else {
-      // If drawn area is larger, keep original vertices
+   
       const scaledRectangles = regularRectangles.map(rect => ({
         id: rect.id,
         vertices: rect.vertices,
@@ -1072,63 +1044,38 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
         visibility: rect.visibility || "",
       }));
       
-      const circlesData = circles.map(circle => ({
-        id: circle.id,
-        x: circle.x,
-        y: circle.y,
-        radius: circle.radius,
-        name: circle.name,
-        isColored: circle.isColored,
-        color: circle.color,
-        tag: circle.tag || "",
-        visibility: circle.visibility || "",
-        instructionData: circle.instruction && instruction_data.find(item => 
-          item.id === circle.instruction
-        ),
+      // const circlesData = circles.map(circle => ({
+      //   id: circle.id,
+      //   x: circle.x,
+      //   y: circle.y,
+      //   radius: circle.radius,
+      //   name: circle.name,
+      //   isColored: circle.isColored,
+      //   color: circle.color,
+      //   tag: circle.tag || "",
+      //   visibility: circle.visibility || "",
+      //   instructionData: circle.instruction && instruction_data.find(item => 
+      //     item.id === circle.instruction
+      //   ),
 
-      }))
-      // console.log(`Using original dimensions - Drawing area: ${totalDrawnArea}m², Store area: ${userArea}m²`);
+      // }))
+ 
     
 
-      // Process open space rectangles
-      const processedOpenSpaces = openSpaceRectangles.map(rect => {
-        // Find all regular rectangles that intersect with this open space
-        const intersectingShapes = regularRectangles.filter(regular => 
-          isIntersecting(rect, regular)
-        );
-      
-        return {
-          id: rect.id,
-          type: 'openSpace',
-          vertices: rect.vertices,
-          name: rect.name || '',
-          // Include other properties matching regular rectangles
-          isOpenSpace: true,
-          intersectingShapes: intersectingShapes.map(shape => ({
-            id: shape.id,
-            vertices: shape.vertices,
-            type: shape.type,
-            name: shape.name,
-            isBricked: shape.isBricked,
-            isColored: shape.isColored,
-            color: shape.color
-          }))
-        };
-      });
+    
       
 
-    if(!clickPosition){
-      setShowStatusModal(true);
-      setErrorMessage("Please click on the image to set the start point")
-      return;
-    }
+    // if(!clickPosition){
+    //   setShowStatusModal(true);
+    //   setErrorMessage("Please click on the image to set the start point")
+    //   return;
+    // }
 
 
     if (onSaveShapes) {
       onSaveShapes({
-        shapes: scaledRectangles,
-        openSpaces: processedOpenSpaces,
-        circles: circlesData,
+        // shapes: scaledRectangles,
+        // circles: circlesData,
         snapshot: canvasSnapshot,
         image: backgroundImage,
       });
@@ -1181,11 +1128,11 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
   };
 
   return (
-    <div className="relative w-full h-[calc(100vh-2rem)] flex flex-col items-center justify-center">
+    <div className="relative w-full h-[calc(100vh-1rem)] flex flex-col items-center ">
       <div className="relative">
         <canvas
           ref={canvasRef}
-          className={`bg-white shadow-md rounded-lg ${cursorMap[selectedTool] || "cursor-default"}`}
+          className={`bg-white shadow-md rounded-lg mb-3 ${cursorMap[selectedTool] || "cursor-default"}`}
           onMouseDown={(e) => {
             handleCanvasClick(e);
             startDrawing(e); 
@@ -1252,8 +1199,8 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
           <div
             className="absolute bg-white p-6 rounded-xl shadow-lg w-[350px]"
             style={{
-              left: `${shapeDialog.x}px`,
-              top: `${shapeDialog.y}px`,
+              left: `${shapeDialog.x +12  }px`,
+              top: `${shapeDialog.y - 110}px`,
               transform: "translate(-50%, -50%)",
               border: "1px solid #E5E7EB",
             }}
@@ -1276,13 +1223,13 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
 
                 <>
                   {/*  existing input fields */}
-                  <div className="flex items-center">
-                        <label className="font-medium text-gray-700 w-24">Name:</label>
-                        <div className="flex-1">
+                  <div className="flex items-center justify-around">
+                        <label className="font-medium text-gray-700">Region Name: </label>
+                        <div className="">
                           <input
                             id="storeName"
                             type="text"
-                            placeholder="Enter the name of the Table"
+                            placeholder="Enter region name"
                             value={shapeDialog.name}
                             onChange={(e) => setShapeDialog({ ...shapeDialog, name: e.target.value })}
                             className="w-full flex-1 border-b border-gray-300 px-1 py-1 focus:outline-none focus:border-indigo-500 text-black text-sm"
@@ -1290,7 +1237,7 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
                         </div>
                       </div>
 
-                      <div className="flex items-center">
+                      {/* <div className="flex items-center">
                         <label className="font-medium text-gray-700 w-24">
                           Visibility:
                         </label>
@@ -1376,7 +1323,7 @@ export default function DrawingCanvas({ errorMessage, setErrorMessage, successMe
                             <ChevronDown size={16} className="text-gray-400" />
                           </div>
                         </div>
-                      </div>
+                      </div> */}
 
                 </>
             
