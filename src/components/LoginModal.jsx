@@ -20,6 +20,7 @@ const LoginModal = () => {
                 const response = await axios.post('/start-stream', { 
                     cameraUrl: cameraUrl.trim() 
                 });
+                console.log("API Response:", response.data);
                 
                 // Store stream details in context
                 setStreamDetails({
