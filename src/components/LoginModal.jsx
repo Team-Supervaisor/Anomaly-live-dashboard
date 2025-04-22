@@ -1,4 +1,4 @@
-"use client"
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -13,12 +13,14 @@ const LoginModal = () => {
 
     const handleSubmit = async (e) => {
       e.preventDefault();
-        setError('');
-        
+        // setError('');
+        const apiUrl = import.meta.env.VITE_API_URL; // You can set a default value
+        // console.log("API URL:", apiUrl);
         if (cameraUrl.trim() !== '') {
+
             setLoading(true);
             try {
-                const response = await axios.post('/start-stream', { 
+                const response = await axios.post(`${apiUrl}/start-stream`, { 
                     cameraUrl: cameraUrl.trim() 
                 });
                 console.log("API Response:", response.data);
