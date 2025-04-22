@@ -102,6 +102,8 @@ export default function DrawingCanvas( ) {
 
   useEffect(() => {
     if (!streamDetails?.playlistUrl) return;
+
+    console.log("Stream URL:", streamDetails.playlistUrl);
     
     const video = videoRef.current;
     if (!video) return;
