@@ -99,10 +99,9 @@ export default function DrawingCanvas( ) {
     }
   }, [])
 
+
   useEffect(() => {
     if (!streamDetails?.playlistUrl) return;
-
-    console.log("Stream URL:", streamDetails.playlistUrl);
     
     const video = videoRef.current;
     if (!video) return;
@@ -113,16 +112,59 @@ export default function DrawingCanvas( ) {
       hls = new Hls();
       hls.loadSource(streamDetails.playlistUrl);
       hls.attachMedia(video);
+      
+      // Add error handling and logging
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error('HLS Error:', data);
+      });
+      
+      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+        console.log('HLS Media Attached');
+      });
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log('HLS Manifest Parsed');
+        video.play().catch(err => console.error('Video play error:', err));
+      });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = streamDetails.playlistUrl;
     }
+
+    video.addEventListener('loadeddata', () => {
+      console.log('Video loaded');
+    });
 
     return () => {
       if (hls) {
         hls.destroy();
       }
     };
-  }, [streamDetails]);
+}, [streamDetails]);
+
+  // useEffect(() => {
+  //   if (!streamDetails?.playlistUrl) return;
+
+  //   console.log("Stream URL:", streamDetails.playlistUrl);
+    
+  //   const video = videoRef.current;
+  //   if (!video) return;
+
+  //   let hls = null;
+
+  //   if (Hls.isSupported()) {
+  //     hls = new Hls();
+  //     hls.loadSource(streamDetails.playlistUrl);
+  //     hls.attachMedia(video);
+  //   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+  //     video.src = streamDetails.playlistUrl;
+  //   }
+
+  //   return () => {
+  //     if (hls) {
+  //       hls.destroy();
+  //     }
+  //   };
+  // }, [streamDetails]);
 
   useEffect(() => {
     if (!ctx || !canvasRef.current) return;
