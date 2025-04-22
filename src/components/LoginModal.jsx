@@ -1,62 +1,61 @@
 import React, { useState, useEffect } from 'react';
-
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context';
 
 const LoginModal = () => {
-    const [email, setEmail] = useState('');
+    const [cameraUrl, setCameraUrl] = useState('');
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(''); // Add error state
+    const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { login } = useAppContext();
-
+    const { setStreamDetails } = useAppContext();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         
-        if (email.trim() === 'admin') {
+        if (cameraUrl.trim() !== '') {
             setLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Set expiration time to 1 day from now
-            const expirationTime = new Date().getTime() + (24 * 60 * 60 * 1000);
-            
-            // Store credentials with expiration in localStorage
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('authExpiration', expirationTime.toString());
-            localStorage.setItem('user', JSON.stringify({ 
-                username: email.trim(),
-                expiresAt: expirationTime
-            }));
-            
-            setLoading(false);
-            login();
-            navigate('/');
+            try {
+                const response = await axios.post('/start-stream', { 
+                    cameraUrl: cameraUrl.trim() 
+                });
+                
+                // Store stream details in context
+                setStreamDetails({
+                    streamId: response.data.stream_id,
+                    playlistUrl: response.data.playlist_url
+                });
+                
+                setLoading(false);
+                navigate('/');
+            } catch (err) {
+                setLoading(false);
+                setError('Failed to start stream. Please try again.');
+                console.error("API Error:", err);
+            }
         } else {
-            setError('Invalid credentials. Please try again.');
+            setError('Please enter a valid camera URL');
         }
     };
-
 
     // Add this useEffect to check for expiration
-useEffect(() => {
-    const checkAuthExpiration = () => {
-        const expiration = localStorage.getItem('authExpiration');
-        if (expiration) {
-            const expirationTime = parseInt(expiration);
-            if (new Date().getTime() > expirationTime) {
-                // Authentication has expired
-                localStorage.removeItem('isAuthenticated');
-                localStorage.removeItem('authExpiration');
-                localStorage.removeItem('user');
+    useEffect(() => {
+        const checkAuthExpiration = () => {
+            const expiration = localStorage.getItem('authExpiration');
+            if (expiration) {
+                const expirationTime = parseInt(expiration);
+                if (new Date().getTime() > expirationTime) {
+                    // Authentication has expired
+                    localStorage.removeItem('isAuthenticated');
+                    localStorage.removeItem('authExpiration');
+                    localStorage.removeItem('user');
+                }
             }
-        }
-    };
-    
-    checkAuthExpiration();
-}, []);
-
+        };
+        
+        checkAuthExpiration();
+    }, []);
 
     useEffect(() => {
         if (error) {
@@ -66,7 +65,6 @@ useEffect(() => {
             return () => clearTimeout(timer);
         }
     }, [error]);
-
 
   return (
     <div className="fixed inset-0 bg-white z-50">
@@ -107,8 +105,8 @@ useEffect(() => {
                 </label>
                 <input
                   type="text"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={cameraUrl}
+                  onChange={(e) => setCameraUrl(e.target.value)}
                   className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none  text-black"
                   placeholder="Enter camera url"
                     autocomplete="off"

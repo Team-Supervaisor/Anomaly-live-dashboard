@@ -11,11 +11,14 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={
-        isAuthenticated ? <Stores /> : <Navigate to="/login" replace />
+        <Stores /> 
       } />
       <Route path="/login" element={
-        !isAuthenticated ? <LoginModal /> : <Navigate to="/" replace />
+        <LoginModal /> 
       } />
+      {/* <Route path="/login" element={
+        !isAuthenticated ? <LoginModal /> : <Navigate to="/" replace />
+      } /> */}
    
     </Routes>
   )

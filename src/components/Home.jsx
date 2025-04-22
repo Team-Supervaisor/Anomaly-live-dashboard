@@ -6,9 +6,9 @@ export default function Home() {
 
   return (
     <>
-      <div className="backdrop-blur-sm fixed inset-0 bg-black/30 flex items-center justify-center font-[Urbanist]">
+      <div className="backdrop-blur-sm fixed inset-0 bg-black/30 flex items-center justify-center ">
 
-  <DrawingCanvas />
+      <DrawingCanvas />
 
       </div>
 

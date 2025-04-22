@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react"
 import ToolBar from "./tool-bar"
 import { ChevronDown, X, PencilIcon, Trash2 } from "lucide-react"
-
+import { useAppContext } from '../context';
+import Hls from 'hls.js'
 
 const tagOptions = [
   { id: "cashier", title: "Cashier", color: "#FFD6C3" },
@@ -43,6 +44,8 @@ const tagBorderStyles = {
 
 export default function DrawingCanvas( ) {
   const canvasRef = useRef(null)
+  const { streamDetails } = useAppContext();
+  const videoRef = useRef(null);
   const [fillColor, setFillColor] = useState("#000000")
   const [ctx, setCtx] = useState(null)
   const [hoveredShape, setHoveredShape] = useState(null);
@@ -96,47 +99,45 @@ export default function DrawingCanvas( ) {
     }
   }, [])
 
+  useEffect(() => {
+    if (!streamDetails?.playlistUrl) return;
+    
+    const video = videoRef.current;
+    if (!video) return;
 
-  //   if(!ctx || !planogramLength || !planogramWidth) return
-  //   ctx.font = "10px Arial";
-  //   ctx.fillStyle = "black";
-  //   ctx.strokeStyle = "gray";
+    let hls = null;
 
-  //   // X-axis (top)
-  //   const xStep = canvasWidth / planogramWidth;
-  //   const xIncrement = Math.floor(planogramWidth / 5);
-  //   for (let i = xIncrement; i <= planogramWidth; i += xIncrement) {
-  //     const x = i * xStep - 510;
-  //     ctx.beginPath();
-  //     ctx.moveTo(x, -250);
-  //     ctx.lineTo(x, -240);
-  //     ctx.stroke();
-  //     ctx.fillText(`${i}ft`, x-7, -230);
-  //   }
+    if (Hls.isSupported()) {
+      hls = new Hls();
+      hls.loadSource(streamDetails.playlistUrl);
+      hls.attachMedia(video);
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = streamDetails.playlistUrl;
+    }
 
-  //   // Y-axis (left)
-  //   const yStep = canvasHeight / planogramLength;
-  //   const yIncrement = Math.floor(planogramLength / 5);
-  //   for (let i = yIncrement; i <= planogramLength; i += yIncrement) {
-  //     const y = i * yStep - 250;
-  //     ctx.beginPath();
-  //     ctx.moveTo(-500, y-10);
-  //     ctx.lineTo(-490, y-10);
-  //     ctx.stroke();
-  //     ctx.fillText(`${i}ft`, -487, y -5);
-  //   }
-  // };
-
+    return () => {
+      if (hls) {
+        hls.destroy();
+      }
+    };
+  }, [streamDetails]);
 
   useEffect(() => {
-    if (!ctx || !canvasRef.current) return
+    if (!ctx || !canvasRef.current) return;
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    let animationFrameId;
 
-    ctx.save();
-    ctx.translate(canvasWidth / 2, canvasHeight / 2);
+    const render = () => {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+      // Draw video frame if video is ready
+      if (videoRef.current?.readyState >= 2) {
+        ctx.drawImage(videoRef.current, 0, 0, canvasWidth, canvasHeight);
+      }
+
+      ctx.save();
+      ctx.translate(canvasWidth / 2, canvasHeight / 2);
 
  
 
@@ -395,32 +396,17 @@ export default function DrawingCanvas( ) {
 
     // Rest of your existing drawing code...
     ctx.restore();
-  }, [shapes, ctx, drawingState, selectedShape]);
+      animationFrameId = requestAnimationFrame(render);
+    };
 
-  // Update available instructions when selectedInstructions change
-  // useEffect(() => {
-  //   if (!instruction_data) return;
-    
-  //   // Create a new object for available instructions
-  //   const newAvailable = {};
-    
-  //   shapes.forEach(shape => {
-  //     // Get all instruction IDs
-  //     const allInstructionIds = instruction_data.map(item => item.id);
-      
-  //     // Filter out instructions that are selected by other shapes
-  //     const availableForShape = allInstructionIds.filter(id => {
-  //       // Include if it's this shape's current selection
-  //       if (selectedInstructions[shape.id] === id) return true;
-  //       // Or if it's not selected by any other shape
-  //       return !Object.values(selectedInstructions).includes(id);
-  //     });
-      
-  //     newAvailable[shape.id] = availableForShape;
-  //   });
-    
-  //   setAvailableInstructions(newAvailable);
-  // }, [selectedInstructions, shapes, instruction_data]);
+    render();
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [shapes, ctx, drawingState, selectedShape]);
 
   const getCustomCoordinates = (e) => {
     const rect = canvasRef.current?.getBoundingClientRect()
@@ -867,31 +853,6 @@ export default function DrawingCanvas( ) {
     setTextInput({ isActive: false, x: 0, y: 0, text: "" });
   }
 
-  // const handleInstructionChange = (e) => {
-  //   const newInstructionId = e.target.value;
-  //   const shapeId = shapeDialog.shapeId;
-    
-  //   // Update the shapeDialog state
-  //   setShapeDialog({ 
-  //     ...shapeDialog, 
-  //     instruction: newInstructionId 
-  //   });
-    
-  //   // Update the selectedInstructions tracking
-  //   setSelectedInstructions(prev => {
-  //     const newSelected = { ...prev };
-      
-  //     // If empty/none selected, remove from tracking
-  //     if (!newInstructionId) {
-  //       delete newSelected[shapeId];
-  //     } else {
-  //       newSelected[shapeId] = newInstructionId;
-  //     }
-      
-  //     return newSelected;
-  //   });
-  // };
-
   const handleTagChange = (e) => {
     setShapeDialog({ 
       ...shapeDialog, 
@@ -1053,29 +1014,12 @@ export default function DrawingCanvas( ) {
 
 
  
-  // Get the filtered instruction options for the current shape
-  // const getFilteredInstructions = () => {
-  //   if (!instruction_data || !shapeDialog.shapeId) return [];
-    
-  //   const currentShapeId = shapeDialog.shapeId;
-  //   const availableIds = availableInstructions[currentShapeId] || [];
-    
-  //   // Always include currently selected instruction if any
-  //   if (shapeDialog.instruction && !availableIds.includes(shapeDialog.instruction)) {
-  //     availableIds.push(shapeDialog.instruction);
-  //   }
-    
-  //   return instruction_data.filter(option => 
-  //     availableIds.includes(option.id)
-  //   );
-  // };
-
   return (
     <div className="relative w-full h-[calc(100vh-1rem)] flex flex-col items-center ">
       <div className="relative">
         <canvas
           ref={canvasRef}
-          className={`bg-white shadow-md rounded-lg mb-3 ${cursorMap[selectedTool] || "cursor-default"}`}
+          className={`bg-black ${cursorMap[selectedTool] || "cursor-default"}`}
           onMouseDown={(e) => {
             handleCanvasClick(e);
             startDrawing(e); 
@@ -1088,13 +1032,12 @@ export default function DrawingCanvas( ) {
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
         />
-        {/* <button
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"
-          onClick={onClose}
-        >
-          <X size={18} />
-        </button> */}
-
+        <video
+          ref={videoRef}
+          style={{ display: 'none' }}
+          muted
+          autoPlay
+        />
         {textInput.isActive && (
           <div
             className="absolute bg-white p-2 rounded shadow-md"
@@ -1148,24 +1091,8 @@ export default function DrawingCanvas( ) {
               border: "1px solid #E5E7EB",
             }}
           >
-            {/* <button
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"
-              onClick={closeShapeDialog}
-            >
-              <X size={18} />
-            </button> */}
-
             <div className="flex flex-col gap-4">
-              {/* <div className="flex items-center justify-center mb-1">
-                <span className="text-sm font-semibold bg-gray-100 px-3 py-1 rounded-full text-gray-700">
-                  ID: {shapeDialog.shapeId}
-                </span>
-              </div> */}
-
-                
-
                 <>
-                  {/*  existing input fields */}
                   <div className="flex items-center justify-around">
                         <label className="font-medium text-gray-700">Region Name: </label>
                         <div className="">
@@ -1179,95 +1106,6 @@ export default function DrawingCanvas( ) {
                           />
                         </div>
                       </div>
-
-                      {/* <div className="flex items-center">
-                        <label className="font-medium text-gray-700 w-24">
-                          Visibility:
-                        </label>
-                        <div className="flex-1 relative">
-                          <select
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm appearance-none text-[black]"
-                            value={shapeDialog.visibility}
-                            defaultValue={""}
-                            onChange={handleVisibilityChange}
-                          >
-                            <option value="" disabled>
-                              Select from below
-                            </option>
-                            {visibilityOptions.map((option) => (
-                              <option
-                                key={option.id}
-                                value={option.id}
-                                className="text-black-[500]"
-                              >
-                                {option.title}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                            <ChevronDown size={16} className="text-gray-400" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center">
-                        <label className="font-medium text-gray-700 w-24">Tag:</label>
-                        <div className="flex-1 relative">
-                          <select
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm appearance-none text-[black]"
-                            value={shapeDialog.tag}
-                            onChange={handleTagChange}
-                            defaultValue={""}
-                          >
-                            <option value="" disabled>
-                              Select from below
-                            </option>
-                            {tagOptions.map((option) => (
-                              <option
-                                key={option.id}
-                                value={option.id}
-                                className="text-black-[500]"
-                              >
-                                {option.title}
-                              </option>
-                            ))}
-                          </select>
-
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                            <ChevronDown size={16} className="text-gray-400" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center">
-                        <label className="font-medium text-gray-700 w-24">
-                          Instruction:
-                        </label>
-                        <div className="flex-1 relative">
-                          <select
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm appearance-none text-[black]"
-                            value={shapeDialog.instruction}
-                            onChange={handleInstructionChange}
-                          >
-                            <option value="" disabled>
-                              Select from below
-                            </option>
-                            {getFilteredInstructions().map((option) => (
-                              <option
-                                key={option.id}
-                                value={option.id}
-                                className="text-black-[500]"
-                              >
-                                {option.title}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                            <ChevronDown size={16} className="text-gray-400" />
-                          </div>
-                        </div>
-                      </div> */}
-
                 </>
             
               <div className="flex justify-end gap-2 mt-2">
@@ -1301,7 +1139,6 @@ export default function DrawingCanvas( ) {
             gap: "8px",
           }}
         >
-          {/* Edit Button with Tooltip */}
           <div className="relative group">
             <button
               className="w-8 h-8 rounded-full bg-indigo-400 hover:bg-indigo-500 flex items-center justify-center shadow-md"
@@ -1317,7 +1154,6 @@ export default function DrawingCanvas( ) {
             </div>
           </div>
         
-          {/* Delete Button */}
           <div className="relative group">
             <button
               className="w-8 h-8 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
@@ -1338,13 +1174,6 @@ export default function DrawingCanvas( ) {
         
         )}
       </div>
-      {/* {planogramLength !== 0 && planogramWidth !== 0 && <div>
-        <div className="bg-white p-2 mt-4 rounded shadow-md z-10 flex items-center mb-6">
-          <label className="text-sm font-medium text-gray-700 mr-2">ScaleX: 1ft = {Math.floor(1000 / planogramWidth)}px</label>
-          <label className="text-sm font-medium text-gray-700 mr-2">ScaleY: 1ft = {Math.floor(1000 / planogramLength)}px</label>
-        </div>
-      </div>} */}
-
       <ToolBar
         selectedTool={selectedTool}
         setSelectedTool={setSelectedTool}
@@ -1368,19 +1197,6 @@ export default function DrawingCanvas( ) {
         </div>
       </>
       )}
-      {/* <OverlayAddStore 
-        message={errorMessage}
-        setErrorMessage={setErrorMessage}
-        successMessage={successMessage}
-        isOpen={showStatusModal}
-        onClose={() => {
-          setShowStatusModal(false);
-          if (isSuccess) {
-            handleClose();
-          }
-        }}
-        isSuccess={isSuccess}
-      /> */}
     </div>
   );
 }

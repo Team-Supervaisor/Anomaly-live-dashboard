@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
-const AuthContext = createContext(null);
+const AppContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
+export const AppProvider = ({ children }) => {
+  const [streamDetails, setStreamDetails] = useState(null);
+
   // Initialize state from localStorage
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const expiration = localStorage.getItem('authExpiration');
@@ -35,22 +37,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ 
+    <AppContext.Provider value={{ 
       isAuthenticated, 
       login, 
       logout,
       user,
-      setUser 
+      setUser,
+      streamDetails,
+      setStreamDetails
     }}>
       {children}
-    </AuthContext.Provider>
+    </AppContext.Provider>
   );
 };
 
 export const useAppContext = () => {
-  const context = useContext(AuthContext);
+  const context = useContext(AppContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAppContext must be used within an AppProvider');
   }
   return context;
 };
