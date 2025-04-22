@@ -11,10 +11,10 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={
-        <Stores /> 
-      } />
-      <Route path="/login" element={
         <LoginModal /> 
+      } />
+      <Route path="/app" element={
+        <Stores /> 
       } />
       {/* <Route path="/login" element={
         !isAuthenticated ? <LoginModal /> : <Navigate to="/" replace />

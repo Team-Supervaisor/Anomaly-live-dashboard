@@ -1,3 +1,4 @@
+"use client"
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +12,7 @@ const LoginModal = () => {
     const { setStreamDetails } = useAppContext();
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+      e.preventDefault();
         setError('');
         
         if (cameraUrl.trim() !== '') {
@@ -29,7 +30,7 @@ const LoginModal = () => {
                 });
                 
                 setLoading(false);
-                navigate('/');
+                navigate('/app');
             } catch (err) {
                 setLoading(false);
                 setError('Failed to start stream. Please try again.');
