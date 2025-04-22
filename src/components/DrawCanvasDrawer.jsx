@@ -101,6 +101,8 @@ export default function DrawingCanvas( ) {
 
   useEffect(() => {
     if (!streamDetails?.playlistUrl) return;
+
+    console.log("Stream URL:", streamDetails.playlistUrl);
     
     const video = videoRef.current;
     if (!video) return;
@@ -1019,7 +1021,7 @@ export default function DrawingCanvas( ) {
       <div className="relative">
         <canvas
           ref={canvasRef}
-          className={`bg-black ${cursorMap[selectedTool] || "cursor-default"}`}
+          className={`bg-white ${cursorMap[selectedTool] || "cursor-default"}`}
           onMouseDown={(e) => {
             handleCanvasClick(e);
             startDrawing(e); 
