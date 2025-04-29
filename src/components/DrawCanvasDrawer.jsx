@@ -3,6 +3,7 @@ import ToolBar from "./tool-bar"
 import { ChevronDown, X, PencilIcon, Trash2 } from "lucide-react"
 import { useAppContext } from '../context';
 import Hls from 'hls.js'
+import axios from 'axios';
 
 const tagOptions = [
   { id: "cashier", title: "Cashier", color: "#FFD6C3" },
@@ -994,76 +995,35 @@ export default function DrawingCanvas({data} ) {
     console.log("Rectangle Vertices Data:", rectangleData);
   };
 
-  const saveShapes = () => {
-    logRectanglesWithVertices();
-    const canvas = canvasRef.current;
-    const canvasSnapshot = canvas.toDataURL("image/png");
+  const saveShapes = async () => {
     const regularRectangles = shapes.filter(shape => 
       shape.type === "rectangle" && !shape.isOpenSpace
     );
-
-    // const circles = shapes.filter(shape => shape.type === "circle");
-
-    // const openSpaceRectangles = shapes.filter(shape => 
-    //   shape.type === "rectangle" && shape.isOpenSpace
-    // );
-    
+  
    
-      const scaledRectangles = regularRectangles.map(rect => ({
-        id: rect.id,
-        vertices: rect.vertices,
-        name: rect.name,
-        isBricked: rect.isBricked,
-        isColored: rect.isColored,
-        color: rect.color,
-        instructionData: rect.instruction && instruction_data.find(item => 
-          item.id === rect.instruction
-        ),
-        tag: rect.tag || "",
-        visibility: rect.visibility || "",
-      }));
+    const regionsPayload = regularRectangles.map(rect => ({
+      Region_name: rect.name || `Region ${rect.id}`,
+      Region_Cords: {
+        vertices: rect.vertices.map(([x, y]) => [x, y])
+      }
+    }));
+  
+    try {
+      console.log(regionsPayload)
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const response = await axios.post(`${apiUrl}/roi`, regionsPayload);
+      console.log("ROI data saved successfully:", response.data);
       
-      // const circlesData = circles.map(circle => ({
-      //   id: circle.id,
-      //   x: circle.x,
-      //   y: circle.y,
-      //   radius: circle.radius,
-      //   name: circle.name,
-      //   isColored: circle.isColored,
-      //   color: circle.color,
-      //   tag: circle.tag || "",
-      //   visibility: circle.visibility || "",
-      //   instructionData: circle.instruction && instruction_data.find(item => 
-      //     item.id === circle.instruction
-      //   ),
-
-      // }))
- 
-    
-
-    
+     
       
-
-    // if(!clickPosition){
-    //   setShowStatusModal(true);
-    //   setErrorMessage("Please click on the image to set the start point")
-    //   return;
-    // }
-
-
-    // if (onSaveShapes) {
-    //   onSaveShapes({
-    //     // shapes: scaledRectangles,
-    //     // circles: circlesData,
-    //     snapshot: canvasSnapshot,
-    //     image: backgroundImage,
-    //   });
-    //   onClose();
-    // }
+    } catch (error) {
+      console.error("Failed to save ROI data:", error);
+      
+    }
   };
 
 
- 
+ console.log('hi')
   return (
     <div className="relative w-full h-[calc(100vh-1rem)] flex flex-col items-center ">
       <div className="relative">
@@ -1135,8 +1095,8 @@ export default function DrawingCanvas({data} ) {
           <div
             className="absolute bg-white p-6 rounded-xl shadow-lg w-[350px]"
             style={{
-              left: `${shapeDialog.x +12  }px`,
-              top: `${shapeDialog.y - 110}px`,
+              left: `${Math.max(175, Math.min(shapeDialog.x + 12, canvasSize.width - 175))}px`,
+              top: `${Math.max(110, Math.min(shapeDialog.y - 110, canvasSize.height - 110))}px`,
               transform: "translate(-50%, -50%)",
               border: "1px solid #E5E7EB",
             }}
