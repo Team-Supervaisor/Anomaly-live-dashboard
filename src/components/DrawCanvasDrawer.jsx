@@ -1023,7 +1023,7 @@ export default function DrawingCanvas({data} ) {
   };
 
 
- console.log('hi')
+
   return (
     <div className="relative w-full h-[calc(100vh-1rem)] flex flex-col items-center ">
       <div className="relative">
