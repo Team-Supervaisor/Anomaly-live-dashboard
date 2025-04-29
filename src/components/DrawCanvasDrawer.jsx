@@ -1,5 +1,3 @@
-
-
 import { useEffect, useRef, useState } from "react"
 import ToolBar from "./tool-bar"
 import { ChevronDown, X, PencilIcon, Trash2 } from "lucide-react"
@@ -79,8 +77,12 @@ export default function DrawingCanvas({data} ) {
   })
   // Track all selected instructions to manage availability
 
-  const canvasWidth = window.innerWidth * 0.95;
-  const canvasHeight = window.innerHeight * 0.88;
+  // Replace the static canvas dimensions with state
+  const [canvasSize, setCanvasSize] = useState({
+    width: window.innerWidth * 0.95,
+    height: window.innerHeight * 0.88
+  });
+
   const [isOpenSpaceMode, setIsOpenSpaceMode] = useState(false);
 
   // console.log("Stream URL:", cameraUrl);
@@ -89,8 +91,8 @@ export default function DrawingCanvas({data} ) {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    canvas.width = canvasWidth
-    canvas.height = canvasHeight
+    canvas.width = canvasSize.width
+    canvas.height = canvasSize.height
 
     const context = canvas.getContext("2d")
     if (context) {
@@ -177,15 +179,15 @@ export default function DrawingCanvas({data} ) {
 
     const render = () => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
 
       // Draw video frame if video is ready
       if (videoRef.current?.readyState >= 2) {
-        ctx.drawImage(videoRef.current, 0, 0, canvasWidth, canvasHeight);
+        ctx.drawImage(videoRef.current, 0, 0, canvasSize.width, canvasSize.height);
       }
 
       ctx.save();
-      ctx.translate(canvasWidth / 2, canvasHeight / 2);
+      ctx.translate(canvasSize.width / 2, canvasSize.height / 2);
 
  
 
@@ -197,7 +199,7 @@ export default function DrawingCanvas({data} ) {
       ctx.beginPath();
       
       // Start with full canvas
-      ctx.rect(-canvasWidth/2, -canvasHeight/2, canvasWidth, canvasHeight);
+      ctx.rect(-canvasSize.width/2, -canvasSize.height/2, canvasSize.width, canvasSize.height);
       
       // Subtract all regular shapes and walls
       shapes.forEach(otherShape => {
@@ -459,8 +461,8 @@ export default function DrawingCanvas({data} ) {
   const getCustomCoordinates = (e) => {
     const rect = canvasRef.current?.getBoundingClientRect()
     if (!rect) return { x: 0, y: 0 }
-    const x = e.clientX - rect.left - canvasWidth / 2
-    const y = e.clientY - rect.top - canvasHeight / 2
+    const x = e.clientX - rect.left - canvasSize.width / 2
+    const y = e.clientY - rect.top - canvasSize.height / 2
     return { x, y }
   }
 
@@ -522,8 +524,8 @@ export default function DrawingCanvas({data} ) {
     
     setShapeDialog({
       isOpen: true,
-      x: centerX + canvasWidth / 2,
-      y: centerY + canvasHeight / 2,
+      x: centerX + canvasSize.width / 2,
+      y: centerY + canvasSize.height / 2,
       shapeId: clickedShape.id,
       name: clickedShape.name || "",
       // instruction: clickedShape.instruction || "",
@@ -554,8 +556,8 @@ export default function DrawingCanvas({data} ) {
         
         setShapeDialog({
           isOpen: true,
-          x: centerX + canvasWidth / 2,
-          y: centerY + canvasHeight / 2,
+          x: centerX + canvasSize.width / 2,
+          y: centerY + canvasSize.height / 2,
           shapeId: clickedShape.id,
           name: clickedShape.name || "",
           // instruction: clickedShape.instruction || "",
@@ -569,13 +571,13 @@ export default function DrawingCanvas({data} ) {
         // Calculate the center of the circle properly for dialog positioning
         const centerX = clickedShape.x + clickedShape.radius;
         const centerY = clickedShape.y + clickedShape.radius;
-        console.log(centerX + canvasWidth/2)
+        console.log(centerX + canvasSize.width/2)
         console.log(centerY)
         
         setShapeDialog({
           isOpen: true,
-          x: centerX + canvasWidth / 2,
-          y: centerY + canvasHeight / 2,
+          x: centerX + canvasSize.width / 2,
+          y: centerY + canvasSize.height / 2,
           shapeId: clickedShape.id,
           name: clickedShape.name || "",
           // instruction: clickedShape.instruction || "",
@@ -732,7 +734,7 @@ export default function DrawingCanvas({data} ) {
       );
       // Fill the rectangle with a color
       ctx.fillStyle = fillColor;
-      ctx.fillRect(clickedRect.x + canvasWidth / 2, clickedRect.y + canvasHeight / 2, clickedRect.width, clickedRect.height);
+      ctx.fillRect(clickedRect.x + canvasSize.width / 2, clickedRect.y + canvasSize.height / 2, clickedRect.width, clickedRect.height);
     }
 
     if(clickedCircle){
@@ -747,7 +749,7 @@ export default function DrawingCanvas({data} ) {
       // Fill the circle with a color
       ctx.fillStyle = fillColor;
       ctx.beginPath();
-      ctx.arc(clickedCircle.x + canvasWidth / 2, clickedCircle.y + canvasHeight / 2, clickedCircle.radius, 0, Math.PI * 2);
+      ctx.arc(clickedCircle.x + canvasSize.width / 2, clickedCircle.y + canvasSize.height / 2, clickedCircle.radius, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -1090,8 +1092,8 @@ export default function DrawingCanvas({data} ) {
           <div
             className="absolute bg-white p-2 rounded shadow-md"
             style={{
-              left: textInput.x + canvasWidth / 2,
-              top: textInput.y + canvasHeight / 2,
+              left: textInput.x + canvasSize.width / 2,
+              top: textInput.y + canvasSize.height / 2,
             }}
           >
             <input
@@ -1178,8 +1180,8 @@ export default function DrawingCanvas({data} ) {
           <div
           style={{
             position: "absolute",
-            left: hoveredShape.x + hoveredShape.width + 2 + canvasWidth / 2 +35 > canvasWidth ? hoveredShape.x + canvasWidth/2 - 33 : hoveredShape.x + hoveredShape.width -35 + canvasWidth / 2,
-            top: hoveredShape.y + canvasHeight / 2 + 2,
+            left: hoveredShape.x + hoveredShape.width + 2 + canvasSize.width / 2 +35 > canvasSize.width ? hoveredShape.x + canvasSize.width/2 - 33 : hoveredShape.x + hoveredShape.width -35 + canvasSize.width / 2,
+            top: hoveredShape.y + canvasSize.height / 2 + 2,
             zIndex: 10,
             display: "flex",
             flexDirection: "column",
