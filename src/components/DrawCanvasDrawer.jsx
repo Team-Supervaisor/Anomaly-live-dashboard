@@ -42,7 +42,7 @@ const tagBorderStyles = {
 
 
 
-export default function DrawingCanvas( ) {
+export default function DrawingCanvas({data} ) {
   const canvasRef = useRef(null)
   const { streamDetails } = useAppContext();
   const videoRef = useRef(null);
@@ -51,7 +51,8 @@ export default function DrawingCanvas( ) {
   const [hoveredShape, setHoveredShape] = useState(null);
   const [selectedTool, setSelectedTool] = useState("rectangle")
   const [shapes, setShapes] = useState([])
-    const [nextId, setNextId] = useState(1)
+  const [nextId, setNextId] = useState(1)
+
   const [drawingState, setDrawingState] = useState({
     isDrawing: false,
     startX: 0,
@@ -82,7 +83,7 @@ export default function DrawingCanvas( ) {
   const canvasHeight = window.innerHeight * 0.88;
   const [isOpenSpaceMode, setIsOpenSpaceMode] = useState(false);
 
- 
+  // console.log("Stream URL:", cameraUrl);
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -101,9 +102,10 @@ export default function DrawingCanvas( ) {
 
 
   useEffect(() => {
-    if (!streamDetails?.playlistUrl) return;
+    if (!data.playlistUrl) return;
 
-    console.log("Stream URL:", streamDetails.playlistUrl);
+
+    console.log("Stream URL:", data.playlistUrl);
     
     const video = videoRef.current;
     if (!video) return;
@@ -112,7 +114,7 @@ export default function DrawingCanvas( ) {
 
     if (Hls.isSupported()) {
       hls = new Hls();
-      hls.loadSource(streamDetails.playlistUrl);
+      hls.loadSource(data.playlistUrl);
       hls.attachMedia(video);
       
       // Add error handling and logging
@@ -129,7 +131,7 @@ export default function DrawingCanvas( ) {
         video.play().catch(err => console.error('Video play error:', err));
       });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = streamDetails.playlistUrl;
+      video.src = data.playlistUrl;
     }
 
     video.addEventListener('loadeddata', () => {
