@@ -105,10 +105,10 @@ export default function DrawingCanvas({data} ) {
 
 
   useEffect(() => {
-    if (!data.playlistUrl) return;
+    // if (!data.playlistUrl) return;
 
 
-    console.log("Stream URL:", data.playlistUrl);
+    // console.log("Stream URL:", data.playlistUrl);
     
     const video = videoRef.current;
     if (!video) return;
@@ -117,7 +117,7 @@ export default function DrawingCanvas({data} ) {
 
     if (Hls.isSupported()) {
       hls = new Hls();
-      hls.loadSource(data.playlistUrl);
+      hls.loadSource("");
       hls.attachMedia(video);
       
       // Add error handling and logging
@@ -134,7 +134,7 @@ export default function DrawingCanvas({data} ) {
         video.play().catch(err => console.error('Video play error:', err));
       });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = data.playlistUrl;
+      video.src = "";
     }
 
     video.addEventListener('loadeddata', () => {
@@ -1009,7 +1009,7 @@ export default function DrawingCanvas({data} ) {
     }));
   
     try {
-      console.log(regionsPayload)
+      console.log(regionsPayload[0].Region_Cords.vertices)
       const apiUrl = import.meta.env.VITE_API_URL;
       const response = await axios.post(`${apiUrl}/roi`, regionsPayload);
       console.log("ROI data saved successfully:", response.data);

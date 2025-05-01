@@ -4,21 +4,19 @@ import Stores from './components/Home'
 
 import LoginModal from './components/LoginModal'
 import { useAppContext } from './context'
-
+import CameraRender from './components/CameraRender'
 function App() {
   const { isAuthenticated } = useAppContext();
 
   return (
     <Routes>
       <Route path="/" element={
-        <LoginModal /> 
+     <CameraRender /> 
       } />
-      <Route path="/app" element={
-        <Stores /> 
-      } />
-      {/* <Route path="/login" element={
-        !isAuthenticated ? <LoginModal /> : <Navigate to="/" replace />
+      {/* <Route path="/app" element={
+       
       } /> */}
+  
    
     </Routes>
   )
