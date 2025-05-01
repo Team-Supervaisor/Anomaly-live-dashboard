@@ -49,7 +49,7 @@ export default function VideoCanvas({ cameraData, isSelected, onSelect }) {
         >
             <canvas
                 ref={canvasRef}
-                className="w-full h-full object-cover bg-black rounded-lg"
+                className="w-full h-full  bg-black rounded-lg"
             />
             <video
                 ref={videoRef}

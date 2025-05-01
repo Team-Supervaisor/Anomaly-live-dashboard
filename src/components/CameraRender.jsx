@@ -29,20 +29,37 @@ export default function CameraRender() {
         setRtspUrl("")
     }
 
+    // const getGridLayout = (count) => {
+    //     switch (count) {
+    //         case 0:
+    //             return '';
+    //         case 1:
+    //             return 'w-[900px] h-[540px] mx-auto mt-15'; // Larger size for single camera
+    //         case 2:
+    //             return 'grid-cols-2 gap-3 w-[90%] h-[500px] mx-auto mt-20'; // Two cameras with gap
+    //         case 3: return 'grid-cols-2 gap-3 w-[70%] h-[540px] mx-auto mt-15';
+          
+    //         case 4:
+    //             return 'grid-cols-2 gap-3 w-[65%] h-[540px] mx-auto mt-15'; // 2x2 grid with gaps
+    //         default:
+    //             return 'grid-cols-2 gap-8 w-[95%] h-[700px] mx-auto mt-20';
+    //     }
+    // }
+
     const getGridLayout = (count) => {
         switch (count) {
             case 0:
                 return '';
             case 1:
-                return 'w-[900px] h-[540px] mx-auto mt-15'; // Larger size for single camera
+                return 'w-[95%] md:w-[80%] lg:w-[900px] h-[400px] md:h-[480px] lg:h-[540px] mx-auto mt-10 md:mt-15'; // Responsive single camera
             case 2:
-                return 'grid-cols-2 gap-3 w-[90%] h-[500px] mx-auto mt-20'; // Two cameras with gap
-            case 3: return 'grid-cols-2 gap-3 w-[70%] h-[540px] mx-auto mt-15';
-          
+                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-4 lg:gap-3 w-[95%] md:w-[90%] lg:w-[90%] h-[600px] md:h-[500px] mx-auto mt-10 md:mt-20'; // Responsive two cameras
+            case 3:
+                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-[95%] md:w-[85%] lg:w-[80%] h-[800px] md:h-[500px] mx-auto mt-10 md:mt-18'; // Responsive three cameras
             case 4:
-                return 'grid-cols-2 gap-3 w-[65%] h-[540px] mx-auto mt-15'; // 2x2 grid with gaps
+                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-[95%] md:w-[85%] lg:w-[80%] h-[1000px] md:h-[520px] mx-auto mt-10 md:mt-18'; // Responsive four cameras
             default:
-                return 'grid-cols-2 gap-8 w-[95%] h-[700px] mx-auto mt-20';
+                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 w-[95%] md:w-[85%] lg:w-[80%] h-[1000px] md:h-[700px] mx-auto mt-10 md:mt-15';
         }
     }
 
