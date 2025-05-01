@@ -28,7 +28,22 @@ export default function ToolBar({
   handleImage
 }) {
   const tools = [
-    { name: "pointer", icon: <MousePointer size={18} color="#333" /> },
+    {
+      name: "pointer",
+      icon: (
+          <img
+              src="/pointerT.svg"
+              style={{
+                  filter: selectedTool === "pointer"
+                      ? "invert(100%) sepia(100%) saturate(0%) hue-rotate(180deg)"
+                      : "none",
+              }}
+              width={18}
+              height={18}
+              alt="pointer"
+          />
+      )
+  },
     { name: "rectangle", icon: <Square size={18} color="#333" /> },
     // { name: "circle", icon: <Circle size={18} color="#333" /> },
     // {
