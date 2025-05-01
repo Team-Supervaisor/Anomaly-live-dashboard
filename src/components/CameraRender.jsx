@@ -72,7 +72,7 @@ export default function CameraRender() {
 
          
                     {activeTab === 'cam' && (
-                        <Dialog open={open} onOpenChange={setOpen} className="rounded-2xl">
+                        <Dialog open={open} onOpenChange={setOpen} >
                             <DialogTrigger asChild>
                                 <button
                                     className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2  rounded-[4rem] border border-[#0000001A] transition-colors"
@@ -81,8 +81,8 @@ export default function CameraRender() {
                                     <span>Add Cam</span>
                                 </button>
                             </DialogTrigger>
-                            <DialogContent className="bg-[#F5F5F5]  rounded-[3rem] border border-[#0000001A] p-0 w-[450px]">
-                                <div className="flex justify-between items-center p-4 border-b border-[#0000001A]">
+                            <DialogContent style={{borderRadius: '20px'}} className="bg-[#F5F5F5]  border border-[#0000001A] p-0 w-[450px] overflow-hidden">
+                                <div className="flex justify-between  items-center p-4 border-b border-[#0000001A]">
                                     <DialogTitle className="text-lg font-medium">Add Cam</DialogTitle>
                                     {/* <button 
                                         onClick={() => setOpen(false)}
