@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import ToolBar from "./tool-bar"
 import { Plus, X } from "lucide-react"
+import VideoCanvas from './VideoCanvas'
 
 export default function CameraRender() {
     const [open, setOpen] = useState(false)
@@ -12,13 +13,14 @@ export default function CameraRender() {
     const [cameras, setCameras] = useState([])
     const [selectedTool, setSelectedTool] = useState("pointer")
     const [selectedCamera, setSelectedCamera] = useState(null)
-    const [activeTab, setActiveTab] = useState('video') // Add this new state
+    const [activeTab, setActiveTab] = useState('video')
 
     const handleSubmit = () => {
         const newCamera = {
             id: Date.now(),
             name: cameraName,
-            url: rtspUrl
+            url: rtspUrl,
+            hlsUrl: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8'
         }
         setCameras([...cameras, newCamera])
         setOpen(false)
@@ -26,11 +28,16 @@ export default function CameraRender() {
         setRtspUrl("")
     }
 
+    const getGridCols = (count) => {
+        if (count <= 1) return 'grid-cols-1'
+        if (count <= 2) return 'grid-cols-2'
+        return 'grid-cols-2 md:grid-cols-2'
+    }
+
     return (
         <div className="backdrop-blur-sm bg-black/30 relative w-full h-[calc(100vh)] flex flex-col items-center">
             <div className="relative flex flex-col items-center h-full w-full">
-                {/* Main content area */}
-                <div className="w-[95%] h-[85%] bg-white rounded-lg shadow-md relative mt-4">
+                <div className="w-[95%] h-[85%] bg-white rounded-lg shadow-md relative mt-4 p-4">
                     {/* Tab buttons */}
                     <div className="absolute top-4 left-4 flex gap-3">
                         <button
@@ -70,8 +77,20 @@ export default function CameraRender() {
                         </button>
                     </div>
 
-         
-                    {activeTab === 'cam' && (
+                    {/* Video Grid */}
+                    <div className={`grid ${getGridCols(cameras.length)} gap-4 h-full`}>
+                        {cameras.map((camera) => (
+                            <VideoCanvas
+                                key={camera.id}
+                                cameraData={camera}
+                                isSelected={selectedCamera === camera.id}
+                                onSelect={setSelectedCamera}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Add Camera Button */}
+                    {activeTab === 'cam' && cameras.length < 4 && (
                         <Dialog open={open} onOpenChange={setOpen} >
                             <DialogTrigger asChild>
                                 <button
@@ -84,12 +103,6 @@ export default function CameraRender() {
                             <DialogContent style={{borderRadius: '20px'}} className="bg-[#F5F5F5]  border border-[#0000001A] p-0 w-[450px] overflow-hidden">
                                 <div className="flex justify-between  items-center p-4 border-b border-[#0000001A]">
                                     <DialogTitle className="text-lg font-medium">Add Cam</DialogTitle>
-                                    {/* <button 
-                                        onClick={() => setOpen(false)}
-                                        className="text-gray-500 hover:text-gray-700"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button> */}
                                 </div>
                                 
                                 <div className="p-4 space-y-4">
@@ -127,23 +140,9 @@ export default function CameraRender() {
                             </DialogContent>
                         </Dialog>
                     )}
-
-                    {cameras.map((camera) => (
-                        <div
-                            key={camera.id}
-                            className={`absolute inset-0 ${
-                                selectedCamera === camera.id ? 'ring-2 ring-[#5D61E2]' : ''
-                            }`}
-                            onClick={() => setSelectedCamera(camera.id)}
-                        >
-                            <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
-                                {camera.name}
-                            </div>
-                        </div>
-                    ))}
                 </div>
 
-                {/* Toolbar repositioned to bottom of screen */}
+                {/* Toolbar */}
                 <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2">
                     <ToolBar
                         selectedTool={selectedTool}
