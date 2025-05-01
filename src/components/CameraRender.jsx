@@ -11,6 +11,7 @@ export default function CameraRender() {
     const [cameras, setCameras] = useState([])
     const [selectedTool, setSelectedTool] = useState("pointer")
     const [selectedCamera, setSelectedCamera] = useState(null)
+    const [activeTab, setActiveTab] = useState('video') // Add this new state
 
     const handleSubmit = () => {
         const newCamera = {
@@ -27,8 +28,39 @@ export default function CameraRender() {
     return (
         <div className="backdrop-blur-sm bg-black/30 relative w-full h-[calc(100vh)] flex flex-col items-center">
             <div className="relative flex flex-col items-center h-full w-full">
-                {/* Main content area - with larger dimensions */}
+                {/* Main content area */}
                 <div className="w-[95%] h-[88%] bg-white rounded-lg shadow-md relative mt-4">
+                    {/* Tab buttons */}
+                    <div className="absolute top-4 left-4 flex gap-3">
+                        <button
+                            onClick={() => setActiveTab('video')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-sm border bg-[#7900F3] text-white border-[#7900F3]}`}
+                        >
+                            <img 
+                                src="/video.svg"
+                                className={`w-4 h-4 ${
+                                    activeTab === 'video' ? 'brightness-0 invert' : ''
+                                }`}
+                                alt="video icon"
+                            />
+                            <span>Video</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('cam')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-sm border `}
+                        >
+                            <img 
+                                src="/cam.svg"
+                                className={`w-4 h-4 ${
+                                    activeTab === 'cam' ? 'brightness-0 invert' : ''
+                                }`}
+                                alt="cam icon"
+                            />
+                            <span>Cam</span>
+                        </button>
+                    </div>
+
                     {cameras.map((camera) => (
                         <div
                             key={camera.id}
@@ -42,8 +74,6 @@ export default function CameraRender() {
                             </div>
                         </div>
                     ))}
-
-                   
                 </div>
 
                 {/* Toolbar repositioned to bottom of screen */}
@@ -61,8 +91,6 @@ export default function CameraRender() {
                     />
                 </div>
             </div>
-
-           
         </div>
     )
 }
