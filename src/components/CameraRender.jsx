@@ -154,7 +154,7 @@ export default function CameraRender() {
                                     <span>Add Cam</span>
                                 </button>
                             </DialogTrigger>
-                            <DialogContent style={{borderRadius: '20px'}} className="bg-[#F5F5F5]  border border-[#0000001A] p-0 w-[450px] overflow-hidden">
+                            <DialogContent style={{borderRadius: '20px'}} className="bg-[#F4F8FF]  border border-[#0000001A] p-0 w-[450px] overflow-hidden">
                                 <div className="flex justify-between  items-center p-4 border-b border-[#0000001A]">
                                     <DialogTitle className="text-lg font-medium">Add Cam</DialogTitle>
                                 </div>

@@ -133,7 +133,7 @@ export default function ToolBar({
   };
 
   return (
-    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full shadow-lg p-2 pl-4 pr-4 flex items-center gap-2">
+    <div className="fixed bottom-4 left-1/2 transform border border-[#0000001A] -translate-x-1/2 bg-white rounded-full shadow-lg p-2 pl-4 pr-4 flex items-center gap-2">
       <div className="flex items-center gap-2 mr-1">
         {tools.map((tool) => (
           <div className="relative group">
