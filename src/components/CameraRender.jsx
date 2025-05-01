@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import ToolBar from "./tool-bar"
-import { Plus, X } from "lucide-react"
+import { Plus, X , Upload} from "lucide-react"
 import VideoCanvas from './VideoCanvas'
+
 
 export default function CameraRender() {
     const [open, setOpen] = useState(false)
@@ -35,9 +36,9 @@ export default function CameraRender() {
     }
 
     return (
-        <div className="backdrop-blur-sm bg-black/30 relative w-full h-[calc(100vh)] flex flex-col items-center">
-            <div className="relative flex flex-col items-center h-full w-full">
-                <div className="w-[95%] h-[85%] bg-white rounded-lg shadow-md relative mt-4 p-4">
+        <div className="relative w-screen h-screen flex flex-col items-center">
+            <div className="relative flex flex-col items-center w-screen h-screen">
+                <div className="w-screen h-screen bg-white rounded-lg shadow-md relative ">
                     {/* Tab buttons */}
                     <div className="absolute top-4 left-4 flex gap-3">
                         <button
@@ -45,11 +46,11 @@ export default function CameraRender() {
                             className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${
                                 activeTab === 'video'
                                     ? 'bg-[#7900F3] text-white border-[#7900F3]'
-                                    : 'bg-white text-[#717171] border-[#717171]'
+                                    : 'bg-white text-[#717171] border-[#0000001A]  '
                             }`}
                         >
                             <img 
-                                src="/video.svg"
+                                src="/play.svg"
                                 className={`w-4 h-4 ${
                                     activeTab === 'video' ? 'brightness-0 invert' : ''
                                 }`}
@@ -63,11 +64,11 @@ export default function CameraRender() {
                             className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${
                                 activeTab === 'cam'
                                     ? 'bg-[#7900F3] text-white border-[#7900F3]'
-                                    : 'bg-white text-[#717171] border-[#717171]'
+                                    : 'bg-white text-[#717171] border-[#0000001A]'
                             }`}
                         >
                             <img 
-                                src="/cam.svg"
+                                src="/camera.svg"
                                 className={`w-4 h-4 ${
                                     activeTab === 'cam' ? 'brightness-0 invert' : ''
                                 }`}
@@ -88,6 +89,17 @@ export default function CameraRender() {
                             />
                         ))}
                     </div>
+                    
+                    {activeTab === 'video' && (
+                        <button
+                            onClick={() => console.log('Upload video')}
+                            className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-[4rem] border border-[#0000001A] hover:bg-gray-50 transition-colors"
+                        >
+                            <Upload className="w-4 h-4 text-black" />
+                            <span className="text-black">Upload</span>
+                        </button>
+                    )}
+
 
                     {/* Add Camera Button */}
                     {activeTab === 'cam' && cameras.length < 4 && (
