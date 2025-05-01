@@ -3,9 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import ToolBar from "./tool-bar"
-import { Plus, X , Upload} from "lucide-react"
+import { Plus, X, Upload, Maximize2, Minimize2 } from "lucide-react"
 import VideoCanvas from './VideoCanvas'
-
 
 export default function CameraRender() {
     const [open, setOpen] = useState(false)
@@ -15,6 +14,7 @@ export default function CameraRender() {
     const [selectedTool, setSelectedTool] = useState("pointer")
     const [selectedCamera, setSelectedCamera] = useState(null)
     const [activeTab, setActiveTab] = useState('video')
+    const [maximizedCamera, setMaximizedCamera] = useState(null)
 
     const handleSubmit = () => {
         const newCamera = {
@@ -29,22 +29,13 @@ export default function CameraRender() {
         setRtspUrl("")
     }
 
-    // const getGridLayout = (count) => {
-    //     switch (count) {
-    //         case 0:
-    //             return '';
-    //         case 1:
-    //             return 'w-[900px] h-[540px] mx-auto mt-15'; // Larger size for single camera
-    //         case 2:
-    //             return 'grid-cols-2 gap-3 w-[90%] h-[500px] mx-auto mt-20'; // Two cameras with gap
-    //         case 3: return 'grid-cols-2 gap-3 w-[70%] h-[540px] mx-auto mt-15';
-          
-    //         case 4:
-    //             return 'grid-cols-2 gap-3 w-[65%] h-[540px] mx-auto mt-15'; // 2x2 grid with gaps
-    //         default:
-    //             return 'grid-cols-2 gap-8 w-[95%] h-[700px] mx-auto mt-20';
-    //     }
-    // }
+    const handleMaximize = (cameraId) => {
+        setMaximizedCamera(cameraId)
+    }
+
+    const handleMinimize = () => {
+        setMaximizedCamera(null)
+    }
 
     const getGridLayout = (count) => {
         switch (count) {
@@ -107,18 +98,21 @@ export default function CameraRender() {
                     </div>
 
                     {/* Video Grid */}
-                    {cameras.length === 1 ? (
-                        // Single camera view
+                    {maximizedCamera ? (
+                        // Maximized single camera view
                         <div className={`${getGridLayout(1)} relative`}>
                             <VideoCanvas
-                                key={cameras[0].id}
-                                cameraData={cameras[0]}
-                                isSelected={selectedCamera === cameras[0].id}
+                                key={maximizedCamera}
+                                cameraData={cameras.find(cam => cam.id === maximizedCamera)}
+                                isSelected={selectedCamera === maximizedCamera}
                                 onSelect={setSelectedCamera}
+                                isMaximized={true}
+                                onMinimize={handleMinimize}
+                                showMaximize={true} // Add this line to show minimize icon
                             />
                         </div>
                     ) : (
-                        // Multiple cameras grid
+                        // Normal grid view
                         <div className={`grid ${getGridLayout(cameras.length)}`}>
                             {cameras.map((camera) => (
                                 <div key={camera.id} className="relative rounded-lg overflow-hidden">
@@ -126,6 +120,9 @@ export default function CameraRender() {
                                         cameraData={camera}
                                         isSelected={selectedCamera === camera.id}
                                         onSelect={setSelectedCamera}
+                                        isMaximized={false}
+                                        onMaximize={() => handleMaximize(camera.id)}
+                                        showMaximize={cameras.length > 1}
                                     />
                                 </div>
                             ))}

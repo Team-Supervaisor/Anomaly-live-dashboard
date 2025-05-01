@@ -1,7 +1,16 @@
 import { useEffect, useRef } from "react"
 import Hls from 'hls.js'
+import { Maximize, Minimize } from "lucide-react"
 
-export default function VideoCanvas({ cameraData, isSelected, onSelect }) {
+export default function VideoCanvas({ 
+    cameraData, 
+    isSelected, 
+    onSelect,
+    isMaximized,
+    onMaximize,
+    onMinimize,
+    showMaximize
+}) {
     const canvasRef = useRef(null)
     const videoRef = useRef(null)
 
@@ -49,16 +58,35 @@ export default function VideoCanvas({ cameraData, isSelected, onSelect }) {
         >
             <canvas
                 ref={canvasRef}
-                className="w-full h-full  bg-black rounded-lg"
+                className="w-full h-full bg-black rounded-lg"
             />
             <video
                 ref={videoRef}
                 className="hidden"
                 muted
             />
+            
+            {/* Camera name */}
             <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
                 {cameraData.name}
             </div>
+
+            {/* Maximize/Minimize button */}
+            {showMaximize && (
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        isMaximized ? onMinimize() : onMaximize()
+                    }}
+                    className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
+                >
+                    {isMaximized ? (
+                        <Minimize className="w-4 h-4 text-white" />
+                    ) : (
+                        <Maximize className="w-4 h-4 text-white" />
+                    )}
+                </button>
+            )}
         </div>
     )
 }
