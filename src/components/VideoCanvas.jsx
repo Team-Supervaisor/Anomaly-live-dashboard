@@ -42,14 +42,14 @@ export default function VideoCanvas({ cameraData, isSelected, onSelect }) {
 
     return (
         <div 
-            className={`relative rounded-lg overflow-hidden ${
+            className={`w-full h-full relative ${
                 isSelected ? 'ring-2 ring-[#7900F3]' : ''
             }`}
             onClick={() => onSelect(cameraData.id)}
         >
             <canvas
                 ref={canvasRef}
-                className="w-full h-full bg-black"
+                className="w-full h-full object-cover bg-black rounded-lg"
             />
             <video
                 ref={videoRef}

@@ -29,14 +29,25 @@ export default function CameraRender() {
         setRtspUrl("")
     }
 
-    const getGridCols = (count) => {
-        if (count <= 1) return 'grid-cols-1'
-        if (count <= 2) return 'grid-cols-2'
-        return 'grid-cols-2 md:grid-cols-2'
+    const getGridLayout = (count) => {
+        switch (count) {
+            case 0:
+                return '';
+            case 1:
+                return 'w-[900px] h-[540px] mx-auto mt-15'; // Larger size for single camera
+            case 2:
+                return 'grid-cols-2 gap-3 w-[90%] h-[500px] mx-auto mt-20'; // Two cameras with gap
+            case 3: return 'grid-cols-2 gap-3 w-[70%] h-[540px] mx-auto mt-15';
+          
+            case 4:
+                return 'grid-cols-2 gap-3 w-[65%] h-[540px] mx-auto mt-15'; // 2x2 grid with gaps
+            default:
+                return 'grid-cols-2 gap-8 w-[95%] h-[700px] mx-auto mt-20';
+        }
     }
 
     return (
-        <div className="relative w-screen h-screen flex flex-col items-center">
+        <div className="relative w-full h-full flex flex-col items-center">
             <div className="relative flex flex-col items-center w-screen h-screen">
                 <div className="w-screen h-screen bg-white rounded-lg shadow-md relative ">
                     {/* Tab buttons */}
@@ -79,16 +90,30 @@ export default function CameraRender() {
                     </div>
 
                     {/* Video Grid */}
-                    <div className={`grid ${getGridCols(cameras.length)} gap-4 h-full`}>
-                        {cameras.map((camera) => (
+                    {cameras.length === 1 ? (
+                        // Single camera view
+                        <div className={`${getGridLayout(1)} relative`}>
                             <VideoCanvas
-                                key={camera.id}
-                                cameraData={camera}
-                                isSelected={selectedCamera === camera.id}
+                                key={cameras[0].id}
+                                cameraData={cameras[0]}
+                                isSelected={selectedCamera === cameras[0].id}
                                 onSelect={setSelectedCamera}
                             />
-                        ))}
-                    </div>
+                        </div>
+                    ) : (
+                        // Multiple cameras grid
+                        <div className={`grid ${getGridLayout(cameras.length)}`}>
+                            {cameras.map((camera) => (
+                                <div key={camera.id} className="relative rounded-lg overflow-hidden">
+                                    <VideoCanvas
+                                        cameraData={camera}
+                                        isSelected={selectedCamera === camera.id}
+                                        onSelect={setSelectedCamera}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     
                     {activeTab === 'video' && (
                         <button
