@@ -1,7 +1,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import ToolBar from "./tool-bar"
 import { Plus, X, Upload, Maximize2, Minimize2 } from "lucide-react"
 import VideoCanvas from './VideoCanvas'
@@ -15,6 +15,9 @@ export default function CameraRender() {
     const [selectedCamera, setSelectedCamera] = useState(null)
     const [activeTab, setActiveTab] = useState('video')
     const [maximizedCamera, setMaximizedCamera] = useState(null)
+    
+    // Store camera references to persist HLS instances
+    const cameraRefs = useRef({});
 
     const handleSubmit = () => {
         const newCamera = {
@@ -54,6 +57,11 @@ export default function CameraRender() {
         }
     }
 
+    // Filter cameras to display based on maximized state
+    const visibleCameras = maximizedCamera 
+        ? cameras.filter(cam => cam.id === maximizedCamera)
+        : cameras;
+
     return (
         <div className="relative w-full h-full flex flex-col items-center">
             <div className="relative flex flex-col items-center w-screen h-screen">
@@ -65,7 +73,7 @@ export default function CameraRender() {
                             className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${
                                 activeTab === 'video'
                                     ? 'bg-[#7900F3] text-white border-[#7900F3]'
-                                    : 'bg-white text-[#717171] border-[#0000001A]  '
+                                    : 'bg-white text-[#717171] border-[#0000001A]'
                             }`}
                         >
                             <img 
@@ -97,37 +105,33 @@ export default function CameraRender() {
                         </button>
                     </div>
 
-                    {/* Video Grid */}
-                    {maximizedCamera ? (
-                        // Maximized single camera view
-                        <div className={`${getGridLayout(1)} relative`}>
-                            <VideoCanvas
-                                key={maximizedCamera}
-                                cameraData={cameras.find(cam => cam.id === maximizedCamera)}
-                                isSelected={selectedCamera === maximizedCamera}
-                                onSelect={setSelectedCamera}
-                                isMaximized={true}
-                                onMinimize={handleMinimize}
-                                showMaximize={true} // Add this line to show minimize icon
-                            />
-                        </div>
-                    ) : (
-                        // Normal grid view
-                        <div className={`grid ${getGridLayout(cameras.length)}`}>
-                            {cameras.map((camera) => (
-                                <div key={camera.id} className="relative rounded-lg overflow-hidden">
+                    {/* Video Grid - Always rendered but not always visible */}
+                    <div className={`grid ${getGridLayout(visibleCameras.length)}`}>
+                        {/* Always render all cameras to keep HLS instances alive,
+                            but only show the ones that should be visible */}
+                        {cameras.map((camera) => {
+                            const isVisible = !maximizedCamera || camera.id === maximizedCamera;
+                            
+                            return (
+                                <div 
+                                    key={camera.id} 
+                                    className={`relative rounded-lg overflow-hidden ${
+                                        isVisible ? '' : 'hidden'
+                                    }`}
+                                >
                                     <VideoCanvas
                                         cameraData={camera}
                                         isSelected={selectedCamera === camera.id}
                                         onSelect={setSelectedCamera}
-                                        isMaximized={false}
+                                        isMaximized={maximizedCamera === camera.id}
                                         onMaximize={() => handleMaximize(camera.id)}
+                                        onMinimize={handleMinimize}
                                         showMaximize={cameras.length > 1}
                                     />
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                            );
+                        })}
+                    </div>
                     
                     {activeTab === 'video' && (
                         <button
@@ -139,20 +143,19 @@ export default function CameraRender() {
                         </button>
                     )}
 
-
                     {/* Add Camera Button */}
                     {activeTab === 'cam' && cameras.length < 4 && (
                         <Dialog open={open} onOpenChange={setOpen} >
                             <DialogTrigger asChild>
                                 <button
-                                    className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2  rounded-[4rem] border border-[#0000001A] transition-colors"
+                                    className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-[4rem] border border-[#0000001A] transition-colors"
                                 >
                                     <Plus className="w-4 h-4" />
                                     <span>Add Cam</span>
                                 </button>
                             </DialogTrigger>
-                            <DialogContent style={{borderRadius: '20px'}} className="bg-[#F4F8FF]  border border-[#0000001A] p-0 w-[450px] overflow-hidden">
-                                <div className="flex justify-between  items-center p-4 border-b border-[#0000001A]">
+                            <DialogContent style={{borderRadius: '20px'}} className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden">
+                                <div className="flex justify-between items-center p-4 border-b border-[#0000001A]">
                                     <DialogTitle className="text-lg font-medium">Add Cam</DialogTitle>
                                 </div>
                                 
@@ -201,6 +204,7 @@ export default function CameraRender() {
                         clearCanvas={() => {
                             setCameras([])
                             setSelectedCamera(null)
+                            setMaximizedCamera(null)
                         }}
                         saveShapes={() => console.log("Save camera config")}
                         isOpenSpaceMode={false}
