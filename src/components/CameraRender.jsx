@@ -5,6 +5,7 @@ import { useState, useRef } from "react"
 import ToolBar from "./tool-bar"
 import { Plus, X, Upload, Maximize2, Minimize2 } from "lucide-react"
 import VideoCanvas from './VideoCanvas'
+import { useEffect, } from "react"
 
 export default function CameraRender() {
     const [open, setOpen] = useState(false)
@@ -22,6 +23,9 @@ export default function CameraRender() {
     // Store shapes for each camera
     const [cameraShapes, setCameraShapes] = useState({});
 
+    // Add a state variable to trigger re-render
+    const [gridKey, setGridKey] = useState(0);
+
     const handleSubmit = () => {
         const newCamera = {
             id: Date.now(),
@@ -36,11 +40,13 @@ export default function CameraRender() {
     }
 
     const handleMaximize = (cameraId) => {
-        setMaximizedCamera(cameraId)
+        setMaximizedCamera(cameraId);
+        setGridKey(prevKey => prevKey + 1); // Trigger re-render
     }
 
     const handleMinimize = () => {
-        setMaximizedCamera(null)
+        setMaximizedCamera(null);
+        setGridKey(prevKey => prevKey + 1); // Trigger re-render
     }
     
     const handleSaveShapes = () => {
@@ -130,7 +136,10 @@ export default function CameraRender() {
                     </div>
 
                     {/* Video Grid - Always rendered but not always visible */}
-                    <div className={`grid ${getGridLayout(visibleCameras.length)}`}>
+                    <div 
+                        key={gridKey} // Add key to force re-render
+                        className={`grid ${getGridLayout(visibleCameras.length)}`}
+                    >
                         {/* Always render all cameras to keep HLS instances alive,
                             but only show the ones that should be visible */}
                         {cameras.map((camera) => {

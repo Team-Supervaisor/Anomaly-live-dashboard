@@ -2,6 +2,16 @@ import { useEffect, useRef, useState } from "react"
 import Hls from 'hls.js'
 import { Maximize, Minimize, PencilIcon, Trash2 } from "lucide-react"
 
+// Define cursor map similar to DrawCanvasDrawer
+const cursorMap = {
+    pointer: "cursor-pointer",
+    rectangle: "cursor-crosshair",
+    fill: "custom-fill",
+};
+
+// Create a global store to persist playback positions across remounts
+const playbackPositions = {};
+
 export default function VideoCanvas({ 
     cameraData, 
     isSelected, 
@@ -19,6 +29,12 @@ export default function VideoCanvas({
     const hlsRef = useRef(null)
     const animationFrameRef = useRef(null)
     const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+    
+    // Store playback state in a ref to persist across renders
+    const playbackStateRef = useRef({
+        currentTime: playbackPositions[cameraData.id] || 0,
+        isInitialized: false
+    })
     
     // Drawing state
     const [nextId, setNextId] = useState(1)
@@ -71,13 +87,36 @@ export default function VideoCanvas({
         // Start render loop
         renderFrame()
 
+        // Handle window resize to ensure canvas dimensions are correct
+        const handleResize = () => {
+            resizeCanvas()
+        }
+        
+        window.addEventListener('resize', handleResize)
+
         // Cleanup
         return () => {
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current)
             }
+            window.removeEventListener('resize', handleResize)
         }
     }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape]) // Re-run on maximize state change or shapes change
+
+    // Add keyboard event listener for Escape key to minimize
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && isMaximized && onMinimize) {
+                onMinimize();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isMaximized, onMinimize]);
 
     // Draw all shapes on the canvas
     const drawShapes = (ctx, width, height) => {
@@ -154,12 +193,19 @@ export default function VideoCanvas({
         if (!video || !cameraData.hlsUrl) return
 
         if (Hls.isSupported()) {
+            // Store current time before setting up new HLS instance
+            if (hlsRef.current && videoRef.current) {
+                playbackStateRef.current.currentTime = videoRef.current.currentTime
+                playbackPositions[cameraData.id] = videoRef.current.currentTime
+            }
+            
             const hls = new Hls({
                 maxBufferSize: 30 * 1000 * 1000, // 30MB buffer
                 maxBufferLength: 60, // 60 seconds buffer
                 enableWorker: true, // Enable web worker
                 lowLatencyMode: true, // Enable low latency mode
-                backBufferLength: 90 // 90 seconds backward buffer
+                backBufferLength: 90, // 90 seconds backward buffer
+                startPosition: playbackStateRef.current.currentTime // Start from saved position
             })
 
             hlsRef.current = hls
@@ -168,8 +214,17 @@ export default function VideoCanvas({
             hls.attachMedia(video)
 
             hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                // Only set the time if we've played before
+                if (playbackStateRef.current.isInitialized && 
+                    playbackStateRef.current.currentTime > 0) {
+                    video.currentTime = playbackStateRef.current.currentTime
+                }
+                
                 video.play()
-                    .then(() => setIsVideoPlaying(true))
+                    .then(() => {
+                        setIsVideoPlaying(true)
+                        playbackStateRef.current.isInitialized = true
+                    })
                     .catch(err => console.error("Play failed:", err))
             })
 
@@ -188,19 +243,51 @@ export default function VideoCanvas({
                     }
                 }
             })
+            
+            // Store current time periodically to maintain position
+            const timeUpdateHandler = () => {
+                if (video.currentTime > 0) {
+                    playbackStateRef.current.currentTime = video.currentTime
+                    playbackPositions[cameraData.id] = video.currentTime
+                }
+            }
+            
+            video.addEventListener('timeupdate', timeUpdateHandler)
 
             return () => {
-                hls.destroy()
+                video.removeEventListener('timeupdate', timeUpdateHandler)
+                // Don't destroy HLS here to maintain state between renders
             }
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = cameraData.hlsUrl
             video.addEventListener('loadedmetadata', () => {
+                if (playbackStateRef.current.currentTime > 0) {
+                    video.currentTime = playbackStateRef.current.currentTime
+                }
                 video.play()
                     .then(() => setIsVideoPlaying(true))
                     .catch(err => console.error("Play failed:", err))
             })
         }
-    }, [cameraData.hlsUrl])
+    }, [cameraData.hlsUrl, cameraData.id]) // Re-run if URL changes
+
+    // Save playback position before unmount
+    useEffect(() => {
+        return () => {
+            if (videoRef.current) {
+                const currentTime = videoRef.current.currentTime
+                if (currentTime > 0) {
+                    playbackStateRef.current.currentTime = currentTime
+                    playbackPositions[cameraData.id] = currentTime
+                }
+            }
+            
+            if (hlsRef.current) {
+                hlsRef.current.destroy()
+                hlsRef.current = null
+            }
+        }
+    }, [cameraData.id])
 
     // Get canvas coordinates from mouse event
     const getCanvasCoordinates = (e) => {
@@ -391,16 +478,7 @@ export default function VideoCanvas({
 
     // Get cursor style based on selected tool
     const getCursorStyle = () => {
-        switch (selectedTool) {
-            case "pointer":
-                return "cursor-pointer"
-            case "rectangle":
-                return "cursor-crosshair"
-            case "fill":
-                return "custom-fill"
-            default:
-                return ""
-        }
+        return cursorMap[selectedTool] || "";
     }
 
     return (
