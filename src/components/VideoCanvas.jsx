@@ -122,6 +122,10 @@ export default function VideoCanvas({
     const drawShapes = (ctx, width, height) => {
         if (!ctx) return
         
+        // Only draw shapes when maximized or when there's only one stream
+        // We can determine if it's the only stream by checking if showMaximize is false
+        if (!isMaximized && showMaximize) return;
+        
         // Draw all existing shapes
         shapes.forEach((shape) => {
             if (shape.type === "rectangle") {
@@ -327,7 +331,8 @@ export default function VideoCanvas({
 
     // Handle mouse down event
     const handleMouseDown = (e) => {
-        if (!selectedTool) return
+        // Allow drawing when maximized or when there's only one stream (showMaximize is false)
+        if (!selectedTool || (!isMaximized && showMaximize)) return
         
         e.stopPropagation() // Prevent triggering parent onClick
         const { x, y } = getCanvasCoordinates(e)
@@ -364,10 +369,13 @@ export default function VideoCanvas({
             })
         }
         
-        // Handle hover for pointer tool
-        if (selectedTool === "pointer" && !drawingState.isDrawing) {
+        // Handle hover for pointer tool - only when maximized or single stream
+        if (selectedTool === "pointer" && !drawingState.isDrawing && (isMaximized || !showMaximize)) {
             const hoverShape = findShapeAtPosition(x, y)
             setHoveredShape(hoverShape)
+        } else {
+            // Clear hovered shape when not in pointer mode or when in grid view
+            setHoveredShape(null)
         }
     }
 
@@ -524,8 +532,8 @@ export default function VideoCanvas({
                 </button>
             )}
             
-            {/* Fill color selector */}
-            {selectedTool === "fill" && isSelected && (
+            {/* Fill color selector - only show when maximized or single stream */}
+            {selectedTool === "fill" && isSelected && (isMaximized || !showMaximize) && (
                 <div className="absolute top-4 left-4 bg-white p-2 rounded shadow-md z-10 flex items-center">
                     <label className="text-sm font-medium text-gray-700">Fill Color:</label>
                     <input
@@ -537,8 +545,8 @@ export default function VideoCanvas({
                 </div>
             )}
             
-            {/* Hover controls */}
-            {hoveredShape && selectedTool === "pointer" && (
+            {/* Hover controls - only show when maximized or single stream */}
+            {hoveredShape && selectedTool === "pointer" && (isMaximized || !showMaximize) && (
                 <div
                     style={{
                         position: "absolute",
