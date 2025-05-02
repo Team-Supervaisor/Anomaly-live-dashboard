@@ -428,9 +428,9 @@ export default function VideoCanvas({
                 style={{ width: "100%", height: "100%" }}
             />
 
-            <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
+            {/* <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
                 {videoData.name}
-            </div>
+            </div> */}
 
             {showMaximize && (
                 <button

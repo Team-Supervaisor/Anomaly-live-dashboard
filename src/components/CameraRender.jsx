@@ -228,22 +228,75 @@ export default function CameraRender() {
         }
     }
 
-    const getVideoGridLayout = (count) => {
-        switch (count) {
-            case 0:
-                return '';
-            case 1:
-                return 'w-[95%] md:w-[80%] lg:w-[900px] h-[400px] md:h-[580px] lg:h-[640px] mx-auto mt-10 md:mt-15'; // Responsive single camera
-            case 2:
-                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-4 lg:gap-3 w-[95%] md:w-[90%] lg:w-[90%] h-[600px] md:h-[600px] mx-auto mt-10 md:mt-20'; // Responsive two cameras
-            case 3:
-                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-[95%] md:w-[85%] lg:w-[80%] h-[800px] md:h-[700px] mx-auto mt-10 md:mt-18'; // Responsive three cameras
-            case 4:
-                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-[95%] md:w-[85%] lg:w-[80%] h-[1000px] md:h-[720px] mx-auto mt-10 md:mt-18'; // Responsive four cameras
-            default:
-                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 w-[95%] md:w-[85%] lg:w-[80%] h-[1000px] md:h-[700px] mx-auto mt-10 md:mt-15';
-        }
+    useEffect(() => {
+        return () => {
+            // Cleanup object URLs when component unmounts
+            uploadedVideos.forEach(video => {
+                if (video.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(video.url);
+                }
+            });
+        };
+    }, [uploadedVideos]);
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.add('border-[#717AEA]', 'bg-[#717AEA33]');
     };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove('border-[#717AEA]', 'bg-[#717AEA33]');
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove('border-[#717AEA]', 'bg-[#717AEA33]');
+
+        const files = Array.from(e.dataTransfer.files);
+        const videoFiles = files.filter(file => file.type.startsWith('video/'));
+
+        if (videoFiles.length === 0) {
+            alert("Please drop video files only");
+            return;
+        }
+        if (uploadedVideos.length + videoFiles.length > 4) {
+            alert("You can upload a maximum of 4 videos.");
+            return;
+        }
+
+        videoFiles.forEach(file => {
+            const newVideo = {
+                id: Date.now() + Math.random(),
+                file,
+                url: URL.createObjectURL(file),
+            };
+
+            setUploadedVideos((prev) => [...prev, newVideo]);
+        });
+
+        setUploadDialogOpen(false);
+    };
+
+    // const getVideoGridLayout = (count) => {
+    //     switch (count) {
+    //         case 0:
+    //             return '';
+    //         case 1:
+    //             return 'w-[95%] md:w-[80%] lg:w-[900px] h-[400px] md:h-[580px] lg:h-[640px] mx-auto mt-10 md:mt-15'; // Responsive single camera
+    //         case 2:
+    //             return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-4 lg:gap-3 w-[95%] md:w-[90%] lg:w-[90%] h-[600px] md:h-[600px] mx-auto mt-10 md:mt-20'; // Responsive two cameras
+    //         case 3:
+    //             return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-[95%] md:w-[85%] lg:w-[80%] h-[800px] md:h-[700px] mx-auto mt-10 md:mt-18'; // Responsive three cameras
+    //         case 4:
+    //             return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-[95%] md:w-[85%] lg:w-[80%] h-[1000px] md:h-[720px] mx-auto mt-10 md:mt-18'; // Responsive four cameras
+    //         default:
+    //             return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 w-[95%] md:w-[85%] lg:w-[80%] h-[1000px] md:h-[700px] mx-auto mt-10 md:mt-15';
+    //     }
+    // };
 
 
     // Filter cameras to display based on maximized state
@@ -338,8 +391,8 @@ export default function CameraRender() {
 
                     {activeTab === 'video' && (
                         <div
-                        key={gridKey} // Add key to force re-render
-                        className={`grid ${getGridLayout(visibleVideos.length)}`}>
+                            key={gridKey} // Add key to force re-render
+                            className={`grid ${getGridLayout(visibleVideos.length)}`}>
                             {uploadedVideos.map((video) => {
                                 const isVisible = !maximizedVideo || video.id === maximizedVideo;
 
@@ -391,7 +444,7 @@ export default function CameraRender() {
                                     </button>
                                 </div>
 
-                                <div className="p-4 space-y-4">
+                                {/* <div className="p-4 space-y-4">
                                     <div
                                         className="border-1 border-dashed border-[#717AEA] bg-[#717AEA1A] rounded-3xl flex items-center justify-center h-[283px] text-center cursor-pointer"
                                         onClick={() => document.getElementById("video-upload-input").click()}
@@ -408,6 +461,38 @@ export default function CameraRender() {
                                             accept="video/*"
                                             className="hidden"
                                             onChange={handleVideoUpload}
+                                        />
+                                    </div>
+
+                                    <button
+                                        className="w-full py-2 bg-[#717AEA] text-white rounded-full mt-3 text-[22px]"
+                                        onClick={() => setUploadDialogOpen(false)}
+                                    >
+                                        Upload
+                                    </button>
+                                </div> */}
+
+                                <div className="p-4 space-y-4">
+                                    <div
+                                        className="border-2 border-dashed border-[#717AEA] bg-[#717AEA1A] rounded-3xl flex items-center justify-center h-[283px] text-center cursor-pointer transition-colors duration-200"
+                                        onClick={() => document.getElementById("video-upload-input").click()}
+                                        onDragOver={handleDragOver}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={handleDrop}
+                                    >
+                                        <div>
+                                            <img src={UploadIcon} className="mx-auto w-14 h-[42px] text-[#717AEA]" />
+                                            <p className="text-[16px] font-medium mt-[10px] text-black">
+                                                Drop your files here or <span className="text-[#717AEA66] underline">click to browse</span>
+                                            </p>
+                                        </div>
+                                        <input
+                                            id="video-upload-input"
+                                            type="file"
+                                            accept="video/*"
+                                            className="hidden"
+                                            onChange={handleVideoUpload}
+                                            multiple
                                         />
                                     </div>
 
