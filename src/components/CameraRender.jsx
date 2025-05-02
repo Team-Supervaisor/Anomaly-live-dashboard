@@ -5,6 +5,9 @@ import { useState, useRef } from "react"
 import ToolBar from "./tool-bar"
 import { Plus, X, Upload, Maximize2, Minimize2 } from "lucide-react"
 import VideoCanvas from './VideoCanvas'
+import VideoSection from "./VideoSection"
+
+import UploadIcon from "../assets/Upload.png"
 
 export default function CameraRender() {
     const [open, setOpen] = useState(false)
@@ -15,7 +18,11 @@ export default function CameraRender() {
     const [selectedCamera, setSelectedCamera] = useState(null)
     const [activeTab, setActiveTab] = useState('video')
     const [maximizedCamera, setMaximizedCamera] = useState(null)
-    
+
+    const [uploadedVideos, setUploadedVideos] = useState([]);
+    const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+
+
     // Store camera references to persist HLS instances
     const cameraRefs = useRef({});
 
@@ -40,6 +47,25 @@ export default function CameraRender() {
         setMaximizedCamera(null)
     }
 
+    const handleVideoUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (uploadedVideos.length >= 4) {
+            alert("You can upload a maximum of 4 videos.");
+            return;
+        }
+
+        const newVideo = {
+            id: Date.now() + Math.random(),
+            file,
+            url: URL.createObjectURL(file),
+        };
+
+        setUploadedVideos((prev) => [...prev, newVideo]);
+        setUploadDialogOpen(false);
+    }
+
     const getGridLayout = (count) => {
         switch (count) {
             case 0:
@@ -57,8 +83,26 @@ export default function CameraRender() {
         }
     }
 
+    const getVideoGridLayout = (count) => {
+        switch (count) {
+            case 0:
+                return '';
+            case 1:
+                return 'w-[95%] md:w-[80%] lg:w-[900px] h-[400px] md:h-[580px] lg:h-[640px] mx-auto mt-10 md:mt-15'; // Responsive single camera
+            case 2:
+                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-4 lg:gap-3 w-[95%] md:w-[90%] lg:w-[90%] h-[600px] md:h-[600px] mx-auto mt-10 md:mt-20'; // Responsive two cameras
+            case 3:
+                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-[95%] md:w-[85%] lg:w-[80%] h-[800px] md:h-[700px] mx-auto mt-10 md:mt-18'; // Responsive three cameras
+            case 4:
+                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-[95%] md:w-[85%] lg:w-[80%] h-[1000px] md:h-[720px] mx-auto mt-10 md:mt-18'; // Responsive four cameras
+            default:
+                return 'grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 w-[95%] md:w-[85%] lg:w-[80%] h-[1000px] md:h-[700px] mx-auto mt-10 md:mt-15';
+        }
+    };
+
+
     // Filter cameras to display based on maximized state
-    const visibleCameras = maximizedCamera 
+    const visibleCameras = maximizedCamera
         ? cameras.filter(cam => cam.id === maximizedCamera)
         : cameras;
 
@@ -70,17 +114,15 @@ export default function CameraRender() {
                     <div className="absolute top-4 left-4 flex gap-3">
                         <button
                             onClick={() => setActiveTab('video')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${
-                                activeTab === 'video'
-                                    ? 'bg-[#7900F3] text-white border-[#7900F3]'
-                                    : 'bg-white text-[#717171] border-[#0000001A]'
-                            }`}
-                        >
-                            <img 
-                                src="/play.svg"
-                                className={`w-4 h-4 ${
-                                    activeTab === 'video' ? 'brightness-0 invert' : ''
+                            className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${activeTab === 'video'
+                                ? 'bg-[#7900F3] text-white border-[#7900F3]'
+                                : 'bg-white text-[#717171] border-[#0000001A]'
                                 }`}
+                        >
+                            <img
+                                src="/play.svg"
+                                className={`w-4 h-4 ${activeTab === 'video' ? 'brightness-0 invert' : ''
+                                    }`}
                                 alt="video icon"
                             />
                             <span>Video</span>
@@ -88,17 +130,15 @@ export default function CameraRender() {
 
                         <button
                             onClick={() => setActiveTab('cam')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${
-                                activeTab === 'cam'
-                                    ? 'bg-[#7900F3] text-white border-[#7900F3]'
-                                    : 'bg-white text-[#717171] border-[#0000001A]'
-                            }`}
-                        >
-                            <img 
-                                src="/camera.svg"
-                                className={`w-4 h-4 ${
-                                    activeTab === 'cam' ? 'brightness-0 invert' : ''
+                            className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${activeTab === 'cam'
+                                ? 'bg-[#7900F3] text-white border-[#7900F3]'
+                                : 'bg-white text-[#717171] border-[#0000001A]'
                                 }`}
+                        >
+                            <img
+                                src="/camera.svg"
+                                className={`w-4 h-4 ${activeTab === 'cam' ? 'brightness-0 invert' : ''
+                                    }`}
                                 alt="cam icon"
                             />
                             <span>Cam</span>
@@ -111,13 +151,12 @@ export default function CameraRender() {
                             but only show the ones that should be visible */}
                         {cameras.map((camera) => {
                             const isVisible = !maximizedCamera || camera.id === maximizedCamera;
-                            
+
                             return (
-                                <div 
-                                    key={camera.id} 
-                                    className={`relative rounded-lg overflow-hidden ${
-                                        isVisible ? '' : 'hidden'
-                                    }`}
+                                <div
+                                    key={camera.id}
+                                    className={`relative rounded-lg overflow-hidden ${isVisible ? '' : 'hidden'
+                                        }`}
                                 >
                                     <VideoCanvas
                                         cameraData={camera}
@@ -132,15 +171,118 @@ export default function CameraRender() {
                             );
                         })}
                     </div>
-                    
+
+                    {/* {activeTab === 'video' && (
+                        <div className={`grid ${getVideoGridLayout(uploadedVideos.length)}`}>
+                            {uploadedVideos.map((video) => {
+                                const isVisible = !maximizedCamera || video.id === maximizedCamera
+
+                                return (
+                                    <div
+                                        key={video.id}
+                                        className={`relative rounded-lg overflow-hidden ${isVisible ? "" : "hidden"}`}
+                                    >
+                                        <VideoSection
+                                            videoData={video}
+                                            isSelected={selectedCamera === video.id}
+                                            onSelect={setSelectedCamera}
+                                            isMaximized={maximizedCamera === video.id}
+                                            onMaximize={() => handleMaximize(video.id)}
+                                            onMinimize={handleMinimize}
+                                            showMaximize={uploadedVideos.length > 1}
+                                        />
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )} */}
+
                     {activeTab === 'video' && (
-                        <button
-                            onClick={() => console.log('Upload video')}
-                            className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-[4rem] border border-[#0000001A] hover:bg-gray-50 transition-colors"
-                        >
-                            <Upload className="w-4 h-4 text-black" />
-                            <span className="text-black">Upload</span>
-                        </button>
+                        <div className={`grid ${getVideoGridLayout(uploadedVideos.length)}`}>
+                            {uploadedVideos.map((video) => {
+                                const isVisible = !maximizedCamera || video.id === maximizedCamera;
+
+                                return (
+                                    <div
+                                        key={video.id}
+                                        className={`relative rounded-lg overflow-hidden ${isVisible ? "" : "hidden"}`}
+                                    >
+                                        <VideoSection
+                                            videoData={video}
+                                            isSelected={selectedCamera === video.id}
+                                            onSelect={setSelectedCamera}
+                                            isMaximized={maximizedCamera === video.id}
+                                            onMaximize={() => handleMaximize(video.id)}
+                                            onMinimize={handleMinimize}
+                                            showMaximize={uploadedVideos.length > 1}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {activeTab === 'video' && (
+                        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+                            <DialogTrigger asChild>
+                                <button
+                                    onClick={() => {
+                                        if (uploadedVideos.length >= 4) {
+                                            alert("Maximum 4 videos allowed.");
+                                            return;
+                                        }
+                                        setUploadDialogOpen(true);
+                                    }}
+                                    className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-[4rem] border border-[#0000001A] hover:bg-gray-50 transition-colors"
+                                >
+                                    <Upload className="w-4 h-4 text-black" />
+                                    <span className="text-black">Upload</span>
+                                </button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[664px] overflow-hidden rounded-3xl">
+                                <div className="flex justify-between items-center p-5 border-b border-[#0000001A]">
+                                    <DialogTitle className="text-2xl font-medium">Upload file</DialogTitle>
+                                    <button onClick={() => setUploadDialogOpen(false)}>
+                                        {/* <X className="w-4 h-4" /> */}
+                                    </button>
+                                </div>
+
+                                <div className="p-4 space-y-4">
+                                    <div
+                                        className="border-1 border-dashed border-[#717AEA] bg-[#717AEA1A] rounded-3xl flex items-center justify-center h-[283px] text-center cursor-pointer"
+                                        onClick={() => document.getElementById("video-upload-input").click()}
+                                    >
+                                        <div>
+                                            <img src={UploadIcon} className="mx-auto w-14 h-[42px] text-[#717AEA]" />
+                                            <p className="text-[16px] font-medium mt-[10px] text-black">
+                                                Drop your files here or <span className="text-[#717AEA66] underline">click to browse</span>
+                                            </p>
+                                        </div>
+                                        <input
+                                            id="video-upload-input"
+                                            type="file"
+                                            accept="video/*"
+                                            className="hidden"
+                                            onChange={handleVideoUpload}
+                                        />
+                                    </div>
+
+                                    <button
+                                        className="w-full py-2 bg-[#717AEA] text-white rounded-full mt-3 text-[22px]"
+                                        onClick={() => setUploadDialogOpen(false)}
+                                    >
+                                        Upload
+                                    </button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                        // <button
+                        //     onClick={() => console.log('Upload video')}
+                        //     className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-[4rem] border border-[#0000001A] hover:bg-gray-50 transition-colors"
+                        // >
+                        //     <Upload className="w-4 h-4 text-black" />
+                        //     <span className="text-black">Upload</span>
+                        // </button>
                     )}
 
                     {/* Add Camera Button */}
@@ -154,11 +296,11 @@ export default function CameraRender() {
                                     <span>Add Cam</span>
                                 </button>
                             </DialogTrigger>
-                            <DialogContent style={{borderRadius: '20px'}} className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden">
+                            <DialogContent style={{ borderRadius: '20px' }} className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden">
                                 <div className="flex justify-between items-center p-4 border-b border-[#0000001A]">
                                     <DialogTitle className="text-lg font-medium">Add Cam</DialogTitle>
                                 </div>
-                                
+
                                 <div className="p-4 space-y-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">
@@ -208,7 +350,7 @@ export default function CameraRender() {
                         }}
                         saveShapes={() => console.log("Save camera config")}
                         isOpenSpaceMode={false}
-                        setIsOpenSpaceMode={() => {}}
+                        setIsOpenSpaceMode={() => { }}
                     />
                 </div>
             </div>
