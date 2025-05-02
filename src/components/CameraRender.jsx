@@ -18,6 +18,9 @@ export default function CameraRender() {
     
     // Store camera references to persist HLS instances
     const cameraRefs = useRef({});
+    
+    // Store shapes for each camera
+    const [cameraShapes, setCameraShapes] = useState({});
 
     const handleSubmit = () => {
         const newCamera = {
@@ -38,6 +41,27 @@ export default function CameraRender() {
 
     const handleMinimize = () => {
         setMaximizedCamera(null)
+    }
+    
+    const handleSaveShapes = () => {
+        console.log("Saving shapes for all cameras:", cameraShapes)
+        // Here you would implement the logic to save shapes to your backend
+    }
+    
+    const handleClearCanvas = () => {
+        // Clear all shapes from all cameras
+        const emptyCameraShapes = {}
+        cameras.forEach(camera => {
+            emptyCameraShapes[camera.id] = []
+        })
+        setCameraShapes(emptyCameraShapes)
+    }
+    
+    const updateShapesForCamera = (cameraId, shapes) => {
+        setCameraShapes(prev => ({
+            ...prev,
+            [cameraId]: shapes
+        }));
     }
 
     const getGridLayout = (count) => {
@@ -127,6 +151,9 @@ export default function CameraRender() {
                                         onMaximize={() => handleMaximize(camera.id)}
                                         onMinimize={handleMinimize}
                                         showMaximize={cameras.length > 1}
+                                        selectedTool={selectedTool}
+                                        shapes={cameraShapes[camera.id] || []}
+                                        onShapesChange={(shapes) => updateShapesForCamera(camera.id, shapes)}
                                     />
                                 </div>
                             );
@@ -201,12 +228,8 @@ export default function CameraRender() {
                     <ToolBar
                         selectedTool={selectedTool}
                         setSelectedTool={setSelectedTool}
-                        clearCanvas={() => {
-                            setCameras([])
-                            setSelectedCamera(null)
-                            setMaximizedCamera(null)
-                        }}
-                        saveShapes={() => console.log("Save camera config")}
+                        clearCanvas={handleClearCanvas}
+                        saveShapes={handleSaveShapes}
                         isOpenSpaceMode={false}
                         setIsOpenSpaceMode={() => {}}
                     />
