@@ -251,9 +251,9 @@ export default function CameraRender() {
         ? cameras.filter(cam => cam.id === maximizedCamera)
         : cameras;
 
-    const visibleVideo = maximizedVideo
-        ? cameras.filter(cam => cam.id === maximizedVideo)
-        : cameras;
+    const visibleVideos = maximizedVideo
+        ? uploadedVideos.filter(video => video.id === maximizedVideo)
+        : uploadedVideos;
 
     // Trigger re-render when cameras change
     useEffect(() => {
@@ -337,7 +337,9 @@ export default function CameraRender() {
                     </div>
 
                     {activeTab === 'video' && (
-                        <div className={`grid ${getVideoGridLayout(uploadedVideos.length)}`}>
+                        <div
+                        key={gridKey} // Add key to force re-render
+                        className={`grid ${getGridLayout(visibleVideos.length)}`}>
                             {uploadedVideos.map((video) => {
                                 const isVisible = !maximizedVideo || video.id === maximizedVideo;
 
@@ -418,13 +420,6 @@ export default function CameraRender() {
                                 </div>
                             </DialogContent>
                         </Dialog>
-                        // <button
-                        //     onClick={() => console.log('Upload video')}
-                        //     className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-[4rem] border border-[#0000001A] hover:bg-gray-50 transition-colors"
-                        // >
-                        //     <Upload className="w-4 h-4 text-black" />
-                        //     <span className="text-black">Upload</span>
-                        // </button>
                     )}
 
                     {/* Add Camera Button */}

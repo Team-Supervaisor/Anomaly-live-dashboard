@@ -53,54 +53,6 @@ export default function VideoCanvas({
         isInitialized: false
     })
 
-    // useEffect(() => {
-    //     const canvas = canvasRef.current
-    //     const video = videoRef.current
-
-    //     if (!canvas || !video || !videoData.url) return
-
-    //     const ctx = canvas.getContext('2d')
-
-    //     // Set video source
-    //     // video.src = videoData.fileUrl // REMOVE THIS LINE
-
-    //     const handleLoadedMetadata = () => {
-    //         if (playbackStateRef.current.currentTime > 0) {
-    //             video.currentTime = playbackStateRef.current.currentTime
-    //         }
-    //         video.play().then(() => {
-    //             setIsVideoPlaying(true)
-    //             playbackStateRef.current.isInitialized = true
-    //         }).catch(err => console.error("Play failed:", err))
-    //     }
-
-    //     video.addEventListener('loadedmetadata', handleLoadedMetadata)
-
-    //     const timeUpdateHandler = () => {
-    //         if (video.currentTime > 0) {
-    //             playbackStateRef.current.currentTime = video.currentTime
-    //         }
-    //     }
-
-    //     video.addEventListener('timeupdate', timeUpdateHandler)
-
-    //     let animationFrame
-    //     function drawVideo() {
-    //         if (video.readyState >= 2) {
-    //             ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-    //         }
-    //         animationFrame = requestAnimationFrame(drawVideo)
-    //     }
-    //     drawVideo()
-
-    //     return () => {
-    //         video.pause()
-    //         video.removeEventListener('loadedmetadata', handleLoadedMetadata)
-    //         video.removeEventListener('timeupdate', timeUpdateHandler)
-    //         cancelAnimationFrame(animationFrame)
-    //     }
-    // }, [videoData.url, isMaximized])
-
     useEffect(() => {
             const canvas = canvasRef.current
             const video = videoRef.current
