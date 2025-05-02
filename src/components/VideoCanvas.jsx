@@ -397,7 +397,7 @@ export default function VideoCanvas({
             case "rectangle":
                 return "cursor-crosshair"
             case "fill":
-                return "cursor-cell"
+                return "custom-fill"
             default:
                 return ""
         }
