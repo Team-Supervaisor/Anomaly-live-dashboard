@@ -21,16 +21,20 @@ export default function CameraRender() {
 
     const [uploadedVideos, setUploadedVideos] = useState([]);
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+    const [selectedVideo, setSelectedVideo] = useState(null)
+    const [maximizedVideo, setMaximizedVideo] = useState(null)
 
 
     // Store camera references to persist HLS instances
     const cameraRefs = useRef({});
-    
+
     // Store shapes for each camera
     const [cameraShapes, setCameraShapes] = useState({});
+    const [videoShapes, setVideoShapes] = useState({});
 
     // Add a state variable to trigger re-render
     const [gridKey, setGridKey] = useState(0);
+    const [gridVideoKey, setGridVideoKey] = useState(0);
 
     const handleSubmit = () => {
         const newCamera = {
@@ -54,16 +58,26 @@ export default function CameraRender() {
         setMaximizedCamera(null);
         setGridKey(prevKey => prevKey + 1); // Trigger re-render
     }
-    
+
+    const handleVideoMaximize = (videoId) => {
+        setMaximizedVideo(videoId);
+        setGridVideoKey(prevKey => prevKey + 1); // Trigger re-render
+    }
+
+    const handleVideoMinimize = () => {
+        setMaximizedVideo(null);
+        setGridVideoKey(prevKey => prevKey + 1); // Trigger re-render
+    }
+
     const handleSaveShapes = () => {
         // Create a structured object with camera info and shapes
         const cameraShapesData = cameras.map(camera => {
             // Get shapes for this camera
             const shapes = cameraShapes[camera.id] || [];
-            
+
             // Filter for rectangle shapes (similar to your previous approach)
             const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
-            
+
             // Transform shapes into the required format, matching your previous approach
             const regionsPayload = rectangleShapes.map(rect => {
                 // Create vertices from the rectangle coordinates
@@ -73,7 +87,7 @@ export default function CameraRender() {
                     [rect.x + rect.width, rect.y + rect.height],
                     [rect.x + rect.width, rect.y]
                 ];
-                
+
                 return {
                     Region_name: rect.name || `Region ${rect.id}`,
                     Region_Cords: {
@@ -81,7 +95,7 @@ export default function CameraRender() {
                     }
                 };
             });
-            
+
             return {
                 camera: {
                     id: camera.id,
@@ -95,30 +109,86 @@ export default function CameraRender() {
 
         // Filter out cameras with no regions
         const camerasWithRegions = cameraShapesData.filter(item => item.regions.length > 0);
-        
+
+        // Handle video shapes
+        const videoShapesData = uploadedVideos.map(video => {
+            const shapes = videoShapes[video.id] || [];
+            const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
+
+            const regionsPayload = rectangleShapes.map(rect => ({
+                Region_name: rect.name || `Region ${rect.id}`,
+                Region_Cords: {
+                    vertices: [
+                        [rect.x, rect.y],
+                        [rect.x, rect.y + rect.height],
+                        [rect.x + rect.width, rect.y + rect.height],
+                        [rect.x + rect.width, rect.y]
+                    ]
+                }
+            }));
+
+            return {
+                type: 'video',
+                source: {
+                    id: video.id,
+                    name: video.file.name,
+                    url: video.url
+                },
+                regions: regionsPayload
+            };
+        });
+
+        // Filter out videos with no regions
+        const videosWithRegions = videoShapesData.filter(item => item.regions.length > 0);
+
+        console.log(JSON.stringify(videosWithRegions, null, 2));
+
         // Log the complete data structure
         console.log("=== SAVED CAMERA SHAPES DATA ===");
         console.log(JSON.stringify(camerasWithRegions, null, 2));
         console.log("===============================");
-        
+
         // You would typically send this data to your backend API
         // Example: axios.post('/api/save-shapes', camerasWithRegions);
     }
 
-    
+
     const handleClearCanvas = () => {
         // Clear all shapes from all cameras
-        const emptyCameraShapes = {}
-        cameras.forEach(camera => {
-            emptyCameraShapes[camera.id] = []
-        })
-        setCameraShapes(emptyCameraShapes)
+        // const emptyCameraShapes = {}
+        // cameras.forEach(camera => {
+        //     emptyCameraShapes[camera.id] = []
+        // })
+        // setCameraShapes(emptyCameraShapes)
+
+        if (activeTab === 'cam') {
+            // Clear all shapes from all cameras
+            const emptyCameraShapes = {}
+            cameras.forEach(camera => {
+                emptyCameraShapes[camera.id] = []
+            })
+            setCameraShapes(emptyCameraShapes)
+        } else {
+            // Clear all shapes from all videos
+            const emptyVideoShapes = {}
+            uploadedVideos.forEach(video => {
+                emptyVideoShapes[video.id] = []
+            })
+            setVideoShapes(emptyVideoShapes)
+        }
     }
-    
+
     const updateShapesForCamera = (cameraId, shapes) => {
         setCameraShapes(prev => ({
             ...prev,
             [cameraId]: shapes
+        }));
+    }
+
+    const updateShapesForVideo = (videoId, shapes) => {
+        setVideoShapes(prev => ({
+            ...prev,
+            [videoId]: shapes
         }));
     }
 
@@ -181,10 +251,18 @@ export default function CameraRender() {
         ? cameras.filter(cam => cam.id === maximizedCamera)
         : cameras;
 
+    const visibleVideo = maximizedVideo
+        ? cameras.filter(cam => cam.id === maximizedVideo)
+        : cameras;
+
     // Trigger re-render when cameras change
     useEffect(() => {
         setGridKey(prevKey => prevKey + 1);
     }, [cameras]);
+
+    useEffect(() => {
+        setGridVideoKey(prevKey => prevKey + 1);
+    }, [uploadedVideos]);
 
     return (
         <div className="relative w-full h-full flex flex-col items-center">
@@ -226,7 +304,7 @@ export default function CameraRender() {
                     </div>
 
                     {/* Video Grid - Always rendered but not always visible */}
-                    <div 
+                    <div
                         key={gridKey} // Add key to force re-render
                         className={`grid ${getGridLayout(visibleCameras.length)}`}
                     >
@@ -258,35 +336,10 @@ export default function CameraRender() {
                         })}
                     </div>
 
-                    {/* {activeTab === 'video' && (
-                        <div className={`grid ${getVideoGridLayout(uploadedVideos.length)}`}>
-                            {uploadedVideos.map((video) => {
-                                const isVisible = !maximizedCamera || video.id === maximizedCamera
-
-                                return (
-                                    <div
-                                        key={video.id}
-                                        className={`relative rounded-lg overflow-hidden ${isVisible ? "" : "hidden"}`}
-                                    >
-                                        <VideoSection
-                                            videoData={video}
-                                            isSelected={selectedCamera === video.id}
-                                            onSelect={setSelectedCamera}
-                                            isMaximized={maximizedCamera === video.id}
-                                            onMaximize={() => handleMaximize(video.id)}
-                                            onMinimize={handleMinimize}
-                                            showMaximize={uploadedVideos.length > 1}
-                                        />
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    )} */}
-
                     {activeTab === 'video' && (
                         <div className={`grid ${getVideoGridLayout(uploadedVideos.length)}`}>
                             {uploadedVideos.map((video) => {
-                                const isVisible = !maximizedCamera || video.id === maximizedCamera;
+                                const isVisible = !maximizedVideo || video.id === maximizedVideo;
 
                                 return (
                                     <div
@@ -295,12 +348,15 @@ export default function CameraRender() {
                                     >
                                         <VideoSection
                                             videoData={video}
-                                            isSelected={selectedCamera === video.id}
-                                            onSelect={setSelectedCamera}
-                                            isMaximized={maximizedCamera === video.id}
-                                            onMaximize={() => handleMaximize(video.id)}
-                                            onMinimize={handleMinimize}
+                                            isSelected={selectedVideo === video.id}
+                                            onSelect={setSelectedVideo}
+                                            isMaximized={maximizedVideo === video.id}
+                                            onMaximize={() => handleVideoMaximize(video.id)}
+                                            onMinimize={handleVideoMinimize}
                                             showMaximize={uploadedVideos.length > 1}
+                                            selectedTool={selectedTool}
+                                            shapes={videoShapes[video.id] || []}
+                                            onShapesChange={(shapes) => updateShapesForVideo(video.id, shapes)}
                                         />
                                     </div>
                                 );
