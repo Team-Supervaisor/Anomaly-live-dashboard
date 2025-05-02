@@ -22,12 +22,12 @@ export default function VideoCanvas({
         const canvas = canvasRef.current
         const video = videoRef.current
 
-        if (!canvas || !video || !videoData.fileUrl) return
+        if (!canvas || !video || !videoData.url) return
 
         const ctx = canvas.getContext('2d')
 
         // Set video source
-        video.src = videoData.fileUrl
+        // video.src = videoData.fileUrl // REMOVE THIS LINE
 
         const handleLoadedMetadata = () => {
             if (playbackStateRef.current.currentTime > 0) {
@@ -64,7 +64,7 @@ export default function VideoCanvas({
             video.removeEventListener('timeupdate', timeUpdateHandler)
             cancelAnimationFrame(animationFrame)
         }
-    }, [videoData.fileUrl, isMaximized])
+    }, [videoData.url, isMaximized])
 
     const handleMaximizeToggle = (e) => {
         e.stopPropagation()
@@ -85,6 +85,7 @@ export default function VideoCanvas({
                 className="w-full h-full bg-black rounded-lg"
             />
             <video
+                ref={videoRef} // Add ref to video element
                 src={videoData.url}
                 controls
                 autoPlay
