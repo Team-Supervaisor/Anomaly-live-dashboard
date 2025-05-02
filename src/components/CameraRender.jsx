@@ -1,11 +1,10 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react" // Import useEffect
 import ToolBar from "./tool-bar"
 import { Plus, X, Upload, Maximize2, Minimize2 } from "lucide-react"
 import VideoCanvas from './VideoCanvas'
-import { useEffect, } from "react"
 
 export default function CameraRender() {
     const [open, setOpen] = useState(false)
@@ -137,6 +136,11 @@ export default function CameraRender() {
     const visibleCameras = maximizedCamera 
         ? cameras.filter(cam => cam.id === maximizedCamera)
         : cameras;
+
+    // Trigger re-render when cameras change
+    useEffect(() => {
+        setGridKey(prevKey => prevKey + 1);
+    }, [cameras]);
 
     return (
         <div className="relative w-full h-full flex flex-col items-center">
