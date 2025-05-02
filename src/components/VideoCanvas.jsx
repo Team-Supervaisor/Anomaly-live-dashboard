@@ -14,121 +14,98 @@ export default function VideoCanvas({
     const canvasRef = useRef(null)
     const videoRef = useRef(null)
     const hlsRef = useRef(null)
+    const animationFrameRef = useRef(null)
     const [isVideoPlaying, setIsVideoPlaying] = useState(false)
-    
-    // Store playback state in a ref to persist across renders
-    const playbackStateRef = useRef({
-        currentTime: 0,
-        isInitialized: false
-    })
 
+    // Setup video rendering loop
     useEffect(() => {
         const canvas = canvasRef.current
         const video = videoRef.current
         
-        if (!canvas || !video || !cameraData.hlsUrl) return
+        if (!canvas || !video) return
 
         const ctx = canvas.getContext('2d')
         
-        // Setup HLS only once per video element
-        if (Hls.isSupported()) {
-            if (!hlsRef.current) {
-                // Create new HLS instance if one doesn't exist
-                hlsRef.current = new Hls({
-                    startPosition: playbackStateRef.current.currentTime
-                })
-                
-                hlsRef.current.on(Hls.Events.MEDIA_ATTACHED, () => {
-                    console.log("HLS media attached")
-                    // Only set the time if we've played before
-                    if (playbackStateRef.current.isInitialized && 
-                        playbackStateRef.current.currentTime > 0) {
-                        video.currentTime = playbackStateRef.current.currentTime
-                    }
-                    
-                    video.play().then(() => {
-                        setIsVideoPlaying(true)
-                        playbackStateRef.current.isInitialized = true
-                    }).catch(err => console.error("Play failed:", err))
-                })
-                
-                hlsRef.current.on(Hls.Events.ERROR, (event, data) => {
-                    console.error("HLS error:", data)
-                    if (data.fatal) {
-                        switch(data.type) {
-                            case Hls.ErrorTypes.NETWORK_ERROR:
-                                hlsRef.current.startLoad()
-                                break
-                            case Hls.ErrorTypes.MEDIA_ERROR:
-                                hlsRef.current.recoverMediaError()
-                                break
-                            default:
-                                // Cannot recover
-                                destroyHls()
-                                initHls()
-                                break
-                        }
-                    }
-                })
-                
-                // Load source and attach media
-                hlsRef.current.loadSource(cameraData.hlsUrl)
-                hlsRef.current.attachMedia(video)
-            } else if (hlsRef.current.url !== cameraData.hlsUrl) {
-                // If URL changed, load new source
-                hlsRef.current.loadSource(cameraData.hlsUrl)
-                hlsRef.current.attachMedia(video)
-            }
-            
-            // Store current time periodically to maintain position
-            const timeUpdateHandler = () => {
-                if (video.currentTime > 0) {
-                    playbackStateRef.current.currentTime = video.currentTime
-                }
-            }
-            
-            video.addEventListener('timeupdate', timeUpdateHandler)
-            
-            // Animation loop for canvas
-            let animationFrame
-            function drawVideo() {
-                if (video.readyState >= 2) {
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-                }
-                animationFrame = requestAnimationFrame(drawVideo)
-            }
-            drawVideo()
-            
-            return () => {
-                video.removeEventListener('timeupdate', timeUpdateHandler)
-                cancelAnimationFrame(animationFrame)
-                // Do NOT destroy HLS here - we'll keep it for reuse
-            }
+        // Set canvas size to match container
+        const resizeCanvas = () => {
+            const rect = canvas.getBoundingClientRect()
+            canvas.width = rect.width
+            canvas.height = rect.height
         }
-    }, [cameraData.hlsUrl, isMaximized]) // Only re-run if URL changes or maximize state changes
+        resizeCanvas()
 
-    // Cleanup on true unmount (when component is removed from DOM)
-    useEffect(() => {
+        // Animation loop for smooth rendering
+        function renderFrame() {
+            if (video.readyState >= 2) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+            }
+            animationFrameRef.current = requestAnimationFrame(renderFrame)
+        }
+
+        // Start render loop
+        renderFrame()
+
+        // Cleanup
         return () => {
-            if (hlsRef.current) {
-                // Save final position before destroying
-                if (videoRef.current) {
-                    playbackStateRef.current.currentTime = videoRef.current.currentTime
-                }
-                hlsRef.current.destroy()
-                hlsRef.current = null
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current)
             }
         }
-    }, [])
+    }, [isMaximized]) // Re-run on maximize state change
 
-    const handleMaximizeToggle = (e) => {
-        e.stopPropagation()
-        // Store current time before layout change
-        if (videoRef.current) {
-            playbackStateRef.current.currentTime = videoRef.current.currentTime
+    // HLS setup
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video || !cameraData.hlsUrl) return
+
+        if (Hls.isSupported()) {
+            const hls = new Hls({
+                maxBufferSize: 30 * 1000 * 1000, // 30MB buffer
+                maxBufferLength: 60, // 60 seconds buffer
+                enableWorker: true, // Enable web worker
+                lowLatencyMode: true, // Enable low latency mode
+                backBufferLength: 90 // 90 seconds backward buffer
+            })
+
+            hlsRef.current = hls
+
+            hls.loadSource(cameraData.hlsUrl)
+            hls.attachMedia(video)
+
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                video.play()
+                    .then(() => setIsVideoPlaying(true))
+                    .catch(err => console.error("Play failed:", err))
+            })
+
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    switch(data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            hls.startLoad()
+                            break
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            hls.recoverMediaError()
+                            break
+                        default:
+                            hls.destroy()
+                            break
+                    }
+                }
+            })
+
+            return () => {
+                hls.destroy()
+            }
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = cameraData.hlsUrl
+            video.addEventListener('loadedmetadata', () => {
+                video.play()
+                    .then(() => setIsVideoPlaying(true))
+                    .catch(err => console.error("Play failed:", err))
+            })
         }
-        isMaximized ? onMinimize() : onMaximize()
-    }
+    }, [cameraData.hlsUrl])
 
     return (
         <div 
@@ -145,6 +122,7 @@ export default function VideoCanvas({
                 ref={videoRef}
                 className="hidden"
                 muted
+                playsInline // Add playsInline for better mobile support
             />
             
             {/* Camera name */}
@@ -152,10 +130,12 @@ export default function VideoCanvas({
                 {cameraData.name}
             </div>
 
-            {/* Maximize/Minimize button */}
             {showMaximize && (
                 <button 
-                    onClick={handleMaximizeToggle}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        isMaximized ? onMinimize() : onMaximize()
+                    }}
                     className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
                 >
                     {isMaximized ? (
