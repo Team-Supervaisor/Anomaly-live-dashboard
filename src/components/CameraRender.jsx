@@ -50,9 +50,55 @@ export default function CameraRender() {
     }
     
     const handleSaveShapes = () => {
-        console.log("Saving shapes for all cameras:", cameraShapes)
-        // Here you would implement the logic to save shapes to your backend
+        // Create a structured object with camera info and shapes
+        const cameraShapesData = cameras.map(camera => {
+            // Get shapes for this camera
+            const shapes = cameraShapes[camera.id] || [];
+            
+            // Filter for rectangle shapes (similar to your previous approach)
+            const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
+            
+            // Transform shapes into the required format, matching your previous approach
+            const regionsPayload = rectangleShapes.map(rect => {
+                // Create vertices from the rectangle coordinates
+                const vertices = [
+                    [rect.x, rect.y],
+                    [rect.x, rect.y + rect.height],
+                    [rect.x + rect.width, rect.y + rect.height],
+                    [rect.x + rect.width, rect.y]
+                ];
+                
+                return {
+                    Region_name: rect.name || `Region ${rect.id}`,
+                    Region_Cords: {
+                        vertices: vertices.map(([x, y]) => [x, y]) // This matches your previous mapping approach
+                    }
+                };
+            });
+            
+            return {
+                camera: {
+                    id: camera.id,
+                    name: camera.name,
+                    url: camera.url,
+                    hlsUrl: camera.hlsUrl
+                },
+                regions: regionsPayload
+            };
+        });
+
+        // Filter out cameras with no regions
+        const camerasWithRegions = cameraShapesData.filter(item => item.regions.length > 0);
+        
+        // Log the complete data structure
+        console.log("=== SAVED CAMERA SHAPES DATA ===");
+        console.log(JSON.stringify(camerasWithRegions, null, 2));
+        console.log("===============================");
+        
+        // You would typically send this data to your backend API
+        // Example: axios.post('/api/save-shapes', camerasWithRegions);
     }
+
     
     const handleClearCanvas = () => {
         // Clear all shapes from all cameras
