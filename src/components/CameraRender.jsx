@@ -1,7 +1,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react" // Import useEffect
 import ToolBar from "./tool-bar"
 import { Plus, X, Upload, Maximize2, Minimize2 } from "lucide-react"
 import VideoCanvas from './VideoCanvas'
@@ -25,6 +25,12 @@ export default function CameraRender() {
 
     // Store camera references to persist HLS instances
     const cameraRefs = useRef({});
+    
+    // Store shapes for each camera
+    const [cameraShapes, setCameraShapes] = useState({});
+
+    // Add a state variable to trigger re-render
+    const [gridKey, setGridKey] = useState(0);
 
     const handleSubmit = () => {
         const newCamera = {
@@ -40,11 +46,80 @@ export default function CameraRender() {
     }
 
     const handleMaximize = (cameraId) => {
-        setMaximizedCamera(cameraId)
+        setMaximizedCamera(cameraId);
+        setGridKey(prevKey => prevKey + 1); // Trigger re-render
     }
 
     const handleMinimize = () => {
-        setMaximizedCamera(null)
+        setMaximizedCamera(null);
+        setGridKey(prevKey => prevKey + 1); // Trigger re-render
+    }
+    
+    const handleSaveShapes = () => {
+        // Create a structured object with camera info and shapes
+        const cameraShapesData = cameras.map(camera => {
+            // Get shapes for this camera
+            const shapes = cameraShapes[camera.id] || [];
+            
+            // Filter for rectangle shapes (similar to your previous approach)
+            const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
+            
+            // Transform shapes into the required format, matching your previous approach
+            const regionsPayload = rectangleShapes.map(rect => {
+                // Create vertices from the rectangle coordinates
+                const vertices = [
+                    [rect.x, rect.y],
+                    [rect.x, rect.y + rect.height],
+                    [rect.x + rect.width, rect.y + rect.height],
+                    [rect.x + rect.width, rect.y]
+                ];
+                
+                return {
+                    Region_name: rect.name || `Region ${rect.id}`,
+                    Region_Cords: {
+                        vertices: vertices.map(([x, y]) => [x, y]) // This matches your previous mapping approach
+                    }
+                };
+            });
+            
+            return {
+                camera: {
+                    id: camera.id,
+                    name: camera.name,
+                    url: camera.url,
+                    hlsUrl: camera.hlsUrl
+                },
+                regions: regionsPayload
+            };
+        });
+
+        // Filter out cameras with no regions
+        const camerasWithRegions = cameraShapesData.filter(item => item.regions.length > 0);
+        
+        // Log the complete data structure
+        console.log("=== SAVED CAMERA SHAPES DATA ===");
+        console.log(JSON.stringify(camerasWithRegions, null, 2));
+        console.log("===============================");
+        
+        // You would typically send this data to your backend API
+        // Example: axios.post('/api/save-shapes', camerasWithRegions);
+    }
+
+    
+    const handleClearCanvas = () => {
+        // Clear all shapes from all cameras
+        const emptyCameraShapes = {}
+        cameras.forEach(camera => {
+            emptyCameraShapes[camera.id] = []
+        })
+        setCameraShapes(emptyCameraShapes)
+    }
+    
+    const updateShapesForCamera = (cameraId, shapes) => {
+        setCameraShapes(prev => ({
+            ...prev,
+            [cameraId]: shapes
+        }));
     }
 
     const handleVideoUpload = (e) => {
@@ -106,6 +181,11 @@ export default function CameraRender() {
         ? cameras.filter(cam => cam.id === maximizedCamera)
         : cameras;
 
+    // Trigger re-render when cameras change
+    useEffect(() => {
+        setGridKey(prevKey => prevKey + 1);
+    }, [cameras]);
+
     return (
         <div className="relative w-full h-full flex flex-col items-center">
             <div className="relative flex flex-col items-center w-screen h-screen">
@@ -146,7 +226,10 @@ export default function CameraRender() {
                     </div>
 
                     {/* Video Grid - Always rendered but not always visible */}
-                    <div className={`grid ${getGridLayout(visibleCameras.length)}`}>
+                    <div 
+                        key={gridKey} // Add key to force re-render
+                        className={`grid ${getGridLayout(visibleCameras.length)}`}
+                    >
                         {/* Always render all cameras to keep HLS instances alive,
                             but only show the ones that should be visible */}
                         {cameras.map((camera) => {
@@ -166,6 +249,9 @@ export default function CameraRender() {
                                         onMaximize={() => handleMaximize(camera.id)}
                                         onMinimize={handleMinimize}
                                         showMaximize={cameras.length > 1}
+                                        selectedTool={selectedTool}
+                                        shapes={cameraShapes[camera.id] || []}
+                                        onShapesChange={(shapes) => updateShapesForCamera(camera.id, shapes)}
                                     />
                                 </div>
                             );
@@ -343,12 +429,8 @@ export default function CameraRender() {
                     <ToolBar
                         selectedTool={selectedTool}
                         setSelectedTool={setSelectedTool}
-                        clearCanvas={() => {
-                            setCameras([])
-                            setSelectedCamera(null)
-                            setMaximizedCamera(null)
-                        }}
-                        saveShapes={() => console.log("Save camera config")}
+                        clearCanvas={handleClearCanvas}
+                        saveShapes={handleSaveShapes}
                         isOpenSpaceMode={false}
                         setIsOpenSpaceMode={() => { }}
                     />
