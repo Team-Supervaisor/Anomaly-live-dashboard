@@ -162,7 +162,16 @@ const LiveVideo = () => {
                 "Video 1": "test_data\\Video 1.mp4"
             }
         },
-        
+        {
+            "hls_urls": {
+                "Video 1": "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8"
+            },
+            "roi_defs_file": "test_data/roi_definitions.json",
+            "status": "ok",
+            "video_paths": {
+                "Video 1": "test_data\\Video 1.mp4"
+            }
+        },
 
     ]
 
