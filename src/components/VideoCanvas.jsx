@@ -135,7 +135,7 @@ export default function VideoCanvas({
                 } else if (hoveredShape && hoveredShape.id === shape.id) {
                     ctx.strokeStyle = "#9CA3AF" // Hover color
                 } else {
-                    ctx.strokeStyle = "#000000"
+                    ctx.strokeStyle = "#FFD700"
                 }
                 
                 ctx.lineWidth = 2

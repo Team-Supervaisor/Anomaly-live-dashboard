@@ -143,7 +143,7 @@ export default function VideoCanvas({
                 } else if (hoveredShape && hoveredShape.id === shape.id) {
                     ctx.strokeStyle = "#9CA3AF" // Hover color
                 } else {
-                    ctx.strokeStyle = "#000000"
+                    ctx.strokeStyle = "#FFD700" // Changed to yellow
                 }
 
                 ctx.lineWidth = 2
@@ -157,7 +157,7 @@ export default function VideoCanvas({
 
                 // Draw shape name if it exists
                 if (shape.name) {
-                    ctx.fillStyle = "#000000"
+                    ctx.fillStyle = "#FFD700" // Changed text color to yellow
                     ctx.font = "14px Arial"
                     const textWidth = ctx.measureText(shape.name).width
                     const textHeight = 14
