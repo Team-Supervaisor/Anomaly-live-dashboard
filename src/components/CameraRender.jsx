@@ -71,52 +71,20 @@ export default function CameraRender() {
         setGridVideoKey(prevKey => prevKey + 1); // Trigger re-render
     }
 
-    const handleSaveShapes = () => {
-        // Create a structured object with camera info and shapes
-        const cameraShapesData = cameras.map(camera => {
-            // Get shapes for this camera
-            const shapes = cameraShapes[camera.id] || [];
-
-            // Filter for rectangle shapes (similar to your previous approach)
-            const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
-
-            // Transform shapes into the required format, matching your previous approach
-            const regionsPayload = rectangleShapes.map(rect => {
-                // Create vertices from the rectangle coordinates
-                const vertices = [
-                    [rect.x, rect.y],
-                    [rect.x, rect.y + rect.height],
-                    [rect.x + rect.width, rect.y + rect.height],
-                    [rect.x + rect.width, rect.y]
-                ];
-
-                return {
-                    Region_name: rect.name || `Region ${rect.id}`,
-                    Region_Cords: {
-                        vertices: vertices.map(([x, y]) => [x, y]) // This matches your previous mapping approach
-                    }
-                };
-            });
-
-            return {
-                camera: {
-                    id: camera.id,
-                    name: camera.name,
-                    url: camera.url,
-                    hlsUrl: camera.hlsUrl
-                },
-                regions: regionsPayload
-            };
+    const handleSaveShapes = async () => {
+        // Create form data
+        const formData = new FormData();
+    
+        // Add all uploaded videos to form data
+        uploadedVideos.forEach(video => {
+            formData.append('video', video.file);
         });
-
-        // Filter out cameras with no regions
-        const camerasWithRegions = cameraShapesData.filter(item => item.regions.length > 0);
-
-        // Handle video shapes
+    
+        // Create the video shapes data structure
         const videoShapesData = uploadedVideos.map(video => {
             const shapes = videoShapes[video.id] || [];
             const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
-
+    
             const regionsPayload = rectangleShapes.map(rect => ({
                 Region_name: rect.name || `Region ${rect.id}`,
                 Region_Cords: {
@@ -128,7 +96,7 @@ export default function CameraRender() {
                     ]
                 }
             }));
-
+    
             return {
                 type: 'video',
                 source: {
@@ -139,21 +107,36 @@ export default function CameraRender() {
                 regions: regionsPayload
             };
         });
-
+    
         // Filter out videos with no regions
         const videosWithRegions = videoShapesData.filter(item => item.regions.length > 0);
-
-        console.log(JSON.stringify(videosWithRegions, null, 2));
-
-        // Log the complete data structure
-        console.log("=== SAVED CAMERA SHAPES DATA ===");
-        console.log(JSON.stringify(camerasWithRegions, null, 2));
-        console.log("===============================");
-
-        // You would typically send this data to your backend API
-        // Example: axios.post('/api/save-shapes', camerasWithRegions);
+    
+        // Add the ROI definitions as a JSON string
+        formData.append('roi_defs', JSON.stringify(videosWithRegions));
+    
+        try {
+            const apiUrl = `${import.meta.env.VITE_API_URL}/upload_config`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                body: formData,
+            });
+    
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+    
+            const data = await response.json();
+            console.log('Upload successful:', data);
+    
+            // Optional: Show success message
+            alert('Configuration saved successfully!');
+        } catch (error) {
+            console.error('Error uploading configuration:', error);
+            // Optional: Show error message
+            alert('Failed to save configuration. Please try again.');
+        }
     }
-
+    
 
     const handleClearCanvas = () => {
         if (activeTab === 'cam') {
