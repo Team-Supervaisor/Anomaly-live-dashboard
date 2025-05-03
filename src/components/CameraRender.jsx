@@ -300,6 +300,16 @@ export default function CameraRender() {
         setGridVideoKey(prevKey => prevKey + 1);
     }, [uploadedVideos]);
 
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        setSelectedCamera(null);
+        setMaximizedCamera(null);
+        setSelectedVideo(null);
+        setMaximizedVideo(null);
+        setCameras([]);
+        setUploadedVideos([])
+    };
+
     return (
         <div className="relative w-full h-full flex flex-col items-center">
             <div className="relative flex flex-col items-center w-screen h-screen">
@@ -307,7 +317,7 @@ export default function CameraRender() {
                     {/* Tab buttons */}
                     <div className="absolute top-4 left-4 flex gap-3">
                         <button
-                            onClick={() => setActiveTab('video')}
+                            onClick={() => handleTabChange('video')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${activeTab === 'video'
                                 ? 'bg-[#7900F3] text-white border-[#7900F3]'
                                 : 'bg-white text-[#717171] border-[#0000001A]'
@@ -323,7 +333,7 @@ export default function CameraRender() {
                         </button>
 
                         <button
-                            onClick={() => setActiveTab('cam')}
+                            onClick={() => handleTabChange('cam')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${activeTab === 'cam'
                                 ? 'bg-[#7900F3] text-white border-[#7900F3]'
                                 : 'bg-white text-[#717171] border-[#0000001A]'

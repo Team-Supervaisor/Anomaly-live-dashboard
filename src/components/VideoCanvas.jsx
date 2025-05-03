@@ -506,7 +506,7 @@ export default function VideoCanvas({
             />
             <video
                 ref={videoRef}
-                className="hidden"
+                // className="hidden"
                 muted
                 playsInline
             />
