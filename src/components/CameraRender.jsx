@@ -24,6 +24,8 @@ export default function CameraRender() {
     const [selectedVideo, setSelectedVideo] = useState(null)
     const [maximizedVideo, setMaximizedVideo] = useState(null)
 
+    // Add this state to track the next video number
+    const [nextVideoNumber, setNextVideoNumber] = useState(1);
 
     // Store camera references to persist HLS instances
     const cameraRefs = useRef({});
@@ -35,6 +37,9 @@ export default function CameraRender() {
     // Add a state variable to trigger re-render
     const [gridKey, setGridKey] = useState(0);
     const [gridVideoKey, setGridVideoKey] = useState(0);
+
+    // Add loading state
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleSubmit = () => {
         const newCamera = {
@@ -69,112 +74,101 @@ export default function CameraRender() {
         setGridVideoKey(prevKey => prevKey + 1); // Trigger re-render
     }
 
-    const handleSaveShapes = () => {
-        // Create a structured object with camera info and shapes
-        const cameraShapesData = cameras.map(camera => {
-            // Get shapes for this camera
-            const shapes = cameraShapes[camera.id] || [];
-
-            // Filter for rectangle shapes (similar to your previous approach)
-            const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
-
-            // Transform shapes into the required format, matching your previous approach
-            const regionsPayload = rectangleShapes.map(rect => {
-                // Create vertices from the rectangle coordinates
-                const vertices = [
-                    [rect.x, rect.y],
-                    [rect.x, rect.y + rect.height],
-                    [rect.x + rect.width, rect.y + rect.height],
-                    [rect.x + rect.width, rect.y]
-                ];
-
-                return {
+    // Modify handleSaveShapes
+    const handleSaveShapes = async () => {
+        setIsSaving(true); // Start loading
+        
+        try {
+            // Create form data
+            const formData = new FormData();
+        
+            // Add all uploaded videos to form data
+            uploadedVideos.forEach(video => {
+                formData.append('video', video.file);
+            });
+        
+            // Create the video shapes data structure
+            const videoShapesData = uploadedVideos.map(video => {
+                const shapes = videoShapes[video.id] || [];
+                const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
+        
+                const regionsPayload = rectangleShapes.map(rect => ({
                     Region_name: rect.name || `Region ${rect.id}`,
                     Region_Cords: {
-                        vertices: vertices.map(([x, y]) => [x, y]) // This matches your previous mapping approach
+                        vertices: [
+                            [rect.x, rect.y],
+                            [rect.x, rect.y + rect.height],
+                            [rect.x + rect.width, rect.y + rect.height],
+                            [rect.x + rect.width, rect.y]
+                        ]
                     }
+                }));
+        
+                return {
+                    type: 'video',
+                    source: {
+                        id: video.id,
+                        name: video.file.name,
+                        url: video.url
+                    },
+                    regions: regionsPayload
                 };
             });
-
-            return {
-                camera: {
-                    id: camera.id,
-                    name: camera.name,
-                    url: camera.url,
-                    hlsUrl: camera.hlsUrl
-                },
-                regions: regionsPayload
-            };
-        });
-
-        // Filter out cameras with no regions
-        const camerasWithRegions = cameraShapesData.filter(item => item.regions.length > 0);
-
-        // Handle video shapes
-        const videoShapesData = uploadedVideos.map(video => {
-            const shapes = videoShapes[video.id] || [];
-            const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
-
-            const regionsPayload = rectangleShapes.map(rect => ({
-                Region_name: rect.name || `Region ${rect.id}`,
-                Region_Cords: {
-                    vertices: [
-                        [rect.x, rect.y],
-                        [rect.x, rect.y + rect.height],
-                        [rect.x + rect.width, rect.y + rect.height],
-                        [rect.x + rect.width, rect.y]
-                    ]
-                }
-            }));
-
-            return {
-                type: 'video',
-                source: {
-                    id: video.id,
-                    name: video.file.name,
-                    url: video.url
-                },
-                regions: regionsPayload
-            };
-        });
-
-        // Filter out videos with no regions
-        const videosWithRegions = videoShapesData.filter(item => item.regions.length > 0);
-
-        console.log(JSON.stringify(videosWithRegions, null, 2));
-
-        // Log the complete data structure
-        console.log("=== SAVED CAMERA SHAPES DATA ===");
-        console.log(JSON.stringify(camerasWithRegions, null, 2));
-        console.log("===============================");
-
-        // You would typically send this data to your backend API
-        // Example: axios.post('/api/save-shapes', camerasWithRegions);
+        
+            // Filter out videos with no regions
+            const videosWithRegions = videoShapesData.filter(item => item.regions.length > 0);
+        
+            // Add the ROI definitions as a JSON string
+            formData.append('roi_defs', JSON.stringify(videosWithRegions));
+        
+            const apiUrl = `${import.meta.env.VITE_API_URL}/upload_config`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                body: formData,
+            });
+        
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        
+            const data = await response.json();
+            console.log('Upload successful:', data);
+            // alert('Configuration saved successfully!');
+        } catch (error) {
+            console.error('Error uploading configuration:', error);
+            // alert('Failed to save configuration. Please try again.');
+        } finally {
+            setIsSaving(false); // End loading regardless of outcome
+        }
     }
 
-
     const handleClearCanvas = () => {
-        // Clear all shapes from all cameras
-        // const emptyCameraShapes = {}
-        // cameras.forEach(camera => {
-        //     emptyCameraShapes[camera.id] = []
-        // })
-        // setCameraShapes(emptyCameraShapes)
-
         if (activeTab === 'cam') {
-            // Clear all shapes from all cameras
-            const emptyCameraShapes = {}
-            cameras.forEach(camera => {
-                emptyCameraShapes[camera.id] = []
-            })
-            setCameraShapes(emptyCameraShapes)
+            // Only clear shapes for maximized camera if one is maximized
+            if (maximizedCamera) {
+                setCameraShapes(prev => ({
+                    ...prev,
+                    [maximizedCamera]: [] // Clear only maximized camera's shapes
+                }));
+            } else if (selectedCamera) {
+                setCameraShapes(prev => ({
+                    ...prev,
+                    [selectedCamera]: [] // Clear only selected camera's shapes
+                }));
+            }
         } else {
-            // Clear all shapes from all videos
-            const emptyVideoShapes = {}
-            uploadedVideos.forEach(video => {
-                emptyVideoShapes[video.id] = []
-            })
-            setVideoShapes(emptyVideoShapes)
+            // Only clear shapes for maximized video if one is maximized
+            if (maximizedVideo) {
+                setVideoShapes(prev => ({
+                    ...prev,
+                    [maximizedVideo]: [] // Clear only maximized video's shapes
+                }));
+            } else if (selectedVideo) {
+                setVideoShapes(prev => ({
+                    ...prev,
+                    [selectedVideo]: [] // Clear only selected video's shapes
+                }));
+            }
         }
     }
 
@@ -192,6 +186,7 @@ export default function CameraRender() {
         }));
     }
 
+    // Modify handleVideoUpload
     const handleVideoUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -202,12 +197,13 @@ export default function CameraRender() {
         }
 
         const newVideo = {
-            id: Date.now() + Math.random(),
+            id: `Video ${nextVideoNumber}`,
             file,
             url: URL.createObjectURL(file),
         };
 
         setUploadedVideos((prev) => [...prev, newVideo]);
+        setNextVideoNumber(prev => prev + 1);
         setUploadDialogOpen(false);
     }
 
@@ -251,6 +247,7 @@ export default function CameraRender() {
         e.currentTarget.classList.remove('border-[#717AEA]', 'bg-[#717AEA33]');
     };
 
+    // Modify handleDrop
     const handleDrop = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -270,17 +267,17 @@ export default function CameraRender() {
 
         videoFiles.forEach(file => {
             const newVideo = {
-                id: Date.now() + Math.random(),
+                id: `Video ${nextVideoNumber}`,
                 file,
                 url: URL.createObjectURL(file),
             };
 
             setUploadedVideos((prev) => [...prev, newVideo]);
+            setNextVideoNumber(prev => prev + 1);
         });
 
         setUploadDialogOpen(false);
     };
-
 
     // Filter cameras to display based on maximized state
     const visibleCameras = maximizedCamera
@@ -300,6 +297,18 @@ export default function CameraRender() {
         setGridVideoKey(prevKey => prevKey + 1);
     }, [uploadedVideos]);
 
+    // Add a reset for nextVideoNumber when switching tabs
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        setSelectedCamera(null);
+        setMaximizedCamera(null);
+        setSelectedVideo(null);
+        setMaximizedVideo(null);
+        setCameras([]);
+        setUploadedVideos([]);
+        setNextVideoNumber(1); // Reset video numbering when switching tabs
+    };
+
     return (
         <div className="relative w-full h-full flex flex-col items-center">
             <div className="relative flex flex-col items-center w-screen h-screen">
@@ -307,7 +316,7 @@ export default function CameraRender() {
                     {/* Tab buttons */}
                     <div className="absolute top-4 left-4 flex gap-3">
                         <button
-                            onClick={() => setActiveTab('video')}
+                            onClick={() => handleTabChange('video')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${activeTab === 'video'
                                 ? 'bg-[#7900F3] text-white border-[#7900F3]'
                                 : 'bg-white text-[#717171] border-[#0000001A]'
@@ -323,7 +332,7 @@ export default function CameraRender() {
                         </button>
 
                         <button
-                            onClick={() => setActiveTab('cam')}
+                            onClick={() => handleTabChange('cam')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${activeTab === 'cam'
                                 ? 'bg-[#7900F3] text-white border-[#7900F3]'
                                 : 'bg-white text-[#717171] border-[#0000001A]'
@@ -513,15 +522,26 @@ export default function CameraRender() {
 
                 {/* Toolbar */}
                 <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2">
-                    <ToolBar
-                        selectedTool={selectedTool}
-                        setSelectedTool={setSelectedTool}
-                        clearCanvas={handleClearCanvas}
-                        saveShapes={handleSaveShapes}
-                        isOpenSpaceMode={false}
-                        setIsOpenSpaceMode={() => { }}
-                    />
-                </div>
+                <ToolBar
+                selectedTool={selectedTool}
+                setSelectedTool={setSelectedTool}
+                clearCanvas={handleClearCanvas}
+                saveShapes={handleSaveShapes}
+                isOpenSpaceMode={false}
+                setIsOpenSpaceMode={() => {}}
+                hasMaximizedOrSelected={Boolean(
+                    activeTab === 'cam' 
+                        ? maximizedCamera    // Only check for maximized camera
+                        : maximizedVideo    // Only check for maximized video
+                )}
+                hasShapes={Boolean(
+                    activeTab === 'cam'
+                        ? (maximizedCamera && cameraShapes[maximizedCamera]?.length > 0)
+                        : (maximizedVideo && videoShapes[maximizedVideo]?.length > 0)
+                )}
+                isSaving={isSaving} // Add this prop
+            />
+</div>
             </div>
         </div>
     )

@@ -72,6 +72,7 @@ export default function VideoCanvas({
             // Animation loop for smooth rendering
             function renderFrame() {
                 if (video.readyState >= 2) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height) // Clear canvas first
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
                     
                     // Draw shapes on top of the video
@@ -97,7 +98,7 @@ export default function VideoCanvas({
                 }
                 window.removeEventListener('resize', handleResize)
             }
-        }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape]) // Re-run on maximize state change or shapes change
+        }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, showMaximize]) // Re-run on maximize state change or shapes change
 
     const handleMaximizeToggle = (e) => {
         e.stopPropagation()
@@ -129,9 +130,9 @@ export default function VideoCanvas({
     const drawShapes = (ctx, width, height) => {
         if (!ctx) return
 
-        // Only draw shapes when maximized or when there's only one stream
-        // We can determine if it's the only stream by checking if showMaximize is false
-        if (!isMaximized && showMaximize) return;
+        // Only draw shapes when the video is maximized OR it's the only video
+        const isEffectivelyMaximized = isMaximized || !showMaximize  // !showMaximize means it's the only video
+        if (!isEffectivelyMaximized) return;
 
         // Draw all existing shapes
         shapes.forEach((shape) => {
@@ -142,7 +143,7 @@ export default function VideoCanvas({
                 } else if (hoveredShape && hoveredShape.id === shape.id) {
                     ctx.strokeStyle = "#9CA3AF" // Hover color
                 } else {
-                    ctx.strokeStyle = "#000000"
+                    ctx.strokeStyle = "#FFD700" // Changed to yellow
                 }
 
                 ctx.lineWidth = 2
@@ -156,7 +157,7 @@ export default function VideoCanvas({
 
                 // Draw shape name if it exists
                 if (shape.name) {
-                    ctx.fillStyle = "#000000"
+                    ctx.fillStyle = "#FFD700" // Changed text color to yellow
                     ctx.font = "14px Arial"
                     const textWidth = ctx.measureText(shape.name).width
                     const textHeight = 14
@@ -169,7 +170,7 @@ export default function VideoCanvas({
                     )
                 }
             }
-        })
+        });
 
         // Draw shape being created
         if (drawingState.isDrawing && selectedTool === "rectangle") {
