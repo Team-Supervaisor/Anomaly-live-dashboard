@@ -154,27 +154,32 @@ export default function CameraRender() {
 
 
     const handleClearCanvas = () => {
-        // Clear all shapes from all cameras
-        // const emptyCameraShapes = {}
-        // cameras.forEach(camera => {
-        //     emptyCameraShapes[camera.id] = []
-        // })
-        // setCameraShapes(emptyCameraShapes)
-
         if (activeTab === 'cam') {
-            // Clear all shapes from all cameras
-            const emptyCameraShapes = {}
-            cameras.forEach(camera => {
-                emptyCameraShapes[camera.id] = []
-            })
-            setCameraShapes(emptyCameraShapes)
+            // Only clear shapes for maximized camera if one is maximized
+            if (maximizedCamera) {
+                setCameraShapes(prev => ({
+                    ...prev,
+                    [maximizedCamera]: [] // Clear only maximized camera's shapes
+                }));
+            } else if (selectedCamera) {
+                setCameraShapes(prev => ({
+                    ...prev,
+                    [selectedCamera]: [] // Clear only selected camera's shapes
+                }));
+            }
         } else {
-            // Clear all shapes from all videos
-            const emptyVideoShapes = {}
-            uploadedVideos.forEach(video => {
-                emptyVideoShapes[video.id] = []
-            })
-            setVideoShapes(emptyVideoShapes)
+            // Only clear shapes for maximized video if one is maximized
+            if (maximizedVideo) {
+                setVideoShapes(prev => ({
+                    ...prev,
+                    [maximizedVideo]: [] // Clear only maximized video's shapes
+                }));
+            } else if (selectedVideo) {
+                setVideoShapes(prev => ({
+                    ...prev,
+                    [selectedVideo]: [] // Clear only selected video's shapes
+                }));
+            }
         }
     }
 
@@ -523,15 +528,25 @@ export default function CameraRender() {
 
                 {/* Toolbar */}
                 <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2">
-                    <ToolBar
-                        selectedTool={selectedTool}
-                        setSelectedTool={setSelectedTool}
-                        clearCanvas={handleClearCanvas}
-                        saveShapes={handleSaveShapes}
-                        isOpenSpaceMode={false}
-                        setIsOpenSpaceMode={() => { }}
-                    />
-                </div>
+                <ToolBar
+                selectedTool={selectedTool}
+                setSelectedTool={setSelectedTool}
+                clearCanvas={handleClearCanvas}
+                saveShapes={handleSaveShapes}
+                isOpenSpaceMode={false}
+                setIsOpenSpaceMode={() => {}}
+                hasMaximizedOrSelected={Boolean(
+                    activeTab === 'cam' 
+                        ? maximizedCamera    // Only check for maximized camera
+                        : maximizedVideo    // Only check for maximized video
+                )}
+                hasShapes={Boolean(
+                    activeTab === 'cam'
+                        ? (maximizedCamera && cameraShapes[maximizedCamera]?.length > 0)
+                        : (maximizedVideo && videoShapes[maximizedVideo]?.length > 0)
+                )}
+            />
+</div>
             </div>
         </div>
     )

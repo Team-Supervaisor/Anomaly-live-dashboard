@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from "../components/ui/tooltip";
 
+// Add these props to the ToolBar component
 export default function ToolBar({
   selectedTool,
   setSelectedTool,
@@ -25,7 +26,10 @@ export default function ToolBar({
   saveShapes,
   isOpenSpaceMode,  // Add this prop
   setIsOpenSpaceMode, // Add this prop
-  handleImage
+  handleImage,
+  // Add these new props
+  hasMaximizedOrSelected,
+  hasShapes
 }) {
   const tools = [
     {
@@ -204,7 +208,12 @@ export default function ToolBar({
         <Button
           variant="outline"
           onClick={clearCanvas}
-          className="rounded-md h-9 px-4 text-sm font-medium text-black"
+          disabled={!hasMaximizedOrSelected || !hasShapes}
+          className={`rounded-md h-9 px-4 text-sm font-medium text-black ${
+            (!hasMaximizedOrSelected || !hasShapes) 
+                ? 'opacity-50 cursor-not-allowed' 
+                : ''
+          }`}
         >
           Discard
         </Button>
