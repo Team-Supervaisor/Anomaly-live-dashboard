@@ -24,6 +24,8 @@ export default function CameraRender() {
     const [selectedVideo, setSelectedVideo] = useState(null)
     const [maximizedVideo, setMaximizedVideo] = useState(null)
 
+    // Add this state to track the next video number
+    const [nextVideoNumber, setNextVideoNumber] = useState(1);
 
     // Store camera references to persist HLS instances
     const cameraRefs = useRef({});
@@ -197,6 +199,7 @@ export default function CameraRender() {
         }));
     }
 
+    // Modify handleVideoUpload
     const handleVideoUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -207,12 +210,13 @@ export default function CameraRender() {
         }
 
         const newVideo = {
-            id: Date.now() + Math.random(),
+            id: `Video ${nextVideoNumber}`,
             file,
             url: URL.createObjectURL(file),
         };
 
         setUploadedVideos((prev) => [...prev, newVideo]);
+        setNextVideoNumber(prev => prev + 1);
         setUploadDialogOpen(false);
     }
 
@@ -256,6 +260,7 @@ export default function CameraRender() {
         e.currentTarget.classList.remove('border-[#717AEA]', 'bg-[#717AEA33]');
     };
 
+    // Modify handleDrop
     const handleDrop = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -275,17 +280,17 @@ export default function CameraRender() {
 
         videoFiles.forEach(file => {
             const newVideo = {
-                id: Date.now() + Math.random(),
+                id: `Video ${nextVideoNumber}`,
                 file,
                 url: URL.createObjectURL(file),
             };
 
             setUploadedVideos((prev) => [...prev, newVideo]);
+            setNextVideoNumber(prev => prev + 1);
         });
 
         setUploadDialogOpen(false);
     };
-
 
     // Filter cameras to display based on maximized state
     const visibleCameras = maximizedCamera
@@ -305,6 +310,7 @@ export default function CameraRender() {
         setGridVideoKey(prevKey => prevKey + 1);
     }, [uploadedVideos]);
 
+    // Add a reset for nextVideoNumber when switching tabs
     const handleTabChange = (tab) => {
         setActiveTab(tab);
         setSelectedCamera(null);
@@ -312,7 +318,8 @@ export default function CameraRender() {
         setSelectedVideo(null);
         setMaximizedVideo(null);
         setCameras([]);
-        setUploadedVideos([])
+        setUploadedVideos([]);
+        setNextVideoNumber(1); // Reset video numbering when switching tabs
     };
 
     return (
