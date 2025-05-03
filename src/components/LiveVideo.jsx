@@ -10,7 +10,18 @@ const LiveVideo = () => {
 
     const location = useLocation();
     // const { data } = location.state || {};
-    const data =
+    const data = [
+        {
+        "hls_urls": {
+            "Video 1": "http://127.0.0.1:5000/hls/Video%201/index.m3u8"
+        },
+        "roi_defs_file": "test_data/roi_definitions.json",
+        "status": "ok",
+        "video_paths": {
+            "Video 1": "test_data\\Video 1.mp4"
+        }
+    },
+]
 
     useEffect(() => {
         const startStream = async () => {
@@ -27,7 +38,7 @@ const LiveVideo = () => {
       }, []);
 
     return (
-        <div className="flex flex-col bg-[#F5F9FF]">
+        <div className="flex flex-col h-screen bg-[#F5F9FF]">
             <header className="flex justify-between items-center p-4 pb-2 ">
                 <Link to="/">
                     <div className="flex items-center space-x-2 cursor-pointer">
@@ -42,14 +53,14 @@ const LiveVideo = () => {
 
             <div className="flex flex-1 p-4 gap-4 overflow-hidden mt-2">
                 {/* Left Section */}
-                <div className="bg-white w-full rounded-[26px] p-4 min-h-[400px] flex flex-col">
+                <div className="bg-white w-full rounded-[26px] p-4 flex flex-col">
                     <div className='flex justify-between'>
                         {/* hls videos */}
                     </div>
                 </div>
 
                 {/* AI Analysis Card */}
-                <div className="bg-white rounded-[26px] p-4 w-[360px] max-h-[380px] flex flex-col">
+                <div className="bg-white rounded-[26px] p-4 w-[360px] flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                         <div
                             className="flex items-center cursor-pointer"
@@ -63,13 +74,6 @@ const LiveVideo = () => {
                   <Loader2 className="animate-spin text-indigo-500 w-4 h-4 ml-2" />
                 )} */}
                         </div>
-                        <button
-                            // onClick={handleRefreshAi}
-                            className="p-2 bg-[#EBECFF] rounded hover:bg-[#DDE2FD] transition"
-                            title="Refresh AI analysis"
-                        >
-                            <RefreshCw className="w-5 h-5 text-[#5A62C8]" />
-                        </button>
                     </div>
                 </div>
             </div>
