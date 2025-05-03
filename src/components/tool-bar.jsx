@@ -8,7 +8,8 @@ import {
   Undo,
   Redo,
   CircleFadingPlus,
-  Circle
+  Circle,
+  Loader2
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
@@ -29,7 +30,8 @@ export default function ToolBar({
   handleImage,
   // Add these new props
   hasMaximizedOrSelected,
-  hasShapes
+  hasShapes,
+  isSaving // Add this prop
 }) {
   const tools = [
     {
@@ -208,9 +210,9 @@ export default function ToolBar({
         <Button
           variant="outline"
           onClick={clearCanvas}
-          disabled={!hasMaximizedOrSelected || !hasShapes}
+          disabled={!hasMaximizedOrSelected || !hasShapes || isSaving}
           className={`rounded-md h-9 px-4 text-sm font-medium text-black ${
-            (!hasMaximizedOrSelected || !hasShapes) 
+            (!hasMaximizedOrSelected || !hasShapes || isSaving) 
                 ? 'opacity-50 cursor-not-allowed' 
                 : ''
           }`}
@@ -220,9 +222,17 @@ export default function ToolBar({
         <Button
           variant="default"
           onClick={saveShapes}
-          className="rounded-md h-9 px-4 bg-[#6366F1] hover:bg-[#5558E3] text-sm font-medium"
+          disabled={isSaving}
+          className="rounded-md h-9 px-4 bg-[#6366F1] hover:bg-[#5558E3] text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save
+          {isSaving ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save'
+          )}
         </Button>
       </div>
     </div>

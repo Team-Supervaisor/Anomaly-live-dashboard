@@ -38,6 +38,9 @@ export default function CameraRender() {
     const [gridKey, setGridKey] = useState(0);
     const [gridVideoKey, setGridVideoKey] = useState(0);
 
+    // Add loading state
+    const [isSaving, setIsSaving] = useState(false);
+
     const handleSubmit = () => {
         const newCamera = {
             id: Date.now(),
@@ -71,72 +74,73 @@ export default function CameraRender() {
         setGridVideoKey(prevKey => prevKey + 1); // Trigger re-render
     }
 
+    // Modify handleSaveShapes
     const handleSaveShapes = async () => {
-        // Create form data
-        const formData = new FormData();
-    
-        // Add all uploaded videos to form data
-        uploadedVideos.forEach(video => {
-            formData.append('video', video.file);
-        });
-    
-        // Create the video shapes data structure
-        const videoShapesData = uploadedVideos.map(video => {
-            const shapes = videoShapes[video.id] || [];
-            const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
-    
-            const regionsPayload = rectangleShapes.map(rect => ({
-                Region_name: rect.name || `Region ${rect.id}`,
-                Region_Cords: {
-                    vertices: [
-                        [rect.x, rect.y],
-                        [rect.x, rect.y + rect.height],
-                        [rect.x + rect.width, rect.y + rect.height],
-                        [rect.x + rect.width, rect.y]
-                    ]
-                }
-            }));
-    
-            return {
-                type: 'video',
-                source: {
-                    id: video.id,
-                    name: video.file.name,
-                    url: video.url
-                },
-                regions: regionsPayload
-            };
-        });
-    
-        // Filter out videos with no regions
-        const videosWithRegions = videoShapesData.filter(item => item.regions.length > 0);
-    
-        // Add the ROI definitions as a JSON string
-        formData.append('roi_defs', JSON.stringify(videosWithRegions));
-    
+        setIsSaving(true); // Start loading
+        
         try {
+            // Create form data
+            const formData = new FormData();
+        
+            // Add all uploaded videos to form data
+            uploadedVideos.forEach(video => {
+                formData.append('video', video.file);
+            });
+        
+            // Create the video shapes data structure
+            const videoShapesData = uploadedVideos.map(video => {
+                const shapes = videoShapes[video.id] || [];
+                const rectangleShapes = shapes.filter(shape => shape.type === "rectangle");
+        
+                const regionsPayload = rectangleShapes.map(rect => ({
+                    Region_name: rect.name || `Region ${rect.id}`,
+                    Region_Cords: {
+                        vertices: [
+                            [rect.x, rect.y],
+                            [rect.x, rect.y + rect.height],
+                            [rect.x + rect.width, rect.y + rect.height],
+                            [rect.x + rect.width, rect.y]
+                        ]
+                    }
+                }));
+        
+                return {
+                    type: 'video',
+                    source: {
+                        id: video.id,
+                        name: video.file.name,
+                        url: video.url
+                    },
+                    regions: regionsPayload
+                };
+            });
+        
+            // Filter out videos with no regions
+            const videosWithRegions = videoShapesData.filter(item => item.regions.length > 0);
+        
+            // Add the ROI definitions as a JSON string
+            formData.append('roi_defs', JSON.stringify(videosWithRegions));
+        
             const apiUrl = `${import.meta.env.VITE_API_URL}/upload_config`;
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 body: formData,
             });
-    
+        
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-    
+        
             const data = await response.json();
             console.log('Upload successful:', data);
-    
-            // Optional: Show success message
-            alert('Configuration saved successfully!');
+            // alert('Configuration saved successfully!');
         } catch (error) {
             console.error('Error uploading configuration:', error);
-            // Optional: Show error message
-            alert('Failed to save configuration. Please try again.');
+            // alert('Failed to save configuration. Please try again.');
+        } finally {
+            setIsSaving(false); // End loading regardless of outcome
         }
     }
-    
 
     const handleClearCanvas = () => {
         if (activeTab === 'cam') {
@@ -535,6 +539,7 @@ export default function CameraRender() {
                         ? (maximizedCamera && cameraShapes[maximizedCamera]?.length > 0)
                         : (maximizedVideo && videoShapes[maximizedVideo]?.length > 0)
                 )}
+                isSaving={isSaving} // Add this prop
             />
 </div>
             </div>
