@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation } from "react-router-dom";
 import { format } from 'date-fns'; // For timestamp formatting
 import { io } from 'socket.io-client';
@@ -14,6 +14,7 @@ const LiveVideo = () => {
     const { data } = location.state || {};
     const [logs, setLogs] = useState([]);
     const [socket, setSocket] = useState(null);
+    const logsContainerRef = useRef(null);
 
     // Mock data for testing
     const mockLogs = [
@@ -44,6 +45,42 @@ const LiveVideo = () => {
             roi: "restricted_area",
             event: "entry",
             timestamp: "2025-05-01T16:45:12.445"
+        }
+        ,
+        {
+            person_id: 4,
+            camera_id: 1,
+            roi: "restricted_area",
+            event: "exit",
+            timestamp: "2025-05-01T16:45:30.123"
+        },
+        {
+            person_id: 5,
+            camera_id: 2,
+            roi: "entrance",
+            event: "entry",
+            timestamp: "2025-05-01T16:46:12.445"
+        },
+        {
+            person_id: 6,
+            camera_id: 2,
+            roi: "entrance",
+            event: "entry",
+            timestamp: "2025-05-01T16:46:30.123"
+        },
+        {
+            person_id: 7,
+            camera_id: 3,
+            roi: "restricted_area",
+            event: "entry",
+            timestamp: "2025-05-01T16:47:12.445"
+        },
+        {
+            person_id: 8,
+            camera_id: 3,
+            roi: "restricted_area",
+            event: "exit",
+            timestamp: "2025-05-01T16:47:30.123"
         }
     ];
 
@@ -83,21 +120,28 @@ const LiveVideo = () => {
     }, []);
 
     // Simulate socket updates every 3 seconds
-    useEffect(() => {
-        setLogs(mockLogs);
+    // useEffect(() => {
+    //     setLogs(mockLogs);
         
-        const interval = setInterval(() => {
-            // Rotate the logs array to simulate updates
-            setLogs(prevLogs => {
-                const rotated = [...prevLogs];
-                const last = rotated.pop();
-                if (last) rotated.unshift(last);
-                return rotated;
-            });
-        }, 3000);
+    //     const interval = setInterval(() => {
+    //         // Rotate the logs array to simulate updates
+    //         setLogs(prevLogs => {
+    //             const rotated = [...prevLogs];
+    //             const last = rotated.pop();
+    //             if (last) rotated.unshift(last);
+    //             return rotated;
+    //         });
+    //     }, 3000);
 
-        return () => clearInterval(interval);
-    }, []);
+    //     return () => clearInterval(interval);
+    // }, []);
+
+    // Add this effect to handle auto-scrolling
+    useEffect(() => {
+        if (logsContainerRef.current) {
+            logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+        }
+    }, [logs]); // Scroll whenever logs update
 
     // Function to format the timestamp
     const formatTimestamp = (timestamp) => {
@@ -150,7 +194,10 @@ const LiveVideo = () => {
                     </div>
 
                     {/* Logs Display with custom scrollbar */}
-                    <div className="flex-1 overflow-y-auto hide-scrollbar ">
+                    <div 
+                        ref={logsContainerRef}
+                        className="flex-1 overflow-y-auto hide-scrollbar scroll-smooth"
+                    >
                         {logs.map((log, index) => (
                             <div 
                                 key={`${log.person_id}-${log.timestamp}-${index}`}
