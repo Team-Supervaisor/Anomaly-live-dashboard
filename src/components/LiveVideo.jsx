@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useEffect } from 'react'
+import { useLocation } from "react-router-dom";
 
 import logo from '../assets/logo.png'
 import ai from '../assets/ai.png'
@@ -6,6 +7,25 @@ import { RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const LiveVideo = () => {
+
+    const location = useLocation();
+    // const { data } = location.state || {};
+    const data =
+
+    useEffect(() => {
+        const startStream = async () => {
+            const apiUrl = import.meta.env.VITE_API_URL;
+          try {
+            await axios.post(`${apiUrl}/start_tracking`);
+            console.log('Stream started successfully');
+          } catch (error) {
+            console.error('Failed to start stream:', error);
+          }
+        };
+    
+        startStream();
+      }, []);
+
     return (
         <div className="flex flex-col bg-[#F5F9FF]">
             <header className="flex justify-between items-center p-4 pb-2 ">
@@ -22,7 +42,7 @@ const LiveVideo = () => {
 
             <div className="flex flex-1 p-4 gap-4 overflow-hidden mt-2">
                 {/* Left Section */}
-                <div className="bg-white w-full rounded-[26px] p-4 min-h-[700px] flex flex-col">
+                <div className="bg-white w-full rounded-[26px] p-4 min-h-[400px] flex flex-col">
                     <div className='flex justify-between'>
                         {/* hls videos */}
                     </div>
