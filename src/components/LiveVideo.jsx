@@ -146,6 +146,7 @@ const LiveVideo = () => {
     const [socket, setSocket] = useState(null);
     const logsContainerRef = useRef(null);
 
+    console.log('Data from location:', data);
     // Mock data for testing
     const mockLogs = [
         {
