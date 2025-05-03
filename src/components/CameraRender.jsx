@@ -6,6 +6,7 @@ import ToolBar from "./tool-bar"
 import { Plus, X, Upload, Maximize2, Minimize2 } from "lucide-react"
 import VideoCanvas from './VideoCanvas'
 import VideoSection from "./VideoSection"
+import { useNavigate } from "react-router-dom";
 
 import UploadIcon from "../assets/Upload.png"
 
@@ -23,6 +24,7 @@ export default function CameraRender() {
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [selectedVideo, setSelectedVideo] = useState(null)
     const [maximizedVideo, setMaximizedVideo] = useState(null)
+    const navigate = useNavigate();
 
     // Add this state to track the next video number
     const [nextVideoNumber, setNextVideoNumber] = useState(1);
@@ -132,7 +134,9 @@ export default function CameraRender() {
             }
         
             const data = await response.json();
+
             console.log('Upload successful:', data);
+            navigate("/live-video",{ state: {data: data} });
             // alert('Configuration saved successfully!');
         } catch (error) {
             console.error('Error uploading configuration:', error);
