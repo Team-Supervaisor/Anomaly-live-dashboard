@@ -227,57 +227,22 @@ const LiveVideo = () => {
     
         startStream();
       }, []);
-    // const data = [
+
+    // Helper function to convert data object to array format
+    const formatVideoData = (data) => {
+        if (!data || !data.hls_urls) return [];
         
-    //     {
-    //         "hls_urls": {
-    //             "Video 1": "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8"
-    //         },
-    //         "roi_defs_file": "test_data/roi_definitions.json",
-    //         "status": "ok",
-    //         "video_paths": {
-    //             "Video 1": "test_data\\Video 1.mp4"
-    //         }
-    //     },
-    //     {
-    //         "hls_urls": {
-    //             "Video 1": "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8"
-    //         },
-    //         "roi_defs_file": "test_data/roi_definitions.json",
-    //         "status": "ok",
-    //         "video_paths": {
-    //             "Video 1": "test_data\\Video 1.mp4"
-    //         }
-    //     },
-    //     {
-    //         "hls_urls": {
-    //             "Video 1": "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8"
-    //         },
-    //         "roi_defs_file": "test_data/roi_definitions.json",
-    //         "status": "ok",
-    //         "video_paths": {
-    //             "Video 1": "test_data\\Video 1.mp4"
-    //         }
-    //     },
-    // ];
-
-    // useEffect(() => {
-    //     const startStream = async () => {
-    //         const apiUrl = import.meta.env.VITE_API_URL;
-    //         try {
-    //             await axios.post(`${apiUrl}/start_tracking`);
-    //             console.log('Stream started successfully');
-    //         } catch (error) {
-    //             console.error('Failed to start stream:', error);
-    //         }
-    //     };
-
-    //     startStream();
-    // }, []);
-
+        return Object.entries(data.hls_urls).map(([videoName, hlsUrl]) => ({
+            videoName,
+            hlsUrl,
+            path: data.video_paths[videoName]
+        }));
+    };
 
     const gridClasses = () => {
-        const len = data?.length;
+        if (!data || !data.hls_urls) return 'grid-cols-1';
+        
+        const len = Object.keys(data.hls_urls).length;
         if (len === 1) return 'grid-cols-1 grid-rows-1';
         if (len === 2) return 'grid-cols-2 grid-rows-1';
         if (len <= 4) return 'grid-cols-2 grid-rows-2';
@@ -383,13 +348,13 @@ const LiveVideo = () => {
                         {/* hls videos */}
 
                         <div className={`grid ${gridClasses()} gap-4 w-full p-4`}>
-                            {data && data.map((item, idx) => {
-                                const videoName = Object.keys(item.hls_urls)[0];
-                                console.log(videoName)
-                                const hlsUrl = item.hls_urls[videoName];
-
-                                return <VideoCanvasPlayer key={idx} hlsUrl={hlsUrl} id={idx} />;
-                            })}
+                            {data && formatVideoData(data).map((video, idx) => (
+                                <VideoCanvasPlayer 
+                                    key={idx} 
+                                    hlsUrl={video.hlsUrl} 
+                                    id={idx} 
+                                />
+                            ))}
                         </div>
 
                         {/* <div className={`grid gap-4 ${gridClasses()} w-full h-full`}>
