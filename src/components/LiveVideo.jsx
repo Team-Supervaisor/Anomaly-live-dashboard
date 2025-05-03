@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useLocation } from "react-router-dom";
 
 import logo from '../assets/logo.png'
@@ -8,16 +8,143 @@ import { Link } from 'react-router-dom'
 import Hls from 'hls.js';
 import axios from 'axios';
 
-const LiveVideo = () => {
+const playbackPositions = {};
 
-    const canvasRefs = useRef([]);
-    const videoRefs = useRef([]);
+const VideoCanvasPlayer = ({ hlsUrl, id }) => {
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const hlsRef = useRef(null)
+
+
+    const playbackStateRef = useRef({
+        currentTime: playbackPositions[id] || 0,
+        isInitialized: false
+    })
+
+    // HLS setup
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video || !hlsUrl) return
+
+        if (Hls.isSupported()) {
+            // Store current time before setting up new HLS instance
+            if (hlsRef.current && videoRef.current) {
+                playbackStateRef.current.currentTime = videoRef.current.currentTime
+                playbackPositions[id] = videoRef.current.currentTime
+            }
+
+            const hls = new Hls({
+                maxBufferSize: 30 * 1000 * 1000, // 30MB buffer
+                maxBufferLength: 60, // 60 seconds buffer
+                enableWorker: true, // Enable web worker
+                lowLatencyMode: true, // Enable low latency mode
+                backBufferLength: 90, // 90 seconds backward buffer
+                startPosition: playbackStateRef.current.currentTime // Start from saved position
+            })
+
+            hlsRef.current = hls
+
+            hls.loadSource(hlsUrl)
+            hls.attachMedia(video)
+
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                // Only set the time if we've played before
+                if (playbackStateRef.current.isInitialized &&
+                    playbackStateRef.current.currentTime > 0) {
+                    video.currentTime = playbackStateRef.current.currentTime
+                }
+
+                video.play()
+                    .then(() => {
+                        playbackStateRef.current.isInitialized = true
+                    })
+                    .catch(err => console.error("Play failed:", err))
+            })
+
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            hls.startLoad()
+                            break
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            hls.recoverMediaError()
+                            break
+                        default:
+                            hls.destroy()
+                            break
+                    }
+                }
+            })
+
+            // Store current time periodically to maintain position
+            const timeUpdateHandler = () => {
+                if (video.currentTime > 0) {
+                    playbackStateRef.current.currentTime = video.currentTime
+                    playbackPositions[id] = video.currentTime
+                }
+            }
+
+            video.addEventListener('timeupdate', timeUpdateHandler)
+
+            return () => {
+                video.removeEventListener('timeupdate', timeUpdateHandler)
+                // Don't destroy HLS here to maintain state between renders
+            }
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = hlsUrl
+            video.addEventListener('loadedmetadata', () => {
+                if (playbackStateRef.current.currentTime > 0) {
+                    video.currentTime = playbackStateRef.current.currentTime
+                }
+                video.play()
+                    .catch(err => console.error("Play failed:", err))
+            })
+        }
+    }, [hlsUrl, id]) // Re-run if URL changes
+
+    // Save playback position before unmount
+    useEffect(() => {
+        return () => {
+            if (videoRef.current) {
+                const currentTime = videoRef.current.currentTime
+                if (currentTime > 0) {
+                    playbackStateRef.current.currentTime = currentTime
+                    playbackPositions[id] = currentTime
+                }
+            }
+
+            if (hlsRef.current) {
+                hlsRef.current.destroy()
+                hlsRef.current = null
+            }
+        }
+    }, [id])
+
+    return (
+        <div className="relative w-full h-full rounded-xl overflow-hidden bg-black aspect-video">
+            <canvas
+                ref={canvasRef}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
+            />
+            <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+            />
+        </div>
+    );
+};
+
+const LiveVideo = () => {
     const location = useLocation();
     // const { data } = location.state || {};
     const data = [
         {
             "hls_urls": {
-                "Video 1": "http://127.0.0.1:5000/hls/Video%201/index.m3u8"
+                "Video 1": "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8"
             },
             "roi_defs_file": "test_data/roi_definitions.json",
             "status": "ok",
@@ -27,7 +154,7 @@ const LiveVideo = () => {
         },
         {
             "hls_urls": {
-                "Video 1": "http://127.0.0.1:5000/hls/Video%201/index.m3u8"
+                "Video 1": "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8"
             },
             "roi_defs_file": "test_data/roi_definitions.json",
             "status": "ok",
@@ -35,38 +162,24 @@ const LiveVideo = () => {
                 "Video 1": "test_data\\Video 1.mp4"
             }
         },
+        
 
     ]
 
-    useEffect(() => {
-        const startStream = async () => {
-            const apiUrl = import.meta.env.VITE_API_URL;
-            try {
-                await axios.post(`${apiUrl}/start_tracking`);
-                console.log('Stream started successfully');
-            } catch (error) {
-                console.error('Failed to start stream:', error);
-            }
-        };
+    // useEffect(() => {
+    //     const startStream = async () => {
+    //         const apiUrl = import.meta.env.VITE_API_URL;
+    //         try {
+    //             await axios.post(`${apiUrl}/start_tracking`);
+    //             console.log('Stream started successfully');
+    //         } catch (error) {
+    //             console.error('Failed to start stream:', error);
+    //         }
+    //     };
 
-        startStream();
-    }, []);
+    //     startStream();
+    // }, []);
 
-    useEffect(() => {
-        data.forEach((item, index) => {
-            const videoEl = videoRefs.current[index];
-            const videoName = Object.keys(item.hls_urls)[0];
-            const hlsUrl = item.hls_urls[videoName];
-
-            if (Hls.isSupported() && videoEl) {
-                const hls = new Hls();
-                hls.loadSource(hlsUrl);
-                hls.attachMedia(videoEl);
-            } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-                videoEl.src = hlsUrl;
-            }
-        });
-    }, [data]);
 
     const gridClasses = () => {
         const len = data.length;
@@ -97,7 +210,17 @@ const LiveVideo = () => {
                     <div className='flex justify-between'>
                         {/* hls videos */}
 
-                        <div className={`grid gap-4 ${gridClasses()} w-full h-full`}>
+                        <div className={`grid ${gridClasses()} gap-4 w-full p-4`}>
+                            {data.map((item, idx) => {
+                                const videoName = Object.keys(item.hls_urls)[0];
+                                console.log(videoName)
+                                const hlsUrl = item.hls_urls[videoName];
+
+                                return <VideoCanvasPlayer key={idx} hlsUrl={hlsUrl} id={idx} />;
+                            })}
+                        </div>
+
+                        {/* <div className={`grid gap-4 ${gridClasses()} w-full h-full`}>
                             {data.map((item, index) => {
                                 const videoName = Object.keys(item.hls_urls)[0];
 
@@ -108,31 +231,17 @@ const LiveVideo = () => {
                                             className="absolute top-0 left-0 w-full h-full z-10 pointer-events-none"
                                         />
                                         <video
-                                            ref={(el) => (videoRefs.current[index] = el)}
+                                            // ref={(el) => (videoRefs.current[index] = el)}
+                                            ref={videoRef}
                                             muted
                                             controls
                                             autoPlay
                                             className="w-full h-full object-cover"
                                         />
-                                        {/* <canvas
-                                            ref={canvasRef}
-                                            className={`w-full h-full bg-black rounded-lg ${getCursorStyle()}`}
-                                            onMouseDown={handleMouseDown}
-                                            onMouseMove={handleMouseMove}
-                                            onMouseUp={handleMouseUp}
-                                            onMouseLeave={handleMouseUp}
-                                        /> */}
-                                        {/* <video
-                                            ref={videoRef} // Add ref to video element
-                                            src={videoData.url}
-                                            controls
-                                            autoPlay
-                                            style={{ width: "100%", height: "100%" }}
-                                        /> */}
                                     </div>
                                 );
                             })}
-                        </div>
+                        </div> */}
                     </div>
                 </div>
 

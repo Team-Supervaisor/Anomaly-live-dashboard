@@ -191,6 +191,7 @@ export default function VideoCanvas({
         }
     }, [shapes]);
 
+
     // HLS setup
     useEffect(() => {
         const video = videoRef.current
