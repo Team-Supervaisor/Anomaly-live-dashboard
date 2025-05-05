@@ -273,43 +273,45 @@ const LiveVideo = () => {
     }, []);
 
     // Simulate socket updates every 3 seconds
-    // useEffect(() => {
-    //     setLogs(mockLogs);
+    useEffect(() => {
+        setLogs(mockLogs);
         
-    //     const interval = setInterval(() => {
-    //         // Rotate the logs array to simulate updates
-    //         setLogs(prevLogs => {
-    //             const rotated = [...prevLogs];
-    //             const last = rotated.pop();
-    //             if (last) rotated.unshift(last);
-    //             return rotated;
-    //         });
-    //     }, 3000);
+        const interval = setInterval(() => {
+            // Rotate the logs array to simulate updates
+            setLogs(prevLogs => {
+                const rotated = [...prevLogs];
+                const last = rotated.pop();
+                if (last) rotated.unshift(last);
+                return rotated;
+            });
+        }, 3000);
 
-    //     return () => clearInterval(interval);
-    // }, []);
+        return () => clearInterval(interval);
+    }, []);
 
     // Add this effect to handle auto-scrolling
     useEffect(() => {
         if (logsContainerRef.current) {
             logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
         }
-    }, [logs]); // Scroll whenever logs update
-    // useEffect(() => {
-    //     setLogs(mockLogs);
+    }, [logs]); 
+    
+    // Scroll whenever logs update
+    useEffect(() => {
+        setLogs(mockLogs);
         
-    //     const interval = setInterval(() => {
-    //         // Rotate the logs array to simulate updates
-    //         setLogs(prevLogs => {
-    //             const rotated = [...prevLogs];
-    //             const last = rotated.pop();
-    //             if (last) rotated.unshift(last);
-    //             return rotated;
-    //         });
-    //     }, 3000);
+        const interval = setInterval(() => {
+            // Rotate the logs array to simulate updates
+            setLogs(prevLogs => {
+                const rotated = [...prevLogs];
+                const last = rotated.pop();
+                if (last) rotated.unshift(last);
+                return rotated;
+            });
+        }, 3000);
 
-    //     return () => clearInterval(interval);
-    // }, []);
+        return () => clearInterval(interval);
+    }, []);
 
     // Function to format the timestamp
     const formatTimestamp = (timestamp) => {
@@ -357,29 +359,6 @@ const LiveVideo = () => {
                                 />
                             ))}
                         </div>
-
-                        {/* <div className={`grid gap-4 ${gridClasses()} w-full h-full`}>
-                            {data.map((item, index) => {
-                                const videoName = Object.keys(item.hls_urls)[0];
-
-                                return (
-                                    <div key={index} className="relative w-full h-full bg-black rounded-lg overflow-hidden">
-                                        <canvas
-                                            ref={(el) => (canvasRefs.current[index] = el)}
-                                            className="absolute top-0 left-0 w-full h-full z-10 pointer-events-none"
-                                        />
-                                        <video
-                                            // ref={(el) => (videoRefs.current[index] = el)}
-                                            ref={videoRef}
-                                            muted
-                                            controls
-                                            autoPlay
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </div> */}
                     </div>
                 </div>
 

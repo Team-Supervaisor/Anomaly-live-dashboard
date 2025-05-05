@@ -54,51 +54,51 @@ export default function VideoCanvas({
     })
 
     useEffect(() => {
-            const canvas = canvasRef.current
-            const video = videoRef.current
-            
-            if (!canvas || !video) return
-    
-            const ctx = canvas.getContext('2d')
-            
-            // Set canvas size to match container
-            const resizeCanvas = () => {
-                const rect = canvas.getBoundingClientRect()
-                canvas.width = rect.width
-                canvas.height = rect.height
+        const canvas = canvasRef.current
+        const video = videoRef.current
+
+        if (!canvas || !video) return
+
+        const ctx = canvas.getContext('2d')
+
+        // Set canvas size to match container
+        const resizeCanvas = () => {
+            const rect = canvas.getBoundingClientRect()
+            canvas.width = rect.width
+            canvas.height = rect.height
+        }
+        resizeCanvas()
+
+        // Animation loop for smooth rendering
+        function renderFrame() {
+            if (video.readyState >= 2) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height) // Clear canvas first
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+                // Draw shapes on top of the video
+                drawShapes(ctx, canvas.width, canvas.height)
             }
+            animationFrameRef.current = requestAnimationFrame(renderFrame)
+        }
+
+        // Start render loop
+        renderFrame()
+
+        // Handle window resize to ensure canvas dimensions are correct
+        const handleResize = () => {
             resizeCanvas()
-    
-            // Animation loop for smooth rendering
-            function renderFrame() {
-                if (video.readyState >= 2) {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height) // Clear canvas first
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-                    
-                    // Draw shapes on top of the video
-                    drawShapes(ctx, canvas.width, canvas.height)
-                }
-                animationFrameRef.current = requestAnimationFrame(renderFrame)
+        }
+
+        window.addEventListener('resize', handleResize)
+
+        // Cleanup
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current)
             }
-    
-            // Start render loop
-            renderFrame()
-    
-            // Handle window resize to ensure canvas dimensions are correct
-            const handleResize = () => {
-                resizeCanvas()
-            }
-            
-            window.addEventListener('resize', handleResize)
-    
-            // Cleanup
-            return () => {
-                if (animationFrameRef.current) {
-                    cancelAnimationFrame(animationFrameRef.current)
-                }
-                window.removeEventListener('resize', handleResize)
-            }
-        }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, showMaximize]) // Re-run on maximize state change or shapes change
+            window.removeEventListener('resize', handleResize)
+        }
+    }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, showMaximize]) // Re-run on maximize state change or shapes change
 
     const handleMaximizeToggle = (e) => {
         e.stopPropagation()
@@ -424,9 +424,12 @@ export default function VideoCanvas({
             <video
                 ref={videoRef} // Add ref to video element
                 src={videoData.url}
-                controls
-                autoPlay
-                style={{ width: "100%", height: "100%" }}
+                style={{ display: 'none' }}
+                preload="auto"
+                muted
+            // controls
+            // autoPlay
+            // style={{ width: "100%", height: "100%" }}
             />
 
             {/* <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
