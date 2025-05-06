@@ -239,6 +239,19 @@ export default function CameraRender() {
         };
     }, [uploadedVideos]);
 
+    const handleClearConfig = async () => {
+        try {
+          const apiUrl = `${import.meta.env.VITE_API_URL}/clear`;
+          const res = await fetch(apiUrl, { method: 'POST' });
+          if (!res.ok) throw new Error(`Status ${res.status}`);
+          setUploadedVideos([]);
+          setVideoShapes({});
+          alert('Configuration cleared.');
+        } catch (err) {
+            alert('Failed to clear config:', err);
+        }
+      };
+
     const handleDragOver = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -415,61 +428,38 @@ export default function CameraRender() {
                         </div>
                     )}
 
-                    {activeTab === 'video' && (
-                        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-                            <DialogTrigger asChild>
-                                <button
-                                    onClick={() => {
-                                        if (uploadedVideos.length >= 4) {
-                                            alert("Maximum 4 videos allowed.");
-                                            return;
-                                        }
-                                        setUploadDialogOpen(true);
-                                    }}
-                                    className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-[4rem] border border-[#0000001A] hover:bg-gray-50 transition-colors"
-                                >
-                                    <Upload className="w-4 h-4 text-black" />
-                                    <span className="text-black">Upload</span>
-                                </button>
-                            </DialogTrigger>
-                            <DialogContent className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[664px] overflow-hidden rounded-3xl">
-                                <div className="flex justify-between items-center p-5 border-b border-[#0000001A]">
-                                    <DialogTitle className="text-xl font-medium">Upload file</DialogTitle>
-                                </div>
-                                <div className="p-4 space-y-4">
-                                    <div
-                                        className="border-2 border-dashed border-[#717AEA] bg-[#717AEA1A] rounded-3xl flex items-center justify-center h-[200px] text-center cursor-pointer transition-colors duration-200"
-                                        onClick={() => document.getElementById("video-upload-input").click()}
-                                        onDragOver={handleDragOver}
-                                        onDragLeave={handleDragLeave}
-                                        onDrop={handleDrop}
-                                    >
-                                        <div>
-                                            <img src={UploadIcon} className="mx-auto w-14 h-[42px] text-[#717AEA]" />
-                                            <p className="text-[16px] font-medium mt-[10px] text-black">
-                                                Drop your files here or <span className="text-[#717AEA66] underline">click to browse</span>
-                                            </p>
-                                        </div>
-                                        <input
-                                            id="video-upload-input"
-                                            type="file"
-                                            accept="video/*"
-                                            className="hidden"
-                                            onChange={handleVideoUpload}
-                                            multiple
-                                        />
-                                    </div>
+{activeTab === 'video' && (
+          <div className="absolute top-4 right-4 flex gap-2">
+            {/* 2️⃣ Clear button to the left */}
+            <button
+              onClick={handleClearConfig}
+              className="px-4 py-2 rounded-[4rem] border border-red-300 text-red-600 hover:bg-red-50 transition-colors"
+            >
+              Clear
+            </button>
 
-                                    <button
-                                        className="w-full py-2 bg-[#717AEA] text-white rounded-full mt-3 text-xl"
-                                        onClick={() => setUploadDialogOpen(false)}
-                                    >
-                                        Upload
-                                    </button>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-                    )}
+            {/* Existing Upload trigger */}
+            <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+              <DialogTrigger asChild>
+                <button
+                  onClick={() => {
+                    if (uploadedVideos.length >= 4) {
+                      alert("Maximum 4 videos allowed.");
+                      return;
+                    }
+                    setUploadDialogOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-[4rem] border border-[#0000001A] hover:bg-gray-50 transition-colors"
+                >
+                  <Upload className="w-4 h-4 text-black" />
+                  <span>Upload</span>
+                </button>
+              </DialogTrigger>
+              {/* … DialogContent … */}
+            </Dialog>
+          </div>
+        )}
+
 
                     {/* Add Camera Button */}
                     {activeTab === 'cam' && cameras.length < 4 && (
