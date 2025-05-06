@@ -252,25 +252,20 @@ const LiveVideo = () => {
     };
 
     useEffect(() => {
-        // Initialize socket connection
         const socketInstance = io(import.meta.env.VITE_API_URL);
         setSocket(socketInstance);
-
-        // Listen for logs updates
-        socketInstance.on('logs', (data) => {
-            // Simply set the new logs without appending
-            if (data.logs) {
-                setLogs(data.logs);
-            }
+      
+        socketInstance.emit('logs_update');
+        
+              socketInstance.on('logs_update', (payload) => {
+          setLogs(payload);
         });
-
-        // Cleanup on unmount
+      
         return () => {
-            if (socketInstance) {
-                socketInstance.disconnect();
-            }
+          socketInstance.disconnect();
         };
-    }, []);
+      }, []);
+      
 
     // Simulate socket updates every 3 seconds
     useEffect(() => {
