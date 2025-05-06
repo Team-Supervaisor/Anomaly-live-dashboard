@@ -3,568 +3,422 @@ import { Maximize, Minimize, PencilIcon, Trash2 } from "lucide-react"
 
 // Define cursor map similar to DrawCanvasDrawer
 const cursorMap = {
-    pointer: "cursor-pointer",
-    rectangle: "cursor-crosshair",
-    fill: "custom-fill",
+  pointer: "cursor-pointer",
+  rectangle: "cursor-crosshair",
+  fill: "custom-fill",
 };
 
 // Create a global store to persist playback positions across remounts
 const playbackPositions = {};
 
 export default function VideoCanvas({
-    videoData,
-    isSelected,
-    onSelect,
-    isMaximized,
-    onMaximize,
-    onMinimize,
-    showMaximize,
-    selectedTool,
-    shapes = [],
-    onShapesChange
+  videoData,
+  isSelected,
+  onSelect,
+  isMaximized,
+  onMaximize,
+  onMinimize,
+  showMaximize,
+  selectedTool,
+  shapes = [],
+  onShapesChange
 }) {
+  const [nextId, setNextId] = useState(1);
+  const [drawingState, setDrawingState] = useState({
+    isDrawing: false,
+    startX: 0,
+    startY: 0,
+    currentX: 0,
+    currentY: 0,
+  });
+  const [selectedShape, setSelectedShape] = useState(null);
+  const [hoveredShape, setHoveredShape] = useState(null);
+  const [shapeDialog, setShapeDialog] = useState({
+    isOpen: false,
+    x: 0,
+    y: 0,
+    shapeId: null,
+    name: "",
+  });
+  const [fillColor, setFillColor] = useState("#6366F1");
 
+  const canvasRef = useRef(null);
+  const videoRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const playbackStateRef = useRef({
+    currentTime: 0,
+    isInitialized: false
+  });
 
-    const [nextId, setNextId] = useState(1)
-    const [drawingState, setDrawingState] = useState({
-        isDrawing: false,
-        startX: 0,
-        startY: 0,
-        currentX: 0,
-        currentY: 0,
-    })
-    const [selectedShape, setSelectedShape] = useState(null)
-    const [hoveredShape, setHoveredShape] = useState(null)
-    const [shapeDialog, setShapeDialog] = useState({
-        isOpen: false,
-        x: 0,
-        y: 0,
-        shapeId: null,
-        name: "",
-    })
-    const [fillColor, setFillColor] = useState("#6366F1")
+  // --- Resize & render loop ---
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    if (!canvas || !video) return;
 
-    const canvasRef = useRef(null)
-    const videoRef = useRef(null)
-    const animationFrameRef = useRef(null)
-    const [isVideoPlaying, setIsVideoPlaying] = useState(false)
-    const playbackStateRef = useRef({
-        currentTime: 0,
-        isInitialized: false
-    })
+    const ctx = canvas.getContext('2d');
 
-    useEffect(() => {
-        const canvas = canvasRef.current
-        const video = videoRef.current
+    const resizeCanvas = () => {
+      if (video.videoWidth && video.videoHeight) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      }
+    };
+    resizeCanvas();
 
-        if (!canvas || !video) return
-
-        const ctx = canvas.getContext('2d')
-
-      
-        // In resizeCanvas function:
-const resizeCanvas = () => {
-    if (videoRef.current) {
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
+    function renderFrame() {
+      if (video.readyState >= 2) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(
+          video,
+          0, 0,
+          video.videoWidth, video.videoHeight,
+          0, 0,
+          canvas.width, canvas.height
+        );
+        drawShapes(ctx, canvas.width, canvas.height);
+      }
+      animationFrameRef.current = requestAnimationFrame(renderFrame);
     }
-  }
-  
-        resizeCanvas()
+    renderFrame();
 
-        // Animation loop for smooth rendering
-        function renderFrame() {
-            if (video.readyState >= 2) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height) // Clear canvas first
-ctx.drawImage(
-    videoRef.current,
-    0, 0, 
-    videoRef.current.videoWidth, videoRef.current.videoHeight,
-    0, 0,
-    canvas.width, canvas.height
-  );
-  
+    window.addEventListener('resize', resizeCanvas);
+    return () => {
+      cancelAnimationFrame(animationFrameRef.current);
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, showMaximize]);
 
-                // Draw shapes on top of the video
-                drawShapes(ctx, canvas.width, canvas.height)
-            }
-            animationFrameRef.current = requestAnimationFrame(renderFrame)
-        }
+  // --- Keyboard Escape to minimize ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isMaximized) {
+        onMinimize();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMaximized, onMinimize]);
 
-        // Start render loop
-        renderFrame()
-
-        // Handle window resize to ensure canvas dimensions are correct
-        const handleResize = () => {
-            resizeCanvas()
-        }
-
-        window.addEventListener('resize', handleResize)
-
-        // Cleanup
-        return () => {
-            if (animationFrameRef.current) {
-                cancelAnimationFrame(animationFrameRef.current)
-            }
-            window.removeEventListener('resize', handleResize)
-        }
-    }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, showMaximize]) // Re-run on maximize state change or shapes change
-
-    const handleMaximizeToggle = (e) => {
-        e.stopPropagation()
-        if (videoRef.current) {
-            playbackStateRef.current.currentTime = videoRef.current.currentTime
-        }
-        isMaximized ? onMinimize() : onMaximize()
+  // --- Update nextId when shapes change ---
+  useEffect(() => {
+    if (shapes.length > 0) {
+      setNextId(Math.max(...shapes.map(s => s.id)) + 1);
+    } else {
+      setNextId(1);
     }
+  }, [shapes]);
 
+  // --- Persist playback position on unmount ---
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        const t = videoRef.current.currentTime;
+        if (t > 0) {
+          playbackPositions[videoData.id] = t;
+        }
+      }
+    };
+  }, [videoData.id]);
 
-    /////////
+  // --- Coordinate conversion ---
+  const getCanvasCoordinates = (e) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect || !videoRef.current) return { x: 0, y: 0 };
+    const scaleX = videoRef.current.videoWidth / rect.width;
+    const scaleY = videoRef.current.videoHeight / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  };
 
-    // Add keyboard event listener for Escape key to minimize
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape' && isMaximized && onMinimize) {
-                onMinimize();
-            }
+  // --- Hit test ---
+  const findShapeAtPosition = (x, y) => {
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      const s = shapes[i];
+      if (s.type === "rectangle") {
+        const norm = {
+          x:      s.width  < 0 ? s.x + s.width   : s.x,
+          y:      s.height < 0 ? s.y + s.height  : s.y,
+          width:  Math.abs(s.width),
+          height: Math.abs(s.height)
         };
+        if (
+          x >= norm.x &&
+          x <= norm.x + norm.width &&
+          y >= norm.y &&
+          y <= norm.y + norm.height
+        ) return s;
+      }
+    }
+    return null;
+  };
 
-        window.addEventListener('keydown', handleKeyDown);
+  // --- Mouse handlers ---
+  const handleMouseDown = (e) => {
+    if (!selectedTool || (!isMaximized && showMaximize)) return;
+    e.stopPropagation();
+    const { x, y } = getCanvasCoordinates(e);
+    if (selectedTool === "pointer") {
+      setSelectedShape(findShapeAtPosition(x, y));
+      setHoveredShape(null);
+    } else if (selectedTool === "rectangle") {
+      setDrawingState({ isDrawing: true, startX: x, startY: y, currentX: x, currentY: y });
+      setSelectedShape(null);
+      setShapeDialog({ ...shapeDialog, isOpen: false });
+    } else if (selectedTool === "fill" && isSelected) {
+      const hit = findShapeAtPosition(x, y);
+      if (hit) {
+        onShapesChange(shapes.map(s =>
+          s.id === hit.id ? { ...s, isColored: true, color: fillColor } : s
+        ));
+      }
+    }
+  };
 
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [isMaximized, onMinimize]);
+  const handleMouseMove = (e) => {
+    const { x, y } = getCanvasCoordinates(e);
+    if (drawingState.isDrawing && selectedTool === "rectangle") {
+      setDrawingState({ ...drawingState, currentX: x, currentY: y });
+    }
+    if (selectedTool === "pointer" && !drawingState.isDrawing && (isMaximized || !showMaximize)) {
+      setHoveredShape(findShapeAtPosition(x, y));
+    } else {
+      setHoveredShape(null);
+    }
+  };
 
+  const handleMouseUp = (e) => {
+    if (!drawingState.isDrawing || selectedTool !== "rectangle") return;
+    const { x, y } = getCanvasCoordinates(e);
+    const w = x - drawingState.startX;
+    const h = y - drawingState.startY;
+    if (Math.abs(w) > 5 && Math.abs(h) > 5) {
+      onShapesChange([...shapes, {
+        id: nextId,
+        type: "rectangle",
+        x: drawingState.startX,
+        y: drawingState.startY,
+        width: w,
+        height: h,
+        isColored: false
+      }]);
+      setNextId(nextId + 1);
+    }
+    setDrawingState({ isDrawing: false, startX: 0, startY: 0, currentX: 0, currentY: 0 });
+  };
 
-    const drawShapes = (ctx, width, height) => {
-        if (!ctx) return
-
-        // Only draw shapes when the video is maximized OR it's the only video
-        const isEffectivelyMaximized = isMaximized || !showMaximize  // !showMaximize means it's the only video
-        if (!isEffectivelyMaximized) return;
-
-        // Draw all existing shapes
-        shapes.forEach((shape) => {
-            if (shape.type === "rectangle") {
-                // Set border style
-                if (selectedShape && selectedShape.id === shape.id) {
-                    ctx.strokeStyle = "#6366F1" // Highlight selected shape
-                } else if (hoveredShape && hoveredShape.id === shape.id) {
-                    ctx.strokeStyle = "#9CA3AF" // Hover color
-                } else {
-                    ctx.strokeStyle = "#FFD700" // Changed to yellow
-                }
-
-                ctx.lineWidth = 2
-                ctx.strokeRect(shape.x, shape.y, shape.width, shape.height)
-
-                // Fill color if shape is colored
-                if (shape.isColored) {
-                    ctx.fillStyle = shape.color
-                    ctx.fillRect(shape.x, shape.y, shape.width, shape.height)
-                }
-
-                // Draw shape name if it exists
-                if (shape.name) {
-                    ctx.fillStyle = "#FFD700" // Changed text color to yellow
-                    ctx.font = "14px Arial"
-                    const textWidth = ctx.measureText(shape.name).width
-                    const textHeight = 14
-                    const centerX = shape.x + shape.width / 2
-                    const centerY = shape.y + shape.height / 2
-                    ctx.fillText(
-                        shape.name,
-                        centerX - textWidth / 2,
-                        centerY + textHeight / 2
-                    )
-                }
-            }
-        });
-
-        // Draw shape being created
-        if (drawingState.isDrawing && selectedTool === "rectangle") {
-            const width = drawingState.currentX - drawingState.startX
-            const height = drawingState.currentY - drawingState.startY
-
-            ctx.strokeStyle = "rgba(99, 102, 241, 0.6)"
-            ctx.lineWidth = 2
-            ctx.setLineDash([5, 3])
-            ctx.strokeRect(drawingState.startX, drawingState.startY, width, height)
-
-            ctx.fillStyle = "rgba(99, 102, 241, 0.1)"
-            ctx.fillRect(drawingState.startX, drawingState.startY, width, height)
-
-            ctx.setLineDash([])
+  // --- Draw shapes ---
+  const drawShapes = (ctx) => {
+    if (!ctx) return;
+    const active = isMaximized || !showMaximize;
+    if (!active) return;
+    shapes.forEach(s => {
+      if (s.type === "rectangle") {
+        ctx.strokeStyle = selectedShape?.id === s.id
+          ? "#6366F1"
+          : hoveredShape?.id === s.id
+            ? "#9CA3AF"
+            : "#FFD700";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(s.x, s.y, s.width, s.height);
+        if (s.isColored) {
+          ctx.fillStyle = s.color;
+          ctx.fillRect(s.x, s.y, s.width, s.height);
         }
-    }
-
-    // Find the next available ID for a new shape
-    useEffect(() => {
-        if (shapes.length > 0) {
-            const maxId = Math.max(...shapes.map(shape => shape.id));
-            setNextId(maxId + 1);
-        } else {
-            setNextId(1);
+        if (s.name) {
+          ctx.fillStyle = "#FFD700";
+          ctx.font = "14px Arial";
+          const tw = ctx.measureText(s.name).width;
+          ctx.fillText(s.name, s.x + (s.width - tw)/2, s.y + s.height/2 + 7);
         }
-    }, [shapes]);
-
-    useEffect(() => {
-        return () => {
-            if (videoRef.current) {
-                const currentTime = videoRef.current.currentTime
-                if (currentTime > 0) {
-                    playbackStateRef.current.currentTime = currentTime
-                    playbackPositions[videoData.id] = currentTime
-                }
-            }
-        }
-    }, [videoData.id])
-
-    // Get canvas coordinates from mouse event
-    const getCanvasCoordinates = (e) => {
-        const rect = canvasRef.current?.getBoundingClientRect()
-        if (!rect) return { x: 0, y: 0 }
-        const scaleX = videoRef.current.videoWidth / rect.width;
-        const scaleY = videoRef.current.videoHeight / rect.height;
-        return { 
-          x: (e.clientX - rect.left) * scaleX,
-          y: (e.clientY - rect.top) * scaleY 
-        };
+      }
+    });
+    if (drawingState.isDrawing && selectedTool === "rectangle") {
+      const w = drawingState.currentX - drawingState.startX;
+      const h = drawingState.currentY - drawingState.startY;
+      ctx.strokeStyle = "rgba(99, 102, 241, 0.6)";
+      ctx.setLineDash([5,3]);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(drawingState.startX, drawingState.startY, w, h);
+      ctx.fillStyle = "rgba(99, 102, 241, 0.1)";
+      ctx.fillRect(drawingState.startX, drawingState.startY, w, h);
+      ctx.setLineDash([]);
     }
+  };
 
-    // Find shape at position
-    const findShapeAtPosition = (x, y) => {
-        for (let i = shapes.length - 1; i >= 0; i--) {
-            const shape = shapes[i]
+  // --- Hover controls style: map from video pixels → CSS pixels ---
+  const hoverStyle = () => {
+    if (!canvasRef.current || !videoRef.current || !hoveredShape) return {};
+    const rect = canvasRef.current.getBoundingClientRect();
+    const vw   = videoRef.current.videoWidth;
+    const vh   = videoRef.current.videoHeight;
+    const cssX = hoveredShape.x / vw * rect.width;
+    const cssY = hoveredShape.y / vh * rect.height;
+    const cssW = hoveredShape.width / vw * rect.width;
+    return {
+      position: 'absolute',
+      left: `${cssX + cssW - 35}px`,
+      top:  `${cssY + 5}px`,
+      zIndex: 10,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '8px'
+    };
+  };
 
-            if (shape.type === "rectangle") {
-                // Normalize rectangle coordinates for hit testing
-                const normalizedRect = {
-                    x: shape.width < 0 ? shape.x + shape.width : shape.x,
-                    y: shape.height < 0 ? shape.y + shape.height : shape.y,
-                    width: Math.abs(shape.width),
-                    height: Math.abs(shape.height)
-                }
+  // --- Edit/Delete handlers ---
+  const handleEditShape = () => {
+    if (!hoveredShape) return;
+    const norm = {
+      x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
+      y: hoveredShape.height< 0 ? hoveredShape.y + hoveredShape.height: hoveredShape.y,
+      width: Math.abs(hoveredShape.width),
+      height: Math.abs(hoveredShape.height)
+    };
+    setShapeDialog({
+      isOpen: true,
+      x: norm.x + norm.width/2,
+      y: norm.y + norm.height/2,
+      shapeId: hoveredShape.id,
+      name: hoveredShape.name || ""
+    });
+    setSelectedShape(hoveredShape);
+    setHoveredShape(null);
+  };
 
-                if (
-                    x >= normalizedRect.x &&
-                    x <= normalizedRect.x + normalizedRect.width &&
-                    y >= normalizedRect.y &&
-                    y <= normalizedRect.y + normalizedRect.height
-                ) {
-                    return shape
-                }
-            }
-        }
-        return null
-    }
+  const handleDeleteShape = () => {
+    if (!hoveredShape) return;
+    onShapesChange(shapes.filter(s => s.id !== hoveredShape.id));
+    setHoveredShape(null);
+  };
 
-    // Handle mouse down event
-    const handleMouseDown = (e) => {
-        // Allow drawing when maximized or when there's only one stream (showMaximize is false)
-        if (!selectedTool || (!isMaximized && showMaximize)) return
+  const closeShapeDialog = () => setShapeDialog({ ...shapeDialog, isOpen: false });
 
-        e.stopPropagation() // Prevent triggering parent onClick
-        const { x, y } = getCanvasCoordinates(e)
+  const handleShapeDialogSave = () => {
+    onShapesChange(shapes.map(s =>
+      s.id === shapeDialog.shapeId
+        ? { ...s, name: shapeDialog.name }
+        : s
+    ));
+    setShapeDialog({ ...shapeDialog, isOpen: false });
+  };
 
-        if (selectedTool === "pointer") {
-            const clickedShape = findShapeAtPosition(x, y)
-            setHoveredShape(null)
-            setSelectedShape(clickedShape)
-        } else if (selectedTool === "rectangle") {
-            setDrawingState({
-                isDrawing: true,
-                startX: x,
-                startY: y,
-                currentX: x,
-                currentY: y,
-            })
-            setSelectedShape(null)
-            setShapeDialog({ ...shapeDialog, isOpen: false })
-        } else if (selectedTool === "fill" && isSelected) {
-            handleFill(x, y)
-        }
-    }
+  const getCursorStyle = () => cursorMap[selectedTool] || "";
 
-    // Handle mouse move event
-    const handleMouseMove = (e) => {
-        const { x, y } = getCanvasCoordinates(e)
+  return (
+    <div
+      className={`w-full h-full relative ${isSelected ? 'ring-2 ring-[#7900F3]' : ''}`}
+      onClick={() => onSelect(videoData.id)}
+    >
+      <canvas
+        ref={canvasRef}
+        className={`w-full h-full bg-black rounded-lg ${getCursorStyle()}`}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      />
 
-        // Update drawing state if currently drawing
-        if (drawingState.isDrawing && selectedTool === "rectangle") {
-            setDrawingState({
-                ...drawingState,
-                currentX: x,
-                currentY: y,
-            })
-        }
+      <video
+        ref={videoRef}
+        src={videoData.url}
+        style={{ display: 'none' }}
+        preload="auto"
+        muted
+      />
 
-        // Handle hover for pointer tool - only when maximized or single stream
-        if (selectedTool === "pointer" && !drawingState.isDrawing && (isMaximized || !showMaximize)) {
-            const hoverShape = findShapeAtPosition(x, y)
-            setHoveredShape(hoverShape)
-        } else {
-            // Clear hovered shape when not in pointer mode or when in grid view
-            setHoveredShape(null)
-        }
-    }
-
-    // Handle mouse up event
-    const handleMouseUp = (e) => {
-        if (!drawingState.isDrawing || selectedTool !== "rectangle") return
-
-        const { x, y } = getCanvasCoordinates(e)
-        const width = x - drawingState.startX
-        const height = y - drawingState.startY
-
-        // Only create rectangle if it has a reasonable size
-        if (Math.abs(width) > 5 && Math.abs(height) > 5) {
-            const newRectangle = {
-                id: nextId,
-                type: "rectangle",
-                x: drawingState.startX,
-                y: drawingState.startY,
-                width: width,
-                height: height,
-                isColored: false,
-            }
-
-            const updatedShapes = [...shapes, newRectangle];
-            onShapesChange(updatedShapes);
-            setNextId(nextId + 1)
-        }
-
-        setDrawingState({
-            isDrawing: false,
-            startX: 0,
-            startY: 0,
-            currentX: 0,
-            currentY: 0,
-        })
-    }
-
-    // Handle fill tool
-    const handleFill = (x, y) => {
-        const clickedShape = findShapeAtPosition(x, y)
-
-        if (clickedShape) {
-            // Update the shape's color
-            const updatedShapes = shapes.map(shape =>
-                shape.id === clickedShape.id
-                    ? { ...shape, color: fillColor, isColored: true }
-                    : shape
-            )
-
-            onShapesChange(updatedShapes)
-        }
-    }
-
-    ////////
-
-    // Handle edit shape
-    const handleEditShape = () => {
-        if (!hoveredShape) return
-
-        // Calculate the center of the rectangle for dialog positioning
-        const normalizedRect = {
-            x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
-            y: hoveredShape.height < 0 ? hoveredShape.y + hoveredShape.height : hoveredShape.y,
-            width: Math.abs(hoveredShape.width),
-            height: Math.abs(hoveredShape.height)
-        }
-
-        const centerX = normalizedRect.x + (normalizedRect.width / 2)
-        const centerY = normalizedRect.y + (normalizedRect.height / 2)
-
-        setShapeDialog({
-            isOpen: true,
-            x: centerX,
-            y: centerY,
-            shapeId: hoveredShape.id,
-            name: hoveredShape.name || "",
-        })
-
-        setSelectedShape(hoveredShape)
-        setHoveredShape(null)
-    }
-
-    const closeShapeDialog = () => {
-        setShapeDialog({ ...shapeDialog, isOpen: false })
-    }
-
-    // Handle delete shape
-    const handleDeleteShape = () => {
-        if (!hoveredShape) return
-
-        // Remove the shape
-        const updatedShapes = shapes.filter(shape => shape.id !== hoveredShape.id)
-        onShapesChange(updatedShapes)
-        setHoveredShape(null)
-    }
-
-    // Handle shape dialog save
-    const handleShapeDialogSave = () => {
-        // Update the shape with the new name
-        const updatedShapes = shapes.map(shape =>
-            shape.id === shapeDialog.shapeId
-                ? { ...shape, name: shapeDialog.name }
-                : shape
-        )
-
-        onShapesChange(updatedShapes)
-        setShapeDialog({ ...shapeDialog, isOpen: false })
-    }
-
-    const getCursorStyle = () => {
-        return cursorMap[selectedTool] || "";
-    }
-
-    console.log(videoData)
-    return (
-        <div
-            className={`w-full h-full relative ${isSelected ? 'ring-2 ring-[#7900F3]' : ''}`}
-            onClick={() => onSelect(videoData.id)}
+      {showMaximize && (
+        <button
+          onClick={e => { e.stopPropagation(); isMaximized ? onMinimize() : onMaximize(); }}
+          className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
         >
-            <canvas
-                ref={canvasRef}
-                className={`w-full h-full bg-black rounded-lg ${getCursorStyle()}`}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-            />
-            <video
-                ref={videoRef} // Add ref to video element
-                src={videoData.url}
-                style={{ display: 'none' }}
-                preload="auto"
-                muted
-            // controls
-            // autoPlay
-            // style={{ width: "100%", height: "100%" }}
-            />
+          {isMaximized
+            ? <Minimize className="w-4 h-4 text-white"/>
+            : <Maximize className="w-4 h-4 text-white"/>
+          }
+        </button>
+      )}
 
-            {/* <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
-                {videoData.name}
-            </div> */}
-
-            {showMaximize && (
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        isMaximized ? onMinimize() : onMaximize()
-                    }}
-                    className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
-                >
-                    {isMaximized ? (
-                        <Minimize className="w-4 h-4 text-white" />
-                    ) : (
-                        <Maximize className="w-4 h-4 text-white" />
-                    )}
-                </button>
-            )}
-
-            {selectedTool === "fill" && isSelected && (isMaximized || !showMaximize) && (
-                <div className="absolute top-4 left-4 bg-white p-2 rounded shadow-md z-10 flex items-center">
-                    <label className="text-sm font-medium text-gray-700">Fill Color:</label>
-                    <input
-                        type="color"
-                        value={fillColor}
-                        onChange={(e) => setFillColor(e.target.value)}
-                        className="ml-2 w-8 h-8 border-none cursor-pointer"
-                    />
-                </div>
-            )}
-
-            {hoveredShape && selectedTool === "pointer" && (isMaximized || !showMaximize) && (
-                <div
-                    style={{
-                        position: "absolute",
-                        left: hoveredShape.x + hoveredShape.width + 2 > canvasRef.current?.width - 50
-                            ? hoveredShape.x - 33
-                            : hoveredShape.x + hoveredShape.width - 35,
-                        top: hoveredShape.y + 2,
-                        zIndex: 10,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: "8px",
-                    }}
-                >
-                    <div className="relative group">
-                        <button
-                            className="w-8 h-8 rounded-full bg-indigo-400 hover:bg-indigo-500 flex items-center justify-center shadow-md"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditShape();
-                            }}
-                        >
-                            <PencilIcon className="text-white w-4 h-4" />
-                        </button>
-                        <div className="absolute w-[65px] left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded">
-                            Edit Info.
-                        </div>
-                    </div>
-
-                    <div className="relative group">
-                        <button
-                            className="w-8 h-8 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteShape();
-                            }}
-                        >
-                            <Trash2 className="text-indigo-400 w-4 h-4" />
-                        </button>
-                        <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded">
-                            Delete
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {shapeDialog.isOpen && (
-                <div
-                    className="absolute bg-white p-6 rounded-xl shadow-lg w-[350px] z-20"
-                    style={{
-                        left: `${Math.max(175, Math.min(shapeDialog.x, canvasRef.current?.width - 175))}px`,
-                        top: `${Math.max(110, Math.min(shapeDialog.y - 50, canvasRef.current?.height - 110))}px`,
-                        transform: "translate(-50%, -50%)",
-                        border: "1px solid #E5E7EB",
-                    }}
-                >
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center justify-around">
-                            <label className="font-medium text-gray-700">Region Name: </label>
-                            <div className="">
-                                <input
-                                    type="text"
-                                    placeholder="Enter region name"
-                                    value={shapeDialog.name}
-                                    onChange={(e) => setShapeDialog({ ...shapeDialog, name: e.target.value })}
-                                    className="w-full flex-1 border-b border-gray-300 px-1 py-1 focus:outline-none focus:border-indigo-500 text-black text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2 mt-2">
-                            <button
-                                className="px-3 py-1 border border-gray-300 rounded-md text-sm text-[black]"
-                                onClick={closeShapeDialog}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="px-3 py-1 bg-[#6366F1] text-white rounded-md text-sm"
-                                onClick={handleShapeDialogSave}
-                            >
-                                Save
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+      {selectedTool === "fill" && isSelected && (isMaximized || !showMaximize) && (
+        <div className="absolute top-4 left-4 bg-white p-2 rounded shadow-md z-10 flex items-center">
+          <label className="text-sm font-medium text-gray-700">Fill Color:</label>
+          <input
+            type="color"
+            value={fillColor}
+            onChange={e => setFillColor(e.target.value)}
+            className="ml-2 w-8 h-8 border-none cursor-pointer"
+          />
         </div>
-    )
+      )}
+
+      {hoveredShape && selectedTool === "pointer" && (isMaximized || !showMaximize) && (
+        <div style={hoverStyle()}>
+          <div className="relative group">
+            <button
+              className="w-8 h-8 rounded-full bg-indigo-400 hover:bg-indigo-500 flex items-center justify-center shadow-md"
+              onClick={e => { e.stopPropagation(); handleEditShape(); }}
+            >
+              <PencilIcon className="text-white w-4 h-4"/>
+            </button>
+            <div className="absolute w-[65px] left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded">
+              Edit Info.
+            </div>
+          </div>
+          <div className="relative group">
+            <button
+              className="w-8 h-8 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
+              onClick={e => { e.stopPropagation(); handleDeleteShape(); }}
+            >
+              <Trash2 className="text-indigo-400 w-4 h-4"/>
+            </button>
+            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded">
+              Delete
+            </div>
+          </div>
+        </div>
+      )}
+
+      {shapeDialog.isOpen && (
+        <div
+          className="absolute bg-white p-6 rounded-xl shadow-lg w-[350px] z-100"
+          style={{
+            left: `${Math.max(175, Math.min(shapeDialog.x, canvasRef.current.width - 175))}px`,
+            top:  `${Math.max(110, Math.min(shapeDialog.y - 50, canvasRef.current.height - 110))}px`,
+            transform: "translate(-50%, -50%)",
+            border: "1px solid #E5E7EB",
+          }}
+        >
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-around">
+              <label className="font-medium text-gray-700">Region Name:</label>
+              <input
+                type="text"
+                placeholder="Enter region name"
+                value={shapeDialog.name}
+                onChange={e => setShapeDialog({ ...shapeDialog, name: e.target.value })}
+                className="w-full border-b border-gray-300 px-1 py-1 focus:outline-none focus:border-indigo-500 text-black text-sm"
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm text-black"
+                onClick={closeShapeDialog}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-3 py-1 bg-[#6366F1] text-white rounded-md text-sm"
+                onClick={handleShapeDialogSave}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
