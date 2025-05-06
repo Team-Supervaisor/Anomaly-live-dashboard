@@ -251,23 +251,28 @@ const LiveVideo = () => {
         return 'grid-cols-1'; // fallback
     };
 
-useEffect(() => {
-    const socketInstance = io(import.meta.env.VITE_API_URL);
-    setSocket(socketInstance);
-  
-    socketInstance.emit('logs');
-  
-    socketInstance.on('log_update', (payload) => {
-      console.log('Received logs_update payload:', payload);
-
-      setLogs(payload);
-    });
-  
-    // 4) cleanup
-    return () => {
-      socketInstance.disconnect();
-    };
-  }, []);
+    useEffect(() => {
+        const socketInstance = io(import.meta.env.VITE_API_URL);
+        setSocket(socketInstance);
+      
+         socketInstance.emit('logs');
+      
+        // 🔄 Listen on the `log_update` channel
+    
+      socketInstance.on('log_update', (payload) => {
+        // payload is coming in as an array:
+       // [
+       //   { person_id: 1, camera_id: "Video 1", roi: "inside", event: "entry", timestamp1: "2025-05-06T23:01:23.454" },
+       //   …
+       // ]
+        setLogs(Array.isArray(payload) ? payload : []);
+     });
+      
+        return () => {
+          socketInstance.disconnect();
+        };
+      }, []);
+      
   
       
 
@@ -373,50 +378,55 @@ useEffect(() => {
                     </div>
 
                     {/* Logs Display with custom scrollbar */}
-                    <div 
-                        ref={logsContainerRef}
-                        className="flex-1 overflow-y-auto hide-scrollbar scroll-smooth"
-                    >
-                        {logs.map((log, index) => (
-                            <div 
-                                key={`${log.person_id}-${log.timestamp}-${index}`}
-                                className="mb-6 p-4 bg-[#F5F9FF] rounded-lg"
-                            >
-                                <div className="flex justify-between items-start ">
-                                    <span className="text-gray-600">Camera: </span>
-                                    <span className="text-sm text-gray-500">
-                                        {log.camera_id}
-                                    </span>
-                                </div>
-                                <div className="space-y-0 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Region:</span>
-                                        <span className="font-medium text-gray-800">{log.roi}</span>
-                                    </div>
-                                    
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Event:</span>
-                                        <span className={`font-medium ${
-                                            log.event === 'entry' ? 'text-green-600' : 
-                                            log.event === 'exit' ? 'text-red-600' : 
-                                            'text-blue-600'
-                                        }`}>
-                                            {log.event}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Timestamp:</span>
-                                        <span className="font-medium text-gray-800">{format(new Date(log.timestamp), 'EEE, HH:mm:ss')}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        {logs.length === 0 && (
-                            <div className="text-center text-gray-500 mt-4">
-                                Waiting for events...
-                            </div>
-                        )}
-                    </div>
+                    <div
+  ref={logsContainerRef}
+  className="flex-1 overflow-y-auto hide-scrollbar scroll-smooth"
+>
+  {logs.length > 0 ? (
+    logs.map((log, idx) => (
+      <div
+        key={`${log.person_id}-${log.timestamp1}-${idx}`}
+        className="mb-6 p-4 bg-[#F5F9FF] rounded-lg"
+      >
+        <div className="flex justify-between items-start">
+          <span className="text-gray-600">Camera:</span>
+          <span className="text-sm text-gray-500">{log.camera_id}</span>
+        </div>
+        <div className="space-y-0 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Region:</span>
+            <span className="font-medium text-gray-800">{log.roi}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Event:</span>
+            <span
+              className={`font-medium ${
+                log.event === 'entry'
+                  ? 'text-green-600'
+                  : log.event === 'exit'
+                  ? 'text-red-600'
+                  : 'text-blue-600'
+              }`}
+            >
+              {log.event}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Timestamp:</span>
+            <span className="font-medium text-gray-800">
+              {format(new Date(log.timestamp1), 'EEE, HH:mm:ss')}
+            </span>
+          </div>
+        </div>
+      </div>
+    ))
+  ) : (
+    <div className="text-center text-gray-500 mt-4">
+      Waiting for events...
+    </div>
+  )}
+</div>
+
                 </div>
             </div>
 
