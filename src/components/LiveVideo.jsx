@@ -385,7 +385,7 @@ const LiveVideo = () => {
   {logs.length > 0 ? (
     logs.map((log, idx) => (
       <div
-        key={`${log.person_id}-${log.timestamp1}-${idx}`}
+        key={`${log.person_id}-${log.timestamp}-${idx}`}
         className="mb-6 p-4 bg-[#F5F9FF] rounded-lg"
       >
         <div className="flex justify-between items-start">
@@ -414,7 +414,7 @@ const LiveVideo = () => {
           <div className="flex justify-between">
             <span className="text-gray-600">Timestamp:</span>
             <span className="font-medium text-gray-800">
-              {format(new Date(log.timestamp1), 'EEE, HH:mm:ss')}
+              {format(new Date(log.timestamp), 'EEE, HH:mm:ss')}
             </span>
           </div>
         </div>
