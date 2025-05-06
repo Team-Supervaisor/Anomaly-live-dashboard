@@ -416,9 +416,7 @@ export default function CameraRender() {
                 return (
                   <div
                     key={video.id}
-                    className={`relative rounded-lg overflow-hidden ${
-                      isVisible ? "" : "hidden"
-                    }`}
+                    className={`relative rounded-lg overflow-visible ${isVisible ? '' : 'hidden'}`}
                   >
                     <VideoSection
                       videoData={video}
