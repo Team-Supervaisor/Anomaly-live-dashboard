@@ -61,19 +61,29 @@ export default function VideoCanvas({
 
         const ctx = canvas.getContext('2d')
 
-        // Set canvas size to match container
-        const resizeCanvas = () => {
-            const rect = canvas.getBoundingClientRect()
-            canvas.width = rect.width
-            canvas.height = rect.height
-        }
+      
+        // In resizeCanvas function:
+const resizeCanvas = () => {
+    if (videoRef.current) {
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+    }
+  }
+  
         resizeCanvas()
 
         // Animation loop for smooth rendering
         function renderFrame() {
             if (video.readyState >= 2) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height) // Clear canvas first
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+ctx.drawImage(
+    videoRef.current,
+    0, 0, 
+    videoRef.current.videoWidth, videoRef.current.videoHeight,
+    0, 0,
+    canvas.width, canvas.height
+  );
+  
 
                 // Draw shapes on top of the video
                 drawShapes(ctx, canvas.width, canvas.height)
@@ -215,9 +225,12 @@ export default function VideoCanvas({
     const getCanvasCoordinates = (e) => {
         const rect = canvasRef.current?.getBoundingClientRect()
         if (!rect) return { x: 0, y: 0 }
-        const x = e.clientX - rect.left
-        const y = e.clientY - rect.top
-        return { x, y }
+        const scaleX = videoRef.current.videoWidth / rect.width;
+        const scaleY = videoRef.current.videoHeight / rect.height;
+        return { 
+          x: (e.clientX - rect.left) * scaleX,
+          y: (e.clientY - rect.top) * scaleY 
+        };
     }
 
     // Find shape at position
