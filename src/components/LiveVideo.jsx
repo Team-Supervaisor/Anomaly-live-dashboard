@@ -251,20 +251,24 @@ const LiveVideo = () => {
         return 'grid-cols-1'; // fallback
     };
 
-    useEffect(() => {
-        const socketInstance = io(import.meta.env.VITE_API_URL);
-        setSocket(socketInstance);
-      
-        socketInstance.emit('logs_update');
-        
-              socketInstance.on('logs_update', (payload) => {
-          setLogs(payload);
-        });
-      
-        return () => {
-          socketInstance.disconnect();
-        };
-      }, []);
+useEffect(() => {
+    const socketInstance = io(import.meta.env.VITE_API_URL);
+    setSocket(socketInstance);
+  
+    socketInstance.emit('logs');
+  
+    socketInstance.on('log_update', (payload) => {
+      console.log('Received logs_update payload:', payload);
+
+      setLogs(payload);
+    });
+  
+    // 4) cleanup
+    return () => {
+      socketInstance.disconnect();
+    };
+  }, []);
+  
       
 
     // Simulate socket updates every 3 seconds
