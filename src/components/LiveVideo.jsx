@@ -124,7 +124,8 @@ const VideoCanvasPlayer = ({ hlsUrl, id }) => {
   }, [id]);
 
   return (
-    <div className="relative w-full h-full rounded-xl overflow-hidden bg-black aspect-video">
+    <div className="relative w-full h-full max-h-full rounded-xl overflow-hidden bg-black">
+
       <canvas
         ref={canvasRef}
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
@@ -257,7 +258,6 @@ const LiveVideo = () => {
 
     socketInstance.emit("logs");
 
-    // 🔄 Listen on the `log_update` channel
 
     socketInstance.on("log_update", (payload) => {
       // payload is coming in as an array:
@@ -341,7 +341,7 @@ const LiveVideo = () => {
               <img className="h-8 w-8" src={logo} alt="Logo" />
             </div>
             <h2 className="text-[22px] text-black font-medium">
-              Anomaly Dashboard
+              Tracking Dashboard
             </h2>
           </div>
         </Link>
@@ -349,9 +349,10 @@ const LiveVideo = () => {
 
       <div className="flex flex-1 p-4 gap-4 overflow-hidden mt-2">
         {/* Left Section */}
-        <div className="bg-white w-full rounded-[26px] p-4 flex flex-col">
+        <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1 overflow-hidden">
+
           <div className="flex justify-between">
-            {/* hls videos */}
+            {/* hls videos */}  
 
             <div className={`grid ${gridClasses()} gap-4 w-full p-4`}>
               {data &&
