@@ -56,31 +56,33 @@ export default function CameraRender() {
     const startStreamEndpoint = `${apiUrl}/start-stream/`;
   
     try {
-      await axios.post(startStreamEndpoint, {
+      const response = await axios.post(startStreamEndpoint, {
         camera_name: cameraName,
         rtsp_url: rtspUrl,
       });
-      console.log("Stream start request sent to:", startStreamEndpoint);
-    } catch (error) {
-      console.error(" start-stream failed:", error);
-    }
   
-    const newId = Date.now();
-    const newCamera = {
-      id: newId,
-      name: cameraName,
-      url: rtspUrl,
-      hlsUrl:
-        "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8",
-    };
-    setCameras((prev) => [...prev, newCamera]);
-    setMaximizedCamera(newId);
-    setGridKey((prev) => prev + 1);
+      const { camera_id, first_frame } = response.data;
+  
+      const newCamera = {
+        id: camera_id,
+        name: cameraName,
+        url: rtspUrl,
+        hlsUrl: "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8",
+        firstFrame: first_frame, 
+      };
+  
+      setCameras((prev) => [...prev, newCamera]);
+      setMaximizedCamera(camera_id);
+      setGridKey((prev) => prev + 1);
+    } catch (error) {
+      console.error("start-stream failed:", error);
+    }
   
     setOpen(false);
     setCameraName("");
     setRtspUrl("");
   };
+  
 
   const handleMaximize = (cameraId) => {
     setMaximizedCamera(cameraId);

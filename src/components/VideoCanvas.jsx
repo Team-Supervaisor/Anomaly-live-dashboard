@@ -28,6 +28,7 @@ export default function VideoCanvas({
     const videoRef = useRef(null)
     const hlsRef = useRef(null)
     const animationFrameRef = useRef(null)
+    const firstFrameImageRef = useRef(null)
     const [isVideoPlaying, setIsVideoPlaying] = useState(false)
     
     // Store playback state in a ref to persist across renders
@@ -55,6 +56,12 @@ export default function VideoCanvas({
         name: "",
     })
     const [fillColor, setFillColor] = useState("#6366F1")
+    +    useEffect(() => {
+         if (!cameraData.firstFrame) return
+              const img = new Image()
+              img.src = cameraData.firstFrame
+              firstFrameImageRef.current = img
+            }, [cameraData.firstFrame])
 
     // Setup video rendering loop
     useEffect(() => {
@@ -73,25 +80,37 @@ export default function VideoCanvas({
         }
         resizeCanvas()
 
-        // Animation loop for smooth rendering
         function renderFrame() {
+            const canvas = canvasRef.current;
+            const video = videoRef.current;
+            const ctx = canvas.getContext('2d');
+    
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
             if (video.readyState >= 2) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-                ctx.drawImage(
-                    videoRef.current,
-                    0, 0, 
-                    videoRef.current.videoWidth, videoRef.current.videoHeight,
-                    0, 0,
-                    canvas.width, canvas.height
-                  );
-                  
-                
-                // Draw shapes on top of the video
-                drawShapes(ctx, canvas.width, canvas.height)
+              ctx.drawImage(
+                video,
+                0, 0,
+                video.videoWidth, video.videoHeight,
+                0, 0,
+                canvas.width, canvas.height
+              );
+            } else if (firstFrameImageRef.current) {
+              const img = firstFrameImageRef.current;
+              ctx.drawImage(
+                img,
+                0, 0,
+                img.width, img.height,
+                0, 0,
+                canvas.width, canvas.height
+              );
             }
-            animationFrameRef.current = requestAnimationFrame(renderFrame)
-        }
+          
+            drawShapes(ctx, canvas.width, canvas.height);
+          
+            animationFrameRef.current = requestAnimationFrame(renderFrame);
+          }
+          
 
         // Start render loop
         renderFrame()
@@ -143,8 +162,8 @@ export default function VideoCanvas({
                     : hoveredShape?.id === s.id
                         ? "#9CA3AF"
                         : "#FFD700";
-                ctx.lineWidth = 5; // Increased line width for all shapes
-                ctx.setLineDash([8, 4]); // Apply dashed style to completed shapes
+                ctx.lineWidth = 5; 
+                ctx.setLineDash([8, 4]); 
                 ctx.strokeRect(s.x, s.y, s.width, s.height);
                 
                 if (s.isColored) {
@@ -152,12 +171,12 @@ export default function VideoCanvas({
                     ctx.fillRect(s.x, s.y, s.width, s.height);
                 }
                 if (s.name) {
-                    ctx.setLineDash([]); // Reset dash for text
+                    ctx.setLineDash([]); 
                     ctx.fillStyle = "#00FFFF";
                     ctx.font = "12px Ubranist";
                     const tw = ctx.measureText(s.name).width;
                     ctx.fillText(s.name, s.x + (s.width - tw)/2, s.y + s.height/2 + 7);
-                    ctx.setLineDash([8, 4]); // Restore dash pattern after text
+                    ctx.setLineDash([8, 4]); 
                 }
             }
         }); 
