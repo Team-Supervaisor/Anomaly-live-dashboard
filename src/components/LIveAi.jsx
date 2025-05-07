@@ -8,7 +8,7 @@ import { RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import Hls from "hls.js";
 import axios from "axios";
-import { Edit2, Loader2 } from 'lucide-react';
+import { Edit2, Loader2, Play, RotateCcw } from 'lucide-react';
 import InstructionModal from './InstructionModal';
 
 const playbackPositions = {};
@@ -153,6 +153,7 @@ const LiveAi = () => {
   const [instructionset, setInstructionset] = useState('');
   const [instrucLoader, setInstrucLoader] = useState(false);
   const socketRef = useRef(null);
+  const [isTracking, setIsTracking] = useState(false);
 
   console.log("Data from location:", data);
   // Mock data for testing
@@ -395,10 +396,20 @@ const LiveAi = () => {
     return out;
   };
 
+  const handleStart = async () => {
+
+   
+  };
+  
+  const handleReset = async () => {
+
+   
+  };
+
   return (
     <div className="flex flex-col h-screen bg-[#F5F9FF]">
-      <header className="flex justify-between items-center p-4 pb-2 ">
-        <Link to="/">
+      <header className="flex items-center p-4 ">
+        <Link to="/" className="flex-none">
           <div className="flex items-center space-x-2 cursor-pointer">
             <div className="rounded">
               <img className="h-8 w-8" src={logo} alt="Logo" />
@@ -408,9 +419,40 @@ const LiveAi = () => {
             </h2>
           </div>
         </Link>
+
+   
+          <div className="flex-1 flex justify-center items-center gap-3 mt-5">
+            <button
+              onClick={handleStart}
+              disabled={isTracking}
+              className={`flex items-center gap-2 px-4 py-2 rounded-[4rem] font-medium transition-colors
+                ${isTracking 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'bg-[#7900F3] text-white hover:bg-[#6600CC]'}`}
+            >
+              {isTracking ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+              {isTracking ? 'Started' : 'Start'}
+            </button>
+            
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-2 px-4 py-2 border border-[#7900F3] rounded-[4rem] 
+                        text-[#7900F3] font-medium hover:bg-[#7900F3]/5 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset
+            </button>
+          </div>
+
+        {/* Add empty div to balance the layout */}
+        <div className="flex-none w-[150px]"></div>
       </header>
 
-      <div className="flex flex-1 p-4 gap-4 overflow-hidden mt-2">
+      <div className="flex flex-1 p-4 pt-0 gap-4 overflow-hidden ">
         {/* Left Section */}
         <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1 overflow-hidden">
 
