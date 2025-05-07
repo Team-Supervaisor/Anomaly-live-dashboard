@@ -23,6 +23,7 @@ const VideoCanvasPlayer = ({ hlsUrl, id }) => {
     currentTime: playbackPositions[id] || 0,
     isInitialized: false,
   });
+  // State to hold the latest frame URL
 
   // HLS setup
   useEffect(() => {
@@ -145,6 +146,10 @@ const VideoCanvasPlayer = ({ hlsUrl, id }) => {
 };
 
 const LiveAi = () => {
+  const [streamUrl, setStreamUrl] = useState(null);
+  const imgRef = useRef(null);
+  
+  const wsRef = useRef(null);
   const location = useLocation();
   const { data } = location.state || {};
   const [logs, setLogs] = useState([]);
@@ -420,26 +425,29 @@ const LiveAi = () => {
     return out;
   };
 
-  const handleStart = async () => {
-        try {
-          await axios.get(`${import.meta.env.VITE_API_URL}/ws/${cameraId}`);
-          console.log(`Pinged /ws/${cameraId} successfully`);
-    
-    
-          socketRef.current.emit("logs", { cameraId });
-    
-          setIsTracking(true);
-        } catch (err) {
-          console.error("Failed to start tracking:", err);
-        }
-      };
-    
-  
-  const handleReset = async () => {
-
-   
+  const handleStart = () => {
+    if (wsRef.current) return;              // already opened
+    const ws = new WebSocket(`ws://localhost:5000/ws/${cameraId}`);
+    ws.binaryType = 'arraybuffer';
+    ws.onopen  = () => setIsTracking(true); // flip your button into “Started”
+    ws.onerror = e  => console.error("WS error", e);
+    ws.onmessage = ({ data }) => {
+      const blob = new Blob([new Uint8Array(data)], { type: "image/jpeg" });
+      const url  = URL.createObjectURL(blob);
+      setStreamUrl(url);
+      // optionally revoke the previous URL here
+    };
+    wsRef.current = ws;
   };
-
+  const handleReset = () => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    setIsTracking(false);
+    setStreamUrl(null);
+  };
+   
   return (
     <div className="flex flex-col h-screen bg-[#F5F9FF]">
       <header className="flex items-center p-4 ">
@@ -493,12 +501,17 @@ const LiveAi = () => {
           <div className="flex justify-between">
             {/* hls videos */}  
 
-            <div className={`grid ${gridClasses()} gap-4 w-full p-4`}>
-              {data &&
-                formatVideoData(data).map((video, idx) => (
-                  <VideoCanvasPlayer key={idx} hlsUrl={video.hlsUrl} id={idx} />
-                ))}
-            </div>
+            <div className="w-full flex justify-center p-4">
+          <img
+            ref={imgRef}
+            src={streamUrl}
+            width={640}
+            height={480}
+            alt="Live stream"
+            className="rounded-xl border"
+          />
+        </div>
+
           </div>
         </div>
 
