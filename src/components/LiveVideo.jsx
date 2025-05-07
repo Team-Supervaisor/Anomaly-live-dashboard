@@ -381,9 +381,16 @@ const LiveVideo = () => {
             {logs.length > 0 ? (
               logs.map((log, idx) => (
                 <div
-                  key={`${log.person_id}-${log.timestamp}-${idx}`}
-                  className="mb-6 p-4 bg-[#F5F9FF] rounded-lg"
-                >
+                key={`${log.person_id}-${log.timestamp}-${idx}`}
+                className={
+                  `mb-6 p-4 bg-[#F5F9FF] rounded-lg 
+                   border-2 
+                   ${idx === 0 
+                     ? 'border-blue-500'   
+                     : 'border-transparent'} 
+                   transition-all duration-500 ease-in-out`
+                }
+              >
                   <div className="flex justify-between items-start">
                     <span className="text-gray-600">Camera:</span>
                     <span className="text-sm text-gray-500">
