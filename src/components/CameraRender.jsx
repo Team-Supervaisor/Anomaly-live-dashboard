@@ -354,6 +354,8 @@ export default function CameraRender() {
     setUploadedVideos([]);
     setNextVideoNumber(1); // Reset video numbering when switching tabs
     setHasShapesSaved(false);
+    setCameraShapes({});
+    setVideoShapes({});
   };
 
   return (
