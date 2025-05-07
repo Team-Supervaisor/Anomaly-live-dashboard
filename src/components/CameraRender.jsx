@@ -31,6 +31,7 @@ export default function CameraRender() {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [maximizedVideo, setMaximizedVideo] = useState(null);
   const navigate = useNavigate();
+  const [hasShapesSaved, setHasShapesSaved] = useState(false);
 
   // Add this state to track the next video number
   const [nextVideoNumber, setNextVideoNumber] = useState(1);
@@ -90,6 +91,9 @@ export default function CameraRender() {
     try {
       // Create form data
       const formData = new FormData();
+      if (activeTab === "cam") {
+        setHasShapesSaved(true); }
+       
 
       // Add all uploaded videos to form data
       uploadedVideos.forEach((video) => {
@@ -145,6 +149,10 @@ export default function CameraRender() {
       }
 
       const data = await response.json();
+
+      if (activeTab === "cam") {
+        setHasShapesSaved(true);
+       }
 
       console.log("Upload successful:", data);
       navigate("/live-video", { state: { data: data } });
@@ -302,6 +310,7 @@ export default function CameraRender() {
     setCameras([]);
     setUploadedVideos([]);
     setNextVideoNumber(1); // Reset video numbering when switching tabs
+    setHasShapesSaved(false);
   };
 
   return (
@@ -485,58 +494,72 @@ export default function CameraRender() {
           )}
 
           {/* Add Camera Button */}
-          {activeTab === "cam" && cameras.length < 4 && (
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <button className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-[4rem] border border-[#0000001A] transition-colors">
-                  <Plus className="w-4 h-4" />
-                  <span>Add Cam</span>
-                </button>
-              </DialogTrigger>
-              <DialogContent
-                style={{ borderRadius: "20px" }}
-                className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden"
+          {activeTab === "cam"  && (
+            <div className="absolute top-4 right-4 flex items-center gap-3">
+          {hasShapesSaved&&  <button
+                onClick={() => navigate("/live-ai")}
+                className="flex items-center px-4 py-2 border border-green-500 rounded-[4rem] text-green-600 font-medium hover:bg-green-50 transition-colors"
               >
-                <div className="flex justify-between items-center p-4 border-b border-[#0000001A]">
-                  <DialogTitle className="text-lg font-medium">
-                    Add Cam
-                  </DialogTitle>
-                </div>
-
-                <div className="p-4 space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Enter the camera name:
-                    </label>
-                    <Input
-                      value={cameraName}
-                      onChange={(e) => setCameraName(e.target.value)}
-                      className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
-                      placeholder="Camera name"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Enter the RTSP URL:
-                    </label>
-                    <Input
-                      value={rtspUrl}
-                      onChange={(e) => setRtspUrl(e.target.value)}
-                      className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
-                      placeholder="rtsp://"
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleSubmit}
-                    className="w-full py-2 px-4 bg-[#717AEA] text-white rounded-[4rem] hover:bg-[#5961e0] transition-colors mt-4"
-                  >
-                    Add
+                <span className="relative flex h-3 w-3 mr-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                Live Ai
+              </button>}
+            {  cameras.length < 4 && <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-[4rem] border border-[#0000001A] transition-colors">
+                    <Plus className="w-4 h-4" />
+                    <span>Add Cam</span>
                   </button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent
+                  style={{ borderRadius: "20px" }}
+                  className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden"
+                >
+                  <div className="flex justify-between items-center p-4 border-b border-[#0000001A]">
+                    <DialogTitle className="text-lg font-medium">
+                      Add Cam
+                    </DialogTitle>
+                  </div>
+
+                  <div className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Enter the camera name:
+                      </label>
+                      <Input
+                        value={cameraName}
+                        onChange={(e) => setCameraName(e.target.value)}
+                        className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
+                        placeholder="Camera name"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Enter the RTSP URL:
+                      </label>
+                      <Input
+                        value={rtspUrl}
+                        onChange={(e) => setRtspUrl(e.target.value)}
+                        className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
+                        placeholder="rtsp://"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleSubmit}
+                      className="w-full py-2 px-4 bg-[#717AEA] text-white rounded-[4rem] hover:bg-[#5961e0] transition-colors mt-4"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </DialogContent>
+              </Dialog>}
+
+             
+            </div>
           )}
         </div>
 
@@ -558,6 +581,7 @@ export default function CameraRender() {
                     (maximizedVideo && videoShapes[maximizedVideo]?.length > 0)
           )}
           isSaving={isSaving}
+          activeTab={activeTab} // A
       />
         </div>
       </div>

@@ -480,6 +480,13 @@ export default function VideoCanvas({
         return cursorMap[selectedTool] || "";
     }
 
+
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            handleShapeDialogSave();
+        }
+    };
+
     return (
         <div 
             className={`w-full h-full relative ${
@@ -586,46 +593,56 @@ export default function VideoCanvas({
             
             {/* Shape dialog for editing */}
             {shapeDialog.isOpen && (
-                <div
-                    className="absolute bg-white p-6 rounded-xl shadow-lg w-[350px] z-20"
-                    style={{
-                        left: `${Math.max(175, Math.min(shapeDialog.x, canvasRef.current?.width - 175))}px`,
-                        top: `${Math.max(110, Math.min(shapeDialog.y - 50, canvasRef.current?.height - 110))}px`,
-                        transform: "translate(-50%, -50%)",
-                        border: "1px solid #E5E7EB",
-                    }}
+    <div
+        className="absolute bg-white p-4 rounded-2xl shadow-xl w-[320px] z-100"
+        style={{
+          left: `${Math.max(175, Math.min(shapeDialog.x, canvasRef.current.width - 175))}px`,
+          top:  `${Math.max(110, Math.min(shapeDialog.y - 50, canvasRef.current.height - 110))}px`,
+            transform: "translate(-50%, -50%)",
+            border: "1px solid #E5E7EB",
+            backgroundColor: "#F8FAFC",
+        }}
+    >
+        <div className="flex flex-col gap-5">
+            <div className="space-y-2">
+                <label className="block font-medium text-gray-700 text-sm">
+                    Region Name
+                </label>
+                <input
+                    type="text"
+                    placeholder="Enter region name"
+                    value={shapeDialog.name}
+                    onKeyDown={handleKeyPress}
+                    onChange={e => setShapeDialog({ ...shapeDialog, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg 
+                             focus:outline-none focus:border-[#6366F1] focus:ring-1 
+                             focus:ring-[#6366F1] text-gray-800 text-sm
+                             placeholder:text-gray-400 transition-colors"
+                />
+            </div>
+            <div className="flex justify-end gap-3">
+                <button
+                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm 
+                               text-gray-700 hover:bg-gray-50 transition-colors
+                               focus:outline-none focus:ring-2 focus:ring-offset-1
+                               focus:ring-gray-200"
+                    onClick={closeShapeDialog}
                 >
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center justify-around">
-                            <label className="font-medium text-gray-700">Region Name: </label>
-                            <div className="">
-                                <input
-                                    type="text"
-                                    placeholder="Enter region name"
-                                    value={shapeDialog.name}
-                                    onChange={(e) => setShapeDialog({ ...shapeDialog, name: e.target.value })}
-                                    className="w-full flex-1 border-b border-gray-300 px-1 py-1 focus:outline-none focus:border-indigo-500 text-black text-sm"
-                                />
-                            </div>
-                        </div>
-                        
-                        <div className="flex justify-end gap-2 mt-2">
-                            <button
-                                className="px-3 py-1 border border-gray-300 rounded-md text-sm text-[black]"
-                                onClick={closeShapeDialog}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="px-3 py-1 bg-[#6366F1] text-white rounded-md text-sm"
-                                onClick={handleShapeDialogSave}
-                            >
-                                Save
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                    Cancel
+                </button>
+                <button
+                    className="px-4 py-2 bg-[#6366F1] text-white rounded-lg text-sm
+                               hover:bg-[#5558E3] transition-colors
+                               focus:outline-none focus:ring-2 focus:ring-offset-1
+                               focus:ring-[#6366F1]"
+                    onClick={handleShapeDialogSave}
+                >
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+               )}
         </div>
     )
 }

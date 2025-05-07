@@ -1,5 +1,5 @@
 import { Route, Routes, Navigate } from 'react-router-dom'
-
+import LiveAi from './components/LIveAi'
 import Stores from './components/Home'
 
 import LoginModal from './components/LoginModal'
@@ -19,6 +19,9 @@ function App() {
       } /> */}
       <Route path="/live-video" element={
        <LiveVideo />
+      } />
+        <Route path="/live-ai" element={
+       <LiveAi />
       } />
   
    

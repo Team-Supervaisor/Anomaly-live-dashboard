@@ -31,7 +31,8 @@ export default function ToolBar({
   // Add these new props
   hasMaximizedOrSelected,
   hasShapes,
-  isSaving // Add this prop
+  isSaving, // Add this prop
+  activeTab // Add this new prop
 }) {
   const tools = [
     {
@@ -228,7 +229,7 @@ export default function ToolBar({
           {isSaving ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Uploading...
+              {activeTab === "cam" ? "Saving..." : "Uploading..."}
             </>
           ) : (
             'Save'
