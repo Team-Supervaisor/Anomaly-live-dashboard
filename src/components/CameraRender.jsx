@@ -118,38 +118,39 @@ export default function CameraRender() {
   
         // Get ROI definitions for camera shapes
         const roiDefs = Object.entries(cameraShapes).map(([cameraId, shapes]) => {
-          const camera = cameras.find((c) => c.id === parseInt(cameraId));
+          // Find the correct camera using string comparison since cameraId might be a string
+          const camera = cameras.find((c) => c.id === cameraId || c.id.toString() === cameraId);
           const rects = shapes.filter((s) => s.type === "rectangle");
           
           return {
-            type: "camera",
-            source: {
-              id: camera.id,
-              name: camera.name,
-              url: camera.hlsUrl,
-            },
-            regions: rects.map((r) => ({
-              Region_name: r.name || `Region ${r.id}`,
-              Region_Cords: {
-                vertices: [
-                  [r.x, r.y],
-                  [r.x, r.y + r.height],
-                  [r.x + r.width, r.y + r.height],
-                  [r.x + r.width, r.y],
-                ],
+              type: "camera",
+              source: {
+                  id: camera.id,
+                  name: camera.name,
+                  url: camera.url, // Using url instead of hlsUrl since we're working with base64
               },
-            })),
+              regions: rects.map((r) => ({
+                  Region_name: r.name || `Region ${r.id}`,
+                  Region_Cords: {
+                      vertices: [
+                          [r.x, r.y],
+                          [r.x, r.y + r.height],
+                          [r.x + r.width, r.y + r.height],
+                          [r.x + r.width, r.y],
+                      ],
+                  },
+              })),
           };
-        });
-  
-        const payload = {
+      });
+      
+      // Update the payload to include firstFrame
+      const payload = {
           camera_name: camera.name || "",
           rtsp_url: camera.url || "",
-          first_frame: firstFrame,
+          first_frame: camera.firstFrame, // Include the base64 first frame
           camera_id: camId,
           roi_defs: roiDefs,
-        };
-  
+      };
         await axios.post(endpoint, payload);
         setHasShapesSaved(true);
       } else {

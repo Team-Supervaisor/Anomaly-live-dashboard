@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import Hls from 'hls.js'
 import { Maximize, Minimize, PencilIcon, Trash2 } from "lucide-react"
-import RegionModal from "./AddRegionModal";
 
 // Define cursor map similar to DrawCanvasDrawer
 const cursorMap = {
@@ -29,8 +28,8 @@ export default function VideoCanvas({
     const videoRef = useRef(null)
     const hlsRef = useRef(null)
     const animationFrameRef = useRef(null)
-    const firstFrameImageRef = useRef(null)
     const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+    const firstFrameImageRef = useRef(null)
     
     // Store playback state in a ref to persist across renders
     const playbackStateRef = useRef({
@@ -57,27 +56,29 @@ export default function VideoCanvas({
         name: "",
     })
     const [fillColor, setFillColor] = useState("#6366F1")
+    
+    // Load the base64 image when component mounts or cameraData changes
     useEffect(() => {
         if (!cameraData.firstFrame) return;
         
         const img = new Image();
         img.onload = () => {
-            // Store image dimensions for coordinate calculations
+            // Store image dimensions for later use
             firstFrameImageRef.current = {
                 image: img,
                 width: img.width,
-                height: img.height
+                height: img.height,
+                aspectRatio: img.width / img.height
             };
         };
         img.src = `data:image/jpeg;base64,${cameraData.firstFrame}`;
     }, [cameraData.firstFrame]);
 
-    // Setup video rendering loop
+    // Setup canvas rendering loop
     useEffect(() => {
         const canvas = canvasRef.current
-        const video = videoRef.current
         
-        if (!canvas || !video) return
+        if (!canvas) return
 
         const ctx = canvas.getContext('2d')
         
@@ -89,29 +90,23 @@ export default function VideoCanvas({
         }
         resizeCanvas()
 
+        // Animation loop for smooth rendering
         function renderFrame() {
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-        
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-            // Draw the base64 image
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            
+            // Draw the base64 image if available, otherwise fallback to video
             if (firstFrameImageRef.current) {
-                const imageData = firstFrameImageRef.current;
-                ctx.drawImage(
-                    imageData.image,
-                    0, 0,
-                    imageData.width, imageData.height,
-                    0, 0,
-                    canvas.width, canvas.height
-                );
+                const img = firstFrameImageRef.current.image
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+            } else if (videoRef.current && videoRef.current.readyState >= 2) {
+                ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)
             }
-        
-            drawShapes(ctx, canvas.width, canvas.height);
-            animationFrameRef.current = requestAnimationFrame(renderFrame);
+            
+            // Draw shapes on top of the image/video
+            drawShapes(ctx, canvas.width, canvas.height)
+            
+            animationFrameRef.current = requestAnimationFrame(renderFrame)
         }
-          
-          
 
         // Start render loop
         renderFrame()
@@ -163,8 +158,8 @@ export default function VideoCanvas({
                     : hoveredShape?.id === s.id
                         ? "#9CA3AF"
                         : "#FFD700";
-                ctx.lineWidth = 5; 
-                ctx.setLineDash([8, 4]); 
+                ctx.lineWidth = 5; // Increased line width for all shapes
+                ctx.setLineDash([8, 4]); // Apply dashed style to completed shapes
                 ctx.strokeRect(s.x, s.y, s.width, s.height);
                 
                 if (s.isColored) {
@@ -172,12 +167,12 @@ export default function VideoCanvas({
                     ctx.fillRect(s.x, s.y, s.width, s.height);
                 }
                 if (s.name) {
-                    ctx.setLineDash([]); 
+                    ctx.setLineDash([]); // Reset dash for text
                     ctx.fillStyle = "#00FFFF";
                     ctx.font = "12px Ubranist";
                     const tw = ctx.measureText(s.name).width;
                     ctx.fillText(s.name, s.x + (s.width - tw)/2, s.y + s.height/2 + 7);
-                    ctx.setLineDash([8, 4]); 
+                    ctx.setLineDash([8, 4]); // Restore dash pattern after text
                 }
             }
         }); 
@@ -197,7 +192,6 @@ export default function VideoCanvas({
             ctx.fillRect(drawingState.startX, drawingState.startY, w, h);
         }
         ctx.setLineDash([]);
-
     }
 
     // Find the next available ID for a new shape
@@ -211,8 +205,11 @@ export default function VideoCanvas({
     }, [shapes]);
 
 
-    // HLS setup
+    // HLS setup - only if firstFrame is not available
     useEffect(() => {
+        // Skip HLS setup if we have a firstFrame
+        if (cameraData.firstFrame) return;
+        
         const video = videoRef.current
         if (!video || !cameraData.hlsUrl) return
 
@@ -293,7 +290,7 @@ export default function VideoCanvas({
                     .catch(err => console.error("Play failed:", err))
             })
         }
-    }, [cameraData.hlsUrl, cameraData.id]) // Re-run if URL changes
+    }, [cameraData.hlsUrl, cameraData.id, cameraData.firstFrame]) // Re-run if URL changes
 
     // Save playback position before unmount
     useEffect(() => {
@@ -315,16 +312,14 @@ export default function VideoCanvas({
 
     // Get canvas coordinates from mouse event
     const getCanvasCoordinates = (e) => {
-        const rect = canvasRef.current?.getBoundingClientRect();
-        if (!rect || !firstFrameImageRef.current) return { x: 0, y: 0 };
-
-        const scaleX = firstFrameImageRef.current.width / rect.width;
-        const scaleY = firstFrameImageRef.current.height / rect.height;
-
-        return { 
-            x: (e.clientX - rect.left) * scaleX,
-            y: (e.clientY - rect.top) * scaleY 
-        };
+        const rect = canvasRef.current?.getBoundingClientRect()
+        if (!rect) return { x: 0, y: 0 }
+        
+        // Direct mapping from canvas space to shape space
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+        
+        return { x, y }
     }
 
     // Find shape at position
@@ -514,32 +509,37 @@ export default function VideoCanvas({
         return cursorMap[selectedTool] || "";
     }
 
-
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
             handleShapeDialogSave();
         }
     };
 
-    const hoverStyle = () => {
-        if (!canvasRef.current || !firstFrameImageRef.current || !hoveredShape) return {};
+    // Calculate hover menu position
+    const calculateHoverPosition = () => {
+        if (!hoveredShape || !canvasRef.current) return {};
         
-        const rect = canvasRef.current.getBoundingClientRect();
-        const imageData = firstFrameImageRef.current;
+        const canvas = canvasRef.current;
         
-        const cssX = hoveredShape.x / imageData.width * rect.width;
-        const cssY = hoveredShape.y / imageData.height * rect.height;
-        const cssW = hoveredShape.width / imageData.width * rect.width;
+        // Calculate normalized position
+        const normalizedRect = {
+            x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
+            y: hoveredShape.height < 0 ? hoveredShape.y + hoveredShape.height : hoveredShape.y,
+            width: Math.abs(hoveredShape.width),
+            height: Math.abs(hoveredShape.height)
+        };
         
         return {
-            position: 'absolute',
-            right: `${rect.width - (cssX + cssW) + 12}px`,
-            top: `${cssY + 12}px`,
+            position: "absolute",
+            left: hoveredShape.x + hoveredShape.width + 2 > canvas.width - 50 
+                ? hoveredShape.x - 33 
+                : hoveredShape.x + hoveredShape.width - 35,
+            top: hoveredShape.y + 2,
             zIndex: 10,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '8px'
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "8px",
         };
     };
 
@@ -560,7 +560,7 @@ export default function VideoCanvas({
             />
             <video
                 ref={videoRef}
-                // className="hidden"
+                className="hidden"
                 muted
                 playsInline
             />
@@ -601,34 +601,16 @@ export default function VideoCanvas({
             
             {/* Hover controls - only show when maximized or single stream */}
             {hoveredShape && selectedTool === "pointer" && (isMaximized || !showMaximize) && (
-                <div
-                style={hoverStyle()}
-                    // style={{
-                    //     position: "absolute",
-                    //     left: hoveredShape.x + hoveredShape.width + 2 > canvasRef.current?.width - 50 
-                    //         ? hoveredShape.x - 33 
-                    //         : hoveredShape.x + hoveredShape.width - 35,
-                    //     top: hoveredShape.y + 2,
-                    //     zIndex: 10,
-                    //     display: "flex",
-                    //     flexDirection: "column",
-                    //     alignItems: "center",
-                    //     gap: "8px",
-                    // }}
-                >
+                <div style={calculateHoverPosition()}>
                     <div className="relative group">
                         <button
-                            className="w-8 h-8 rounded-full flex items-center justify-center shadow-md"
+                            className="w-8 h-8 rounded-full bg-indigo-400 hover:bg-indigo-500 flex items-center justify-center shadow-md"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleEditShape();
                             }}
                         >
-                        <img
-                            src="/pen.svg"
-                            alt="live icon"
-                            className=""
-                            />
+                            <PencilIcon className="text-white w-4 h-4" />
                         </button>
                         <div className="absolute w-[65px] left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded">
                             Edit Info.
@@ -637,7 +619,7 @@ export default function VideoCanvas({
                 
                     <div className="relative group">
                         <button
-                            className="w-7 h-7 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
+                            className="w-8 h-8 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteShape();
@@ -651,79 +633,59 @@ export default function VideoCanvas({
                     </div>
                 </div>
             )}
-
-        
-          
-            {shapeDialog.isOpen && (
-  <RegionModal
-    isOpen={shapeDialog.isOpen}
-    onClose={closeShapeDialog}
-    onSave={(name) => {
-      onShapesChange(shapes.map(s =>
-        s.id === shapeDialog.shapeId
-          ? { ...s, name: name }
-          : s
-      ));
-      setShapeDialog({ ...shapeDialog, isOpen: false });
-    }}
-    initialValue={shapeDialog.name}
-    title="Enter name"
-  />
-)}
-
-
+            
             {/* Shape dialog for editing */}
-            {/* {shapeDialog.isOpen && (
-    <div
-        className="absolute bg-white p-4 rounded-2xl shadow-xl w-[320px] z-100"
-        style={{
-          left: `${Math.max(175, Math.min(shapeDialog.x, canvasRef.current.width - 175))}px`,
-          top:  `${Math.max(110, Math.min(shapeDialog.y - 50, canvasRef.current.height - 110))}px`,
-            transform: "translate(-50%, -50%)",
-            border: "1px solid #E5E7EB",
-            backgroundColor: "#F8FAFC",
-        }}
-    >
-        <div className="flex flex-col gap-5">
-            <div className="space-y-2">
-                <label className="block font-medium text-gray-700 text-sm">
-                    Region Name
-                </label>
-                <input
-                    type="text"
-                    placeholder="Enter region name"
-                    value={shapeDialog.name}
-                    onKeyDown={handleKeyPress}
-                    onChange={e => setShapeDialog({ ...shapeDialog, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg 
-                             focus:outline-none focus:border-[#6366F1] focus:ring-1 
-                             focus:ring-[#6366F1] text-gray-800 text-sm
-                             placeholder:text-gray-400 transition-colors"
-                />
-            </div>
-            <div className="flex justify-end gap-3">
-                <button
-                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm 
-                               text-gray-700 hover:bg-gray-50 transition-colors
-                               focus:outline-none focus:ring-2 focus:ring-offset-1
-                               focus:ring-gray-200"
-                    onClick={closeShapeDialog}
+            {shapeDialog.isOpen && (
+                <div
+                    className="absolute bg-white p-4 rounded-2xl shadow-xl w-[320px] z-100"
+                    style={{
+                      left: `${Math.max(175, Math.min(shapeDialog.x, canvasRef.current.width - 175))}px`,
+                      top:  `${Math.max(110, Math.min(shapeDialog.y - 50, canvasRef.current.height - 110))}px`,
+                        transform: "translate(-50%, -50%)",
+                        border: "1px solid #E5E7EB",
+                        backgroundColor: "#F8FAFC",
+                    }}
                 >
-                    Cancel
-                </button>
-                <button
-                    className="px-4 py-2 bg-[#6366F1] text-white rounded-lg text-sm
-                               hover:bg-[#5558E3] transition-colors
-                               focus:outline-none focus:ring-2 focus:ring-offset-1
-                               focus:ring-[#6366F1]"
-                    onClick={handleShapeDialogSave}
-                >
-                    Save
-                </button>
-            </div>
-        </div>
-    </div>
-               )} */}
+                    <div className="flex flex-col gap-5">
+                        <div className="space-y-2">
+                            <label className="block font-medium text-gray-700 text-sm">
+                                Region Name
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="Enter region name"
+                                value={shapeDialog.name}
+                                onKeyDown={handleKeyPress}
+                                onChange={e => setShapeDialog({ ...shapeDialog, name: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg 
+                                        focus:outline-none focus:border-[#6366F1] focus:ring-1 
+                                        focus:ring-[#6366F1] text-gray-800 text-sm
+                                        placeholder:text-gray-400 transition-colors"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                className="px-4 py-2 border border-gray-200 rounded-lg text-sm 
+                                        text-gray-700 hover:bg-gray-50 transition-colors
+                                        focus:outline-none focus:ring-2 focus:ring-offset-1
+                                        focus:ring-gray-200"
+                                onClick={closeShapeDialog}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-[#6366F1] text-white rounded-lg text-sm
+                                        hover:bg-[#5558E3] transition-colors
+                                        focus:outline-none focus:ring-2 focus:ring-offset-1
+                                        focus:ring-[#6366F1]"
+                                onClick={handleShapeDialogSave}
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
