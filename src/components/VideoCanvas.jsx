@@ -127,58 +127,48 @@ export default function VideoCanvas({
         if (!isMaximized && showMaximize) return;
         
         // Draw all existing shapes
-        shapes.forEach((shape) => {
-            if (shape.type === "rectangle") {
-                // Set border style
-                if (selectedShape && selectedShape.id === shape.id) {
-                    ctx.strokeStyle = "#6366F1" // Highlight selected shape
-                } else if (hoveredShape && hoveredShape.id === shape.id) {
-                    ctx.strokeStyle = "#9CA3AF" // Hover color
-                } else {
-                    ctx.strokeStyle = "#FFD700"
+        shapes.forEach(s => {
+            if (s.type === "rectangle") {
+                ctx.strokeStyle = selectedShape?.id === s.id
+                    ? "#6366F1"
+                    : hoveredShape?.id === s.id
+                        ? "#9CA3AF"
+                        : "#FFD700";
+                ctx.lineWidth = 5; // Increased line width for all shapes
+                ctx.setLineDash([8, 4]); // Apply dashed style to completed shapes
+                ctx.strokeRect(s.x, s.y, s.width, s.height);
+                
+                if (s.isColored) {
+                    ctx.fillStyle = s.color;
+                    ctx.fillRect(s.x, s.y, s.width, s.height);
                 }
-                
-                ctx.lineWidth = 2
-                ctx.strokeRect(shape.x, shape.y, shape.width, shape.height)
-                
-                // Fill color if shape is colored
-                if (shape.isColored) {
-                    ctx.fillStyle = shape.color
-                    ctx.fillRect(shape.x, shape.y, shape.width, shape.height)
-                }
-                
-                // Draw shape name if it exists
-                if (shape.name) {
-                    ctx.fillStyle = "#000000"
-                    ctx.font = "14px Arial"
-                    const textWidth = ctx.measureText(shape.name).width
-                    const textHeight = 14
-                    const centerX = shape.x + shape.width / 2
-                    const centerY = shape.y + shape.height / 2
-                    ctx.fillText(
-                        shape.name,
-                        centerX - textWidth / 2,
-                        centerY + textHeight / 2
-                    )
+                if (s.name) {
+                    ctx.setLineDash([]); // Reset dash for text
+                    ctx.fillStyle = "#00FFFF";
+                    ctx.font = "12px Ubranist";
+                    const tw = ctx.measureText(s.name).width;
+                    ctx.fillText(s.name, s.x + (s.width - tw)/2, s.y + s.height/2 + 7);
+                    ctx.setLineDash([8, 4]); // Restore dash pattern after text
                 }
             }
-        })
+        }); 
         
         // Draw shape being created
         if (drawingState.isDrawing && selectedTool === "rectangle") {
-            const width = drawingState.currentX - drawingState.startX
-            const height = drawingState.currentY - drawingState.startY
+            const w = drawingState.currentX - drawingState.startX;
+            const h = drawingState.currentY - drawingState.startY;
             
-            ctx.strokeStyle = "rgba(99, 102, 241, 0.6)"
-            ctx.lineWidth = 2
-            ctx.setLineDash([5, 3])
-            ctx.strokeRect(drawingState.startX, drawingState.startY, width, height)
-            
-            ctx.fillStyle = "rgba(99, 102, 241, 0.1)"
-            ctx.fillRect(drawingState.startX, drawingState.startY, width, height)
-            
-            ctx.setLineDash([])
+            ctx.strokeStyle = "#FFD700";
+            ctx.lineWidth = 3;
+            ctx.setLineDash([8, 4]);
+            ctx.strokeRect(drawingState.startX, drawingState.startY, w, h);
+    
+            // Add semi-transparent fill
+            ctx.fillStyle = "rgba(255, 215, 0, 0.1)";
+            ctx.fillRect(drawingState.startX, drawingState.startY, w, h);
         }
+        ctx.setLineDash([]);
+
     }
 
     // Find the next available ID for a new shape
