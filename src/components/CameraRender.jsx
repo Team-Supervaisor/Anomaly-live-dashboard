@@ -213,23 +213,27 @@ export default function CameraRender() {
     setUploadDialogOpen(false);
   };
 
+  // Update the getGridLayout function
   const getGridLayout = (count) => {
+    const baseStyles = "mx-auto"; // Removed mt-16 mb-5 from base styles
+    
     switch (count) {
       case 0:
         return "";
       case 1:
-        return "w-[95%] md:w-[80%] lg:w-[800px] h-[400px] md:h-[480px] lg:h-[400px] mx-auto mt-10 md:mt-15"; // Responsive single camera
+        return activeTab === "video" 
+          ? `w-[60%] h-[70vh] ${baseStyles} mb-15 mt-3` // Video styles
+          : `w-[80%] h-[70vh] ${baseStyles} mt-16 mb-10`; // Camera styles
       case 2:
-        return "grid-cols-1 md:grid-cols-2 gap-4 md:gap-4 lg:gap-3 w-[95%] md:w-[90%] lg:w-[80%] h-[600px] md:h-[400px] mx-auto mt-10 md:mt-20"; // Responsive two cameras
+        return `grid-cols-2 gap-4 w-[90%] h-[60vh] ${baseStyles} mt-16`;
       case 3:
-        return "grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-[95%] md:w-[85%] lg:w-[80%] h-[800px] md:h-[390px] mx-auto mt-10 md:mt-18"; // Responsive three cameras
+        return `grid-cols-2 gap-4 w-[90%] h-[70vh] ${baseStyles} mt-16`;
       case 4:
-        return "grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-4 w-[95%] md:w-[85%] lg:w-[80%] h-[1000px] md:h-[390px] mx-auto mt-10 md:mt-18"; // Responsive four cameras
+        return `grid-cols-2 gap-4 w-[90%] h-[75vh] ${baseStyles} mt-16`;
       default:
-        return "grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 w-[95%] md:w-[85%] lg:w-[80%] h-[1000px] md:h-[700px] mx-auto mt-10 md:mt-15";
+        return `grid-cols-2 gap-4 w-[90%] h-[70vh] ${baseStyles} mt-16`;
     }
   };
-
   useEffect(() => {
     return () => {
       // Cleanup object URLs when component unmounts
@@ -359,74 +363,79 @@ export default function CameraRender() {
             </button>
           </div>
 
-          {/* Video Grid - Always rendered but not always visible */}
-          <div
-            key={gridKey} // Add key to force re-render
-            className={`grid ${getGridLayout(visibleCameras.length)}`}
-          >
-            {/* Always render all cameras to keep HLS instances alive,
-                            but only show the ones that should be visible */}
-            {cameras.map((camera) => {
-              const isVisible =
-                !maximizedCamera || camera.id === maximizedCamera;
+          {activeTab === "cam" && (
+  <div className="w-full h-full flex items-center justify-center">
+    <div
+      key={gridKey}
+      className={`grid ${getGridLayout(visibleCameras.length)}`}
+    >
+      {/* Always render all cameras to keep HLS instances alive,
+          but only show the ones that should be visible */}
+      {cameras.map((camera) => {
+        const isVisible =
+          !maximizedCamera || camera.id === maximizedCamera;
 
-              return (
-                <div
-                  key={camera.id}
-                  className={`relative rounded-lg overflow-hidden ${
-                    isVisible ? "" : "hidden"
-                  }`}
-                >
-                  <VideoCanvas
-                    cameraData={camera}
-                    isSelected={selectedCamera === camera.id}
-                    onSelect={setSelectedCamera}
-                    isMaximized={maximizedCamera === camera.id}
-                    onMaximize={() => handleMaximize(camera.id)}
-                    onMinimize={handleMinimize}
-                    showMaximize={cameras.length > 1}
-                    selectedTool={selectedTool}
-                    shapes={cameraShapes[camera.id] || []}
-                    onShapesChange={(shapes) =>
-                      updateShapesForCamera(camera.id, shapes)
-                    }
-                  />
-                </div>
-              );
-            })}
+        return (
+          <div
+            key={camera.id}
+            className={`relative rounded-lg overflow-hidden ${
+              isVisible ? "" : "hidden"
+            }`}
+          >
+            <VideoCanvas
+              cameraData={camera}
+              isSelected={selectedCamera === camera.id}
+              onSelect={setSelectedCamera}
+              isMaximized={maximizedCamera === camera.id}
+              onMaximize={() => handleMaximize(camera.id)}
+              onMinimize={handleMinimize}
+              showMaximize={cameras.length > 1}
+              selectedTool={selectedTool}
+              shapes={cameraShapes[camera.id] || []}
+              onShapesChange={(shapes) =>
+                updateShapesForCamera(camera.id, shapes)
+              }
+            />
           </div>
+        );
+      })}
+    </div>
+  </div>
+)}
 
           {activeTab === "video" && (
-            <div
-              key={gridKey} // Add key to force re-render
-              className={`grid ${getGridLayout(visibleVideos.length)}`}
-            >
-              {uploadedVideos.map((video) => {
-                const isVisible =
-                  !maximizedVideo || video.id === maximizedVideo;
+            <div className="w-full h-full flex items-center justify-center">
+              <div
+                key={gridKey}
+                className={`grid ${getGridLayout(visibleVideos.length)}`}
+              >
+                {uploadedVideos.map((video) => {
+                  const isVisible =
+                    !maximizedVideo || video.id === maximizedVideo;
 
-                return (
-                  <div
-                    key={video.id}
-                    className={`relative rounded-lg overflow-visible ${isVisible ? '' : 'hidden'}`}
-                  >
-                    <VideoSection
-                      videoData={video}
-                      isSelected={selectedVideo === video.id}
-                      onSelect={setSelectedVideo}
-                      isMaximized={maximizedVideo === video.id}
-                      onMaximize={() => handleVideoMaximize(video.id)}
-                      onMinimize={handleVideoMinimize}
-                      showMaximize={uploadedVideos.length > 1}
-                      selectedTool={selectedTool}
-                      shapes={videoShapes[video.id] || []}
-                      onShapesChange={(shapes) =>
-                        updateShapesForVideo(video.id, shapes)
-                      }
-                    />
-                  </div>
-                );
-              })}
+                  return (
+                    <div
+                      key={video.id}
+                      className={`relative rounded-lg overflow-visible ${isVisible ? '' : 'hidden'}`}
+                    >
+                      <VideoSection
+                        videoData={video}
+                        isSelected={selectedVideo === video.id}
+                        onSelect={setSelectedVideo}
+                        isMaximized={maximizedVideo === video.id}
+                        onMaximize={() => handleVideoMaximize(video.id)}
+                        onMinimize={handleVideoMinimize}
+                        showMaximize={uploadedVideos.length > 1}
+                        selectedTool={selectedTool}
+                        shapes={videoShapes[video.id] || []}
+                        onShapesChange={(shapes) =>
+                          updateShapesForVideo(video.id, shapes)
+                        }
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
