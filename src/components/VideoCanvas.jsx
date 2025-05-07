@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import Hls from 'hls.js'
 import { Maximize, Minimize, PencilIcon, Trash2 } from "lucide-react"
+import RegionModal from "./AddRegionModal";
 
 // Define cursor map similar to DrawCanvasDrawer
 const cursorMap = {
@@ -56,12 +57,13 @@ export default function VideoCanvas({
         name: "",
     })
     const [fillColor, setFillColor] = useState("#6366F1")
-    +    useEffect(() => {
-         if (!cameraData.firstFrame) return
-              const img = new Image()
-              img.src = cameraData.firstFrame
-              firstFrameImageRef.current = img
-            }, [cameraData.firstFrame])
+    useEffect(() => {
+        if (!cameraData.firstFrame) return;
+        
+        const img = new Image();
+        img.src = `data:image/jpeg;base64,${cameraData.firstFrame}`; // Convert base64 to image
+        firstFrameImageRef.current = img;
+    }, [cameraData.firstFrame]);
 
     // Setup video rendering loop
     useEffect(() => {
@@ -82,56 +84,25 @@ export default function VideoCanvas({
 
         function renderFrame() {
             const canvas = canvasRef.current;
-            const video  = videoRef.current;
-            const ctx    = canvas.getContext('2d');
-          
-            // clear previous frame
+            const ctx = canvas.getContext('2d');
+        
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
-            if (video.readyState >= 2) {
-              // once the HLS video is buffered/playable, render it
-              ctx.drawImage(
-                video,
-                0, 0,
-                video.videoWidth, video.videoHeight,
-                0, 0,
-                canvas.width, canvas.height
-              );
-              setIsVideoPlaying(true);
-            } else if (cameraData.firstFrame) {
-              // convert Base64 → HTMLImageElement and draw
-              const img = new Image();
-              img.src = cameraData.firstFrame;
-          
-              if (img.complete) {
-                // if already cached, draw immediately
+        
+            // Draw the first frame image instead of video
+            if (firstFrameImageRef.current) {
+                const img = firstFrameImageRef.current;
                 ctx.drawImage(
-                  img,
-                  0, 0,
-                  img.width, img.height,
-                  0, 0,
-                  canvas.width, canvas.height
-                );
-              } else {
-                // otherwise wait for it to load
-                img.onload = () => {
-                  ctx.drawImage(
                     img,
                     0, 0,
                     img.width, img.height,
                     0, 0,
                     canvas.width, canvas.height
-                  );
-                };
-              }
+                );
             }
-          
-            // overlay any shapes on top
+        
             drawShapes(ctx, canvas.width, canvas.height);
-          
-            // schedule next render
             animationFrameRef.current = requestAnimationFrame(renderFrame);
-          }
+        }
           
           
 
@@ -541,6 +512,30 @@ export default function VideoCanvas({
         }
     };
 
+    const hoverStyle = () => {
+        if (!canvasRef.current || !videoRef.current || !hoveredShape) return {};
+        
+        const rect = canvasRef.current.getBoundingClientRect();
+        const vw = videoRef.current.videoWidth;
+        const vh = videoRef.current.videoHeight;
+        
+        // Convert shape coordinates to CSS pixels
+        const cssX = hoveredShape.x / vw * rect.width;
+        const cssY = hoveredShape.y / vh * rect.height;
+        const cssW = hoveredShape.width / vw * rect.width;
+        
+        return {
+          position: 'absolute',
+          right: `${rect.width - (cssX + cssW) + 12}px`, // 12px from right edge of shape
+          top: `${cssY + 12}px`, // 12px from top of shape
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px'
+        };
+      };
+
     return (
         <div 
             className={`w-full h-full relative ${
@@ -600,28 +595,33 @@ export default function VideoCanvas({
             {/* Hover controls - only show when maximized or single stream */}
             {hoveredShape && selectedTool === "pointer" && (isMaximized || !showMaximize) && (
                 <div
-                    style={{
-                        position: "absolute",
-                        left: hoveredShape.x + hoveredShape.width + 2 > canvasRef.current?.width - 50 
-                            ? hoveredShape.x - 33 
-                            : hoveredShape.x + hoveredShape.width - 35,
-                        top: hoveredShape.y + 2,
-                        zIndex: 10,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: "8px",
-                    }}
+                style={hoverStyle()}
+                    // style={{
+                    //     position: "absolute",
+                    //     left: hoveredShape.x + hoveredShape.width + 2 > canvasRef.current?.width - 50 
+                    //         ? hoveredShape.x - 33 
+                    //         : hoveredShape.x + hoveredShape.width - 35,
+                    //     top: hoveredShape.y + 2,
+                    //     zIndex: 10,
+                    //     display: "flex",
+                    //     flexDirection: "column",
+                    //     alignItems: "center",
+                    //     gap: "8px",
+                    // }}
                 >
                     <div className="relative group">
                         <button
-                            className="w-8 h-8 rounded-full bg-indigo-400 hover:bg-indigo-500 flex items-center justify-center shadow-md"
+                            className="w-8 h-8 rounded-full flex items-center justify-center shadow-md"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleEditShape();
                             }}
                         >
-                            <PencilIcon className="text-white w-4 h-4" />
+                        <img
+                            src="/pen.svg"
+                            alt="live icon"
+                            className=""
+                            />
                         </button>
                         <div className="absolute w-[65px] left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded">
                             Edit Info.
@@ -630,7 +630,7 @@ export default function VideoCanvas({
                 
                     <div className="relative group">
                         <button
-                            className="w-8 h-8 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
+                            className="w-7 h-7 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteShape();
@@ -644,9 +644,29 @@ export default function VideoCanvas({
                     </div>
                 </div>
             )}
-            
-            {/* Shape dialog for editing */}
+
+        
+          
             {shapeDialog.isOpen && (
+  <RegionModal
+    isOpen={shapeDialog.isOpen}
+    onClose={closeShapeDialog}
+    onSave={(name) => {
+      onShapesChange(shapes.map(s =>
+        s.id === shapeDialog.shapeId
+          ? { ...s, name: name }
+          : s
+      ));
+      setShapeDialog({ ...shapeDialog, isOpen: false });
+    }}
+    initialValue={shapeDialog.name}
+    title="Enter name"
+  />
+)}
+
+
+            {/* Shape dialog for editing */}
+            {/* {shapeDialog.isOpen && (
     <div
         className="absolute bg-white p-4 rounded-2xl shadow-xl w-[320px] z-100"
         style={{
@@ -696,7 +716,7 @@ export default function VideoCanvas({
             </div>
         </div>
     </div>
-               )}
+               )} */}
         </div>
     )
 }

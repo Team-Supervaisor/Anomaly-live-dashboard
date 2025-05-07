@@ -67,8 +67,8 @@ export default function CameraRender() {
         id: camera_id,
         name: cameraName,
         url: rtspUrl,
-        hlsUrl: "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8",
-        firstFrame: first_frame, 
+        firstFrame: first_frame, // Store the base64 image
+        // Remove hlsUrl since we won't be using it
       };
   
       setCameras((prev) => [...prev, newCamera]);
@@ -82,7 +82,6 @@ export default function CameraRender() {
     setCameraName("");
     setRtspUrl("");
   };
-  
 
   const handleMaximize = (cameraId) => {
     setMaximizedCamera(cameraId);
@@ -550,8 +549,8 @@ export default function CameraRender() {
       </DialogContent>
     </Dialog>
 
-    <button
-      onClick={() => navigate("/live-video")}
+    {/* <button
+      onClick={() => navigate("/live-ai")}
       style={{padding: "14px 24px"}}
       className="flex items-center border gap-[10px] rounded-[100px] text-[#666] text-[16px] font-[500]"
     >
@@ -561,7 +560,7 @@ export default function CameraRender() {
         className="w-4 h-4 mr-2"
       />
       Live AI
-    </button>
+    </button> */}
   </div>
 )}
 
@@ -628,7 +627,7 @@ export default function CameraRender() {
               </Dialog>}
 
               <button
-              onClick={() => navigate("/live-video")}
+              onClick={() => navigate("/live-ai")}
               style={{padding: "14px 24px"}}
               className="flex items-center border gap-[10px] rounded-[100px] text-[#666] text-[16px] font-[500]"
             >

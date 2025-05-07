@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Maximize, Minimize, PencilIcon, Trash2 } from "lucide-react"
+import RegionModal from "./AddRegionModal";
 
 // Define cursor map similar to DrawCanvasDrawer
 const cursorMap = {
@@ -264,16 +265,20 @@ export default function VideoCanvas({
   // --- Hover controls style: map from video pixels → CSS pixels ---
   const hoverStyle = () => {
     if (!canvasRef.current || !videoRef.current || !hoveredShape) return {};
+    
     const rect = canvasRef.current.getBoundingClientRect();
-    const vw   = videoRef.current.videoWidth;
-    const vh   = videoRef.current.videoHeight;
+    const vw = videoRef.current.videoWidth;
+    const vh = videoRef.current.videoHeight;
+    
+    // Convert shape coordinates to CSS pixels
     const cssX = hoveredShape.x / vw * rect.width;
     const cssY = hoveredShape.y / vh * rect.height;
     const cssW = hoveredShape.width / vw * rect.width;
+    
     return {
       position: 'absolute',
-      left: `${cssX + cssW - 35}px`,
-      top:  `${cssY + 5}px`,
+      right: `${rect.width - (cssX + cssW) + 12}px`, // 12px from right edge of shape
+      top: `${cssY + 12}px`, // 12px from top of shape
       zIndex: 10,
       display: 'flex',
       flexDirection: 'column',
@@ -281,7 +286,6 @@ export default function VideoCanvas({
       gap: '8px'
     };
   };
-
   // --- Edit/Delete handlers ---
   const handleEditShape = () => {
     if (!hoveredShape) return;
@@ -310,10 +314,19 @@ export default function VideoCanvas({
 
   const closeShapeDialog = () => setShapeDialog({ ...shapeDialog, isOpen: false });
 
-  const handleShapeDialogSave = () => {
+  // const handleShapeDialogSave = () => {
+  //   onShapesChange(shapes.map(s =>
+  //     s.id === shapeDialog.shapeId
+  //       ? { ...s, name: shapeDialog.name }
+  //       : s
+  //   ));
+  //   setShapeDialog({ ...shapeDialog, isOpen: false });
+  // };
+
+  const handleShapeDialogSave = (name) => {  // Add name parameter here
     onShapesChange(shapes.map(s =>
       s.id === shapeDialog.shapeId
-        ? { ...s, name: shapeDialog.name }
+        ? { ...s, name: name }  // Use the received name
         : s
     ));
     setShapeDialog({ ...shapeDialog, isOpen: false });
@@ -378,10 +391,15 @@ export default function VideoCanvas({
         <div style={hoverStyle()}>
           <div className="relative group">
             <button
-              className="w-8 h-8 rounded-full bg-indigo-400 hover:bg-indigo-500 flex items-center justify-center shadow-md"
+              className="w-8 h-8 rounded-full  flex items-center justify-center shadow-md"
               onClick={e => { e.stopPropagation(); handleEditShape(); }}
             >
-              <PencilIcon className="text-white w-4 h-4"/>
+             
+              <img
+              src="/pen.svg"
+              alt="live icon"
+              className=""
+            />
             </button>
             <div className="absolute w-[65px] left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded">
               Edit Info.
@@ -389,7 +407,7 @@ export default function VideoCanvas({
           </div>
           <div className="relative group">
             <button
-              className="w-8 h-8 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
+              className="w-7 h-7 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
               onClick={e => { e.stopPropagation(); handleDeleteShape(); }}
             >
               <Trash2 className="text-indigo-400 w-4 h-4"/>
@@ -401,57 +419,15 @@ export default function VideoCanvas({
         </div>
       )}
 
+      {/* add Region modal */}
       {shapeDialog.isOpen && (
-    <div
-        className="absolute bg-white p-4 rounded-2xl shadow-xl w-[320px] z-100"
-        style={{
-          left: `${Math.max(175, Math.min(shapeDialog.x, canvasRef.current.width - 175))}px`,
-          top:  `${Math.max(110, Math.min(shapeDialog.y - 50, canvasRef.current.height - 110))}px`,
-            transform: "translate(-50%, -50%)",
-            border: "1px solid #E5E7EB",
-            backgroundColor: "#F8FAFC",
-        }}
-    >
-        <div className="flex flex-col gap-5">
-            <div className="space-y-2">
-                <label className="block font-medium text-gray-700 text-sm">
-                    Region Name
-                </label>
-                <input
-                    type="text"
-                    placeholder="Enter region name"
-                    value={shapeDialog.name}
-                    onKeyDown={handleKeyPress}
-                    onChange={e => setShapeDialog({ ...shapeDialog, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg 
-                             focus:outline-none focus:border-[#6366F1] focus:ring-1 
-                             focus:ring-[#6366F1] text-gray-800 text-sm
-                             placeholder:text-gray-400 transition-colors"
-                />
-            </div>
-            <div className="flex justify-end gap-3">
-                <button
-                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm 
-                               text-gray-700 hover:bg-gray-50 transition-colors
-                               focus:outline-none focus:ring-2 focus:ring-offset-1
-                               focus:ring-gray-200"
-                    onClick={closeShapeDialog}
-                >
-                    Cancel
-                </button>
-                <button
-                    className="px-4 py-2 bg-[#6366F1] text-white rounded-lg text-sm
-                               hover:bg-[#5558E3] transition-colors
-                               focus:outline-none focus:ring-2 focus:ring-offset-1
-                               focus:ring-[#6366F1]"
-                    onClick={handleShapeDialogSave}
-                >
-                    Save
-                </button>
-            </div>
-        </div>
-    </div>
-    )}
+  <RegionModal
+    isOpen={shapeDialog.isOpen}
+    onClose={closeShapeDialog}
+    onSave={handleShapeDialogSave}
+    initialValue={shapeDialog.name}
+  />
+)}
     </div>
   );
 }
