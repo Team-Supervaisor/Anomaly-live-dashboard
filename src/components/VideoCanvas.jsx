@@ -61,8 +61,15 @@ export default function VideoCanvas({
         if (!cameraData.firstFrame) return;
         
         const img = new Image();
-        img.src = `data:image/jpeg;base64,${cameraData.firstFrame}`; // Convert base64 to image
-        firstFrameImageRef.current = img;
+        img.onload = () => {
+            // Store image dimensions for coordinate calculations
+            firstFrameImageRef.current = {
+                image: img,
+                width: img.width,
+                height: img.height
+            };
+        };
+        img.src = `data:image/jpeg;base64,${cameraData.firstFrame}`;
     }, [cameraData.firstFrame]);
 
     // Setup video rendering loop
@@ -88,13 +95,13 @@ export default function VideoCanvas({
         
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-            // Draw the first frame image instead of video
+            // Draw the base64 image
             if (firstFrameImageRef.current) {
-                const img = firstFrameImageRef.current;
+                const imageData = firstFrameImageRef.current;
                 ctx.drawImage(
-                    img,
+                    imageData.image,
                     0, 0,
-                    img.width, img.height,
+                    imageData.width, imageData.height,
                     0, 0,
                     canvas.width, canvas.height
                 );
@@ -308,13 +315,15 @@ export default function VideoCanvas({
 
     // Get canvas coordinates from mouse event
     const getCanvasCoordinates = (e) => {
-        const rect = canvasRef.current?.getBoundingClientRect()
-        if (!rect) return { x: 0, y: 0 }
-        const scaleX = videoRef.current.videoWidth / rect.width;
-        const scaleY = videoRef.current.videoHeight / rect.height;
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (!rect || !firstFrameImageRef.current) return { x: 0, y: 0 };
+
+        const scaleX = firstFrameImageRef.current.width / rect.width;
+        const scaleY = firstFrameImageRef.current.height / rect.height;
+
         return { 
-          x: (e.clientX - rect.left) * scaleX,
-          y: (e.clientY - rect.top) * scaleY 
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY 
         };
     }
 
@@ -513,28 +522,26 @@ export default function VideoCanvas({
     };
 
     const hoverStyle = () => {
-        if (!canvasRef.current || !videoRef.current || !hoveredShape) return {};
+        if (!canvasRef.current || !firstFrameImageRef.current || !hoveredShape) return {};
         
         const rect = canvasRef.current.getBoundingClientRect();
-        const vw = videoRef.current.videoWidth;
-        const vh = videoRef.current.videoHeight;
+        const imageData = firstFrameImageRef.current;
         
-        // Convert shape coordinates to CSS pixels
-        const cssX = hoveredShape.x / vw * rect.width;
-        const cssY = hoveredShape.y / vh * rect.height;
-        const cssW = hoveredShape.width / vw * rect.width;
+        const cssX = hoveredShape.x / imageData.width * rect.width;
+        const cssY = hoveredShape.y / imageData.height * rect.height;
+        const cssW = hoveredShape.width / imageData.width * rect.width;
         
         return {
-          position: 'absolute',
-          right: `${rect.width - (cssX + cssW) + 12}px`, // 12px from right edge of shape
-          top: `${cssY + 12}px`, // 12px from top of shape
-          zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '8px'
+            position: 'absolute',
+            right: `${rect.width - (cssX + cssW) + 12}px`,
+            top: `${cssY + 12}px`,
+            zIndex: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '8px'
         };
-      };
+    };
 
     return (
         <div 
