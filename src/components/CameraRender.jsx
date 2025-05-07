@@ -16,7 +16,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import UploadIcon from "../assets/Upload.png";
-import { ContentSteeringController } from "hls.js";
 
 export default function CameraRender() {
   const [open, setOpen] = useState(false);
@@ -52,8 +51,6 @@ export default function CameraRender() {
   // Add loading state
   const [isSaving, setIsSaving] = useState(false);
 
-  
-
   const handleSubmit = async () => {
     const apiUrl = import.meta.env.VITE_API_URL;
     const startStreamEndpoint = `${apiUrl}/start-stream/`;
@@ -63,9 +60,6 @@ export default function CameraRender() {
         camera_name: cameraName,
         rtsp_url: rtspUrl,
       });
-    //   console.log("Stream started successfully");
-    //   Console.log("Camera name is :", cameraName);
-    //     console.log("RTSP URL is :", rtspUrl);
       console.log("Stream start request sent to:", startStreamEndpoint);
     } catch (error) {
       console.error(" start-stream failed:", error);
@@ -87,63 +81,45 @@ export default function CameraRender() {
     setCameraName("");
     setRtspUrl("");
   };
-  
 
   const handleMaximize = (cameraId) => {
     setMaximizedCamera(cameraId);
-    setGridKey((prevKey) => prevKey + 1); // Trigger re-render
+    setGridKey((prevKey) => prevKey + 1);
   };
 
   const handleMinimize = () => {
     setMaximizedCamera(null);
-    setGridKey((prevKey) => prevKey + 1); // Trigger re-render
+    setGridKey((prevKey) => prevKey + 1); 
   };
 
   const handleVideoMaximize = (videoId) => {
     setMaximizedVideo(videoId);
-    setGridVideoKey((prevKey) => prevKey + 1); // Trigger re-render
+    setGridVideoKey((prevKey) => prevKey + 1); 
   };
 
   const handleVideoMinimize = () => {
     setMaximizedVideo(null);
-    setGridVideoKey((prevKey) => prevKey + 1); // Trigger re-render
+    setGridVideoKey((prevKey) => prevKey + 1); 
   };
 
-  // Modify handleSaveShapes
-  const handleSaveShapes = async () => {
-    setIsSaving(true); // Start loading
 
-    try {
-      // Create form data
-      const formData = new FormData();
-      if (activeTab === "cam") {
-        setHasShapesSaved(true); }
-       
 
-      // Add all uploaded videos to form data
-      uploadedVideos.forEach((video) => {
-        formData.append("video", video.file);
-      });
+const handleSaveShapes  = async () => {
+    setIsSaving(true);
 
-      // Create the video shapes data structure
-      const videoShapesData = uploadedVideos.map((video) => {
-        const shapes = videoShapes[video.id] || [];
-        const rectangleShapes = shapes.filter(
-          (shape) => shape.type === "rectangle"
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const endpoint = `${apiUrl}/start-stream/`;
+
+    if (activeTab === "cam") {
+      const camId = maximizedCamera || selectedCamera;
+      const camera = cameras.find((c) => c.id === camId) || {};
+      const firstFrame = camera.firstFrame || "";
+
+    
+      const roiDefs = uploadedVideos.map((video) => {
+        const rects = (videoShapes[video.id] || []).filter(
+          (s) => s.type === "rectangle"
         );
-
-        const regionsPayload = rectangleShapes.map((rect) => ({
-          Region_name: rect.name || `Region ${rect.id}`,
-          Region_Cords: {
-            vertices: [
-              [rect.x, rect.y],
-              [rect.x, rect.y + rect.height],
-              [rect.x + rect.width, rect.y + rect.height],
-              [rect.x + rect.width, rect.y],
-            ],
-          },
-        }));
-
         return {
           type: "video",
           source: {
@@ -151,44 +127,92 @@ export default function CameraRender() {
             name: video.file.name,
             url: video.url,
           },
-          regions: regionsPayload,
+          regions: rects.map((r) => ({
+            Region_name: r.name || `Region ${r.id}`,
+            Region_Cords: {
+              vertices: [
+                [r.x, r.y],
+                [r.x, r.y + r.height],
+                [r.x + r.width, r.y + r.height],
+                [r.x + r.width, r.y],
+              ],
+            },
+          })),
         };
       });
 
-      // Filter out videos with no regions
-      const videosWithRegions = videoShapesData.filter(
-        (item) => item.regions.length > 0
-      );
+      const payload = {
+        camera_name: camera.name || "",
+        rtsp_url: camera.url || "",
+        first_frame: firstFrame,
+        camera_id: camId,
+        roi_defs: roiDefs,
+      };
 
-      // Add the ROI definitions as a JSON string
-      formData.append("roi_defs", JSON.stringify(videosWithRegions));
+    
+      try {
+        await axios.post(endpoint, payload);
+        setHasShapesSaved(true);
+      } catch (err) {
+        console.error(" Failed to save camera+ROI config:", err);
+      } finally {
+        setIsSaving(false);
+      }
 
-      const apiUrl = `${import.meta.env.VITE_API_URL}/upload_config`;
-      const response = await fetch(apiUrl, {
+      return;
+    }
+
+
+    try {
+      const formData = new FormData();
+      uploadedVideos.forEach((video) => {
+        formData.append("video", video.file);
+      });
+
+      const videoShapesData = uploadedVideos.map((video) => {
+        const rects = (videoShapes[video.id] || []).filter(
+          (s) => s.type === "rectangle"
+        );
+        const regions = rects.map((r) => ({
+          Region_name: r.name || `Region ${r.id}`,
+          Region_Cords: {
+            vertices: [
+              [r.x, r.y],
+              [r.x, r.y + r.height],
+              [r.x + r.width, r.y + r.height],
+              [r.x + r.width, r.y],
+            ],
+          },
+        }));
+        return {
+          type: "video",
+          source: {
+            id: video.id,
+            name: video.file.name,
+            url: video.url,
+          },
+          regions,
+        };
+      });
+
+      formData.append("roi_defs", JSON.stringify(videoShapesData));
+
+      const res = await fetch(`${apiUrl}/upload_config`, {
         method: "POST",
         body: formData,
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (activeTab === "cam") {
-        setHasShapesSaved(true);
-       }
-
-      console.log("Upload successful:", data);
-      navigate("/live-video", { state: { data: data } });
-      // alert('Configuration saved successfully!');
-    } catch (error) {
-      console.error("Error uploading configuration:", error);
-      // alert('Failed to save configuration. Please try again.');
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const data = await res.json();
+      navigate("/live-video", { state: { data } });
+    } catch (err) {
+      console.error("Error uploading video config:", err);
     } finally {
-      setIsSaving(false); // End loading regardless of outcome
+      setIsSaving(false);
     }
   };
+
+
+
 
   const handleClearCanvas = () => {
     if (activeTab === "cam") {
