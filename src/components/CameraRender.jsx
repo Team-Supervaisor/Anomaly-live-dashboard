@@ -13,8 +13,10 @@ import { Plus, X, Upload, Maximize2, Minimize2 } from "lucide-react";
 import VideoCanvas from "./VideoCanvas";
 import VideoSection from "./VideoSection";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 import UploadIcon from "../assets/Upload.png";
+import { ContentSteeringController } from "hls.js";
 
 export default function CameraRender() {
   const [open, setOpen] = useState(false);
@@ -50,7 +52,25 @@ export default function CameraRender() {
   // Add loading state
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = () => {
+  
+
+  const handleSubmit = async () => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const startStreamEndpoint = `${apiUrl}/start-stream/`;
+  
+    try {
+      await axios.post(startStreamEndpoint, {
+        camera_name: cameraName,
+        rtsp_url: rtspUrl,
+      });
+    //   console.log("Stream started successfully");
+    //   Console.log("Camera name is :", cameraName);
+    //     console.log("RTSP URL is :", rtspUrl);
+      console.log("Stream start request sent to:", startStreamEndpoint);
+    } catch (error) {
+      console.error(" start-stream failed:", error);
+    }
+  
     const newId = Date.now();
     const newCamera = {
       id: newId,
@@ -62,10 +82,12 @@ export default function CameraRender() {
     setCameras((prev) => [...prev, newCamera]);
     setMaximizedCamera(newId);
     setGridKey((prev) => prev + 1);
+  
     setOpen(false);
     setCameraName("");
     setRtspUrl("");
   };
+  
 
   const handleMaximize = (cameraId) => {
     setMaximizedCamera(cameraId);
