@@ -104,113 +104,103 @@ export default function CameraRender() {
 
 
 
-const handleSaveShapes  = async () => {
+  const handleSaveShapes = async () => {
     setIsSaving(true);
-
     const apiUrl = import.meta.env.VITE_API_URL;
     const endpoint = `${apiUrl}/start-stream/`;
-
-    if (activeTab === "cam") {
-      const camId = maximizedCamera || selectedCamera;
-      const camera = cameras.find((c) => c.id === camId) || {};
-      const firstFrame = camera.firstFrame || "";
-
-    
-      const roiDefs = uploadedVideos.map((video) => {
-        const rects = (videoShapes[video.id] || []).filter(
-          (s) => s.type === "rectangle"
-        );
-        return {
-          type: "video",
-          source: {
-            id: video.id,
-            name: video.file.name,
-            url: video.url,
-          },
-          regions: rects.map((r) => ({
-            Region_name: r.name || `Region ${r.id}`,
-            Region_Cords: {
-              vertices: [
-                [r.x, r.y],
-                [r.x, r.y + r.height],
-                [r.x + r.width, r.y + r.height],
-                [r.x + r.width, r.y],
-              ],
+  
+    try {
+      if (activeTab === "cam") {
+        const camId = maximizedCamera || selectedCamera;
+        const camera = cameras.find((c) => c.id === camId) || {};
+        const firstFrame = camera.firstFrame || "";
+  
+        // Get ROI definitions for camera shapes
+        const roiDefs = Object.entries(cameraShapes).map(([cameraId, shapes]) => {
+          const camera = cameras.find((c) => c.id === parseInt(cameraId));
+          const rects = shapes.filter((s) => s.type === "rectangle");
+          
+          return {
+            type: "camera",
+            source: {
+              id: camera.id,
+              name: camera.name,
+              url: camera.hlsUrl,
             },
-          })),
+            regions: rects.map((r) => ({
+              Region_name: r.name || `Region ${r.id}`,
+              Region_Cords: {
+                vertices: [
+                  [r.x, r.y],
+                  [r.x, r.y + r.height],
+                  [r.x + r.width, r.y + r.height],
+                  [r.x + r.width, r.y],
+                ],
+              },
+            })),
+          };
+        });
+  
+        const payload = {
+          camera_name: camera.name || "",
+          rtsp_url: camera.url || "",
+          first_frame: firstFrame,
+          camera_id: camId,
+          roi_defs: roiDefs,
         };
-      });
-
-      const payload = {
-        camera_name: camera.name || "",
-        rtsp_url: camera.url || "",
-        first_frame: firstFrame,
-        camera_id: camId,
-        roi_defs: roiDefs,
-      };
-
-    
-      try {
+  
         await axios.post(endpoint, payload);
         setHasShapesSaved(true);
-      } catch (err) {
-        console.error(" Failed to save camera+ROI config:", err);
-      } finally {
-        setIsSaving(false);
+      } else {
+        // Handle video tab
+        const formData = new FormData();
+        uploadedVideos.forEach((video) => {
+          formData.append("video", video.file);
+        });
+  
+        // Get ROI definitions for video shapes - same structure as camera shapes
+        const videoShapesData = Object.entries(videoShapes).map(([videoId, shapes]) => {
+          const video = uploadedVideos.find((v) => v.id === videoId);
+          const rects = shapes.filter((s) => s.type === "rectangle");
+          
+          return {
+            type: "video",
+            source: {
+              id: video.id,
+              name: video.file.name,
+              url: video.url,
+            },
+            regions: rects.map((r) => ({
+              Region_name: r.name || `Region ${r.id}`,
+              Region_Cords: {
+                vertices: [
+                  [r.x, r.y],
+                  [r.x, r.y + r.height],
+                  [r.x + r.width, r.y + r.height],
+                  [r.x + r.width, r.y],
+                ],
+              },
+            })),
+          };
+        });
+  
+        formData.append("roi_defs", JSON.stringify(videoShapesData));
+  
+        const res = await fetch(`${apiUrl}/upload_config`, {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        navigate("/live-video", { state: { data } });
       }
-
-      return;
-    }
-
-
-    try {
-      const formData = new FormData();
-      uploadedVideos.forEach((video) => {
-        formData.append("video", video.file);
-      });
-
-      const videoShapesData = uploadedVideos.map((video) => {
-        const rects = (videoShapes[video.id] || []).filter(
-          (s) => s.type === "rectangle"
-        );
-        const regions = rects.map((r) => ({
-          Region_name: r.name || `Region ${r.id}`,
-          Region_Cords: {
-            vertices: [
-              [r.x, r.y],
-              [r.x, r.y + r.height],
-              [r.x + r.width, r.y + r.height],
-              [r.x + r.width, r.y],
-            ],
-          },
-        }));
-        return {
-          type: "video",
-          source: {
-            id: video.id,
-            name: video.file.name,
-            url: video.url,
-          },
-          regions,
-        };
-      });
-
-      formData.append("roi_defs", JSON.stringify(videoShapesData));
-
-      const res = await fetch(`${apiUrl}/upload_config`, {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      const data = await res.json();
-      navigate("/live-video", { state: { data } });
     } catch (err) {
-      console.error("Error uploading video config:", err);
+      console.error("Error saving shapes:", err);
     } finally {
       setIsSaving(false);
     }
   };
-
 
 
 
@@ -371,31 +361,34 @@ const handleSaveShapes  = async () => {
       <div className="relative flex flex-col items-center w-screen h-screen">
         <div className="w-screen h-screen bg-white rounded-lg shadow-md relative ">
           {/* Tab buttons */}
-          <div className="absolute top-4 left-4 flex gap-3">
-            <button
-              onClick={() => handleTabChange("video")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${
-                activeTab === "video"
-                  ? "bg-[#7900F3] text-white border-[#7900F3]"
-                  : "bg-white text-[#717171] border-[#0000001A]"
-              }`}
-            >
-              <img
-                src="/play.svg"
-                className={`w-4 h-4 ${
-                  activeTab === "video" ? "brightness-0 invert" : ""
-                }`}
-                alt="video icon"
-              />
-              <span>Video</span>
-            </button>
+          <div className="absolute" style={{ top: '34px', left: '34px' }}>
+  <div className="flex gap-3">
+    <button
+      onClick={() => handleTabChange("video")}
+      style={{padding: "14px 24px"}}
+      className={`flex items-center gap-2 rounded-[8px] border text-[16px] font-[500] ${
+        activeTab === "video"
+          ? "bg-[#717AEA] text-white border-none"
+          : "bg-white text-[#717171] "
+      }`}
+    >
+      <img
+        src="/play.svg"
+        className={`w-4 h-4 ${
+          activeTab === "video" ? "brightness-0 invert" : ""
+        }`}
+        alt="video icon"
+      />
+      <span>Video</span>
+    </button>
 
             <button
               onClick={() => handleTabChange("cam")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-sm border ${
+              style={{padding: "14px 24px"}}
+              className={`flex items-center gap-2   text-[16px] font-[500]  rounded-[8px] border ${
                 activeTab === "cam"
-                  ? "bg-[#7900F3] text-white border-[#7900F3]"
-                  : "bg-white text-[#717171] border-[#0000001A]"
+                  ? "bg-[#717AEA] text-white border-none"
+                  : "bg-white text-[#717171] "
               }`}
             >
               <img
@@ -407,6 +400,7 @@ const handleSaveShapes  = async () => {
               />
               <span>Cam</span>
             </button>
+          </div>
           </div>
 
           {activeTab === "cam" && (
@@ -484,31 +478,33 @@ const handleSaveShapes  = async () => {
               </div>
             </div>
           )}
-
           {activeTab === "video" && (
-            <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-              <DialogTrigger asChild>
-                <button
-                  onClick={() => {
-                    if (uploadedVideos.length >= 4) {
-                      alert("Maximum 4 videos allowed.");
-                      return;
-                    }
-                    setUploadDialogOpen(true);
-                  }}
-                  className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-[4rem] border border-[#0000001A] hover:bg-gray-50 transition-colors"
-                >
-                  <Upload className="w-4 h-4 text-black" />
-                  <span className="text-black">Upload</span>
-                </button>
-              </DialogTrigger>
-              <DialogContent className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[664px] overflow-hidden rounded-3xl">
-                <div className="flex justify-between items-center p-5 border-b border-[#0000001A]">
-                  <DialogTitle className="text-xl font-medium">
-                    Upload file
-                  </DialogTitle>
-                </div>
-                <div className="p-4 space-y-4">
+  <div className="absolute flex items-center gap-3" style={{ top: '34px', right: '34px' }}>
+  <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+      <DialogTrigger asChild>
+        <button
+          onClick={() => {
+            if (uploadedVideos.length >= 4) {
+              alert("Maximum 4 videos allowed.");
+              return;
+            }
+            setUploadDialogOpen(true);
+          }}
+          style={{padding: "14px 24px"}}
+          className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
+        >
+          <Upload className="w-4 h-4 text-black" />
+          <span className="text-black">Upload</span>
+        </button>
+      </DialogTrigger>
+      
+      <DialogContent className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[664px] overflow-hidden rounded-3xl">
+        <div className="flex justify-between items-center p-5 border-b border-[#0000001A]">
+          <DialogTitle className="text-xl font-medium">
+            Upload file
+          </DialogTitle>
+        </div>
+        <div className="p-4 space-y-4">
                   <div
                     className="border-2 border-dashed border-[#717AEA] bg-[#717AEA1A] rounded-3xl flex items-center justify-center h-[200px] text-center cursor-pointer transition-colors duration-200"
                     onClick={() =>
@@ -547,29 +543,40 @@ const handleSaveShapes  = async () => {
                     Upload
                   </button>
                 </div>
-              </DialogContent>
-            </Dialog>
-          )}
+      </DialogContent>
+    </Dialog>
+
+    <button
+      onClick={() => navigate("/live-video")}
+      style={{padding: "14px 24px"}}
+      className="flex items-center border gap-[10px] rounded-[100px] text-[#666] text-[16px] font-[500]"
+    >
+      <img
+        src="/live.svg"
+        alt="live icon"
+        className="w-4 h-4 mr-2"
+      />
+      Live AI
+    </button>
+  </div>
+)}
 
           {/* Add Camera Button */}
-          {activeTab === "cam"  && (
-            <div className="absolute top-4 right-4 flex items-center gap-3">
-          {hasShapesSaved&&  <button
-                onClick={() => navigate("/live-ai")}
-                className="flex items-center px-4 py-2 border border-green-500 rounded-[4rem] text-green-600 font-medium hover:bg-green-50 transition-colors"
-              >
-                <span className="relative flex h-3 w-3 mr-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                </span>
-                Live Ai
-              </button>}
-            {  cameras.length < 4 && <Dialog open={open} onOpenChange={setOpen}>
+          {activeTab === "cam" && (
+          <div className="absolute flex items-center gap-3" style={{ top: '34px', right: '34px' }}>
+            
+            
+              {  cameras.length < 4 && <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <button className="flex items-center gap-2 px-3 py-2 rounded-[4rem] border border-[#0000001A] transition-colors">
-                    <Plus className="w-4 h-4" />
-                    <span>Add Cam</span>
-                  </button>
+                <button
+              
+                  style={{padding: "14px 24px"}}
+                  className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
+                >
+                   <Plus className="w-4 h-4" />
+                   <span>Add Cam</span>
+                </button>
+                 
                 </DialogTrigger>
                 <DialogContent
                   style={{ borderRadius: "20px" }}
@@ -616,31 +623,44 @@ const handleSaveShapes  = async () => {
                 </DialogContent>
               </Dialog>}
 
+              <button
+              onClick={() => navigate("/live-video")}
+              style={{padding: "14px 24px"}}
+              className="flex items-center border gap-[10px] rounded-[100px] text-[#666] text-[16px] font-[500]"
+            >
+              <img
+                src="/live.svg"
+                alt="live icon"
+                className="w-4 h-4 mr-2"
+              />
+              Live AI
+            </button>
+
              
             </div>
           )}
         </div>
 
         {/* Toolbar */}
-        <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2">
-        <ToolBar
-          selectedTool={selectedTool}
-          setSelectedTool={setSelectedTool}
-          clearCanvas={handleClearCanvas}
-          saveShapes={handleSaveShapes}
-          isOpenSpaceMode={false}
-          setIsOpenSpaceMode={() => {}}
-          hasMaximizedOrSelected={true} // Always enable the button
-          hasShapes={Boolean(
+        <div className="fixed" style={{ bottom: '34px', left: '50%', transform: 'translateX(-50%)' }}>
+          <ToolBar
+            selectedTool={selectedTool}
+            setSelectedTool={setSelectedTool}
+            clearCanvas={handleClearCanvas}
+            saveShapes={handleSaveShapes}
+            isOpenSpaceMode={false}
+            setIsOpenSpaceMode={() => {}}
+            hasMaximizedOrSelected={true}
+            hasShapes={Boolean(
               activeTab === "cam"
-                  ? (selectedCamera && cameraShapes[selectedCamera]?.length > 0) || 
-                    (maximizedCamera && cameraShapes[maximizedCamera]?.length > 0)
-                  : (selectedVideo && videoShapes[selectedVideo]?.length > 0) || 
-                    (maximizedVideo && videoShapes[maximizedVideo]?.length > 0)
-          )}
-          isSaving={isSaving}
-          activeTab={activeTab} // A
-      />
+                ? (selectedCamera && cameraShapes[selectedCamera]?.length > 0) || 
+                  (maximizedCamera && cameraShapes[maximizedCamera]?.length > 0)
+                : (selectedVideo && videoShapes[selectedVideo]?.length > 0) || 
+                  (maximizedVideo && videoShapes[maximizedVideo]?.length > 0)
+            )}
+            isSaving={isSaving}
+            activeTab={activeTab}
+          />
         </div>
       </div>
     </div>
