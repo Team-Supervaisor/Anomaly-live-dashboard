@@ -223,7 +223,7 @@ export default function VideoCanvas({
                 : hoveredShape?.id === s.id
                     ? "#9CA3AF"
                     : "#FFD700";
-            ctx.lineWidth = 3; // Increased line width for all shapes
+            ctx.lineWidth = 5; // Increased line width for all shapes
             ctx.setLineDash([8, 4]); // Apply dashed style to completed shapes
             ctx.strokeRect(s.x, s.y, s.width, s.height);
             
