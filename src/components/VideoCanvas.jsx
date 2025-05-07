@@ -82,12 +82,14 @@ export default function VideoCanvas({
 
         function renderFrame() {
             const canvas = canvasRef.current;
-            const video = videoRef.current;
-            const ctx = canvas.getContext('2d');
-    
+            const video  = videoRef.current;
+            const ctx    = canvas.getContext('2d');
+          
+            // clear previous frame
             ctx.clearRect(0, 0, canvas.width, canvas.height);
           
             if (video.readyState >= 2) {
+              // once the HLS video is buffered/playable, render it
               ctx.drawImage(
                 video,
                 0, 0,
@@ -95,21 +97,42 @@ export default function VideoCanvas({
                 0, 0,
                 canvas.width, canvas.height
               );
-            } else if (firstFrameImageRef.current) {
-              const img = firstFrameImageRef.current;
-              ctx.drawImage(
-                img,
-                0, 0,
-                img.width, img.height,
-                0, 0,
-                canvas.width, canvas.height
-              );
+              setIsVideoPlaying(true);
+            } else if (cameraData.firstFrame) {
+              // convert Base64 → HTMLImageElement and draw
+              const img = new Image();
+              img.src = cameraData.firstFrame;
+          
+              if (img.complete) {
+                // if already cached, draw immediately
+                ctx.drawImage(
+                  img,
+                  0, 0,
+                  img.width, img.height,
+                  0, 0,
+                  canvas.width, canvas.height
+                );
+              } else {
+                // otherwise wait for it to load
+                img.onload = () => {
+                  ctx.drawImage(
+                    img,
+                    0, 0,
+                    img.width, img.height,
+                    0, 0,
+                    canvas.width, canvas.height
+                  );
+                };
+              }
             }
           
+            // overlay any shapes on top
             drawShapes(ctx, canvas.width, canvas.height);
           
+            // schedule next render
             animationFrameRef.current = requestAnimationFrame(renderFrame);
           }
+          
           
 
         // Start render loop
