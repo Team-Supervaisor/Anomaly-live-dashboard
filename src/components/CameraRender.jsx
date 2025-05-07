@@ -51,14 +51,17 @@ export default function CameraRender() {
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = () => {
+    const newId = Date.now();
     const newCamera = {
-      id: Date.now(),
+      id: newId,
       name: cameraName,
       url: rtspUrl,
       hlsUrl:
         "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8",
     };
-    setCameras([...cameras, newCamera]);
+    setCameras((prev) => [...prev, newCamera]);
+    setMaximizedCamera(newId);
+    setGridKey((prev) => prev + 1);
     setOpen(false);
     setCameraName("");
     setRtspUrl("");
