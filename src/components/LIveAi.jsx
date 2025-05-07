@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation,useParams } from "react-router-dom";
 import { format } from "date-fns"; // For timestamp formatting
 import { io } from "socket.io-client";
 import logo from "../assets/logo.png";
@@ -10,6 +10,7 @@ import Hls from "hls.js";
 import axios from "axios";
 import { Edit2, Loader2, Play, RotateCcw } from 'lucide-react';
 import InstructionModal from './InstructionModal';
+
 
 const playbackPositions = {};
 
@@ -154,9 +155,32 @@ const LiveAi = () => {
   const [instrucLoader, setInstrucLoader] = useState(false);
   const socketRef = useRef(null);
   const [isTracking, setIsTracking] = useState(false);
+  const { cameraId } = useParams();
+  const { state } = useLocation();
+  const { cameraData } = state || {};
+
+
+    useEffect(() => {
+      socketRef.current = io(import.meta.env.VITE_API_URL);
+  
+      // whenever the server sends us new logs, update state
+      socketRef.current.on("log_update", (payload) => {
+        if (Array.isArray(payload)) {
+          setLogs(payload);
+        }
+      });
+  
+      return () => {
+        socketRef.current.disconnect();
+      };
+    }, []);
+
+    
+  useEffect(() => {
+    console.log("Streaming for camera:", cameraId, "with data:", cameraData);
+  }, [cameraId, cameraData]);
 
   console.log("Data from location:", data);
-  // Mock data for testing
   const mockLogs = [
     {
       person_id: 1,
@@ -223,19 +247,19 @@ const LiveAi = () => {
     },
   ];
 
-  useEffect(() => {
-    const startStream = async () => {
-      const apiUrl = import.meta.env.VITE_API_URL;
-      try {
-        await axios.post(`${apiUrl}/start_tracking`);
-        console.log("Stream started successfully");
-      } catch (error) {
-        console.error("Failed to start stream:", error);
-      }
-    };
+  // useEffect(() => {
+  //   const startStream = async () => {
+  //     const apiUrl = import.meta.env.VITE_API_URL;
+  //     try {
+  //       await axios.post(`${apiUrl}/start_tracking`);
+  //       console.log("Stream started successfully");
+  //     } catch (error) {
+  //       console.error("Failed to start stream:", error);
+  //     }
+  //   };
 
-    startStream();
-  }, []);
+  //   startStream();
+  // }, []);
 
   // Helper function to convert data object to array format
   const formatVideoData = (data) => {
@@ -259,32 +283,32 @@ const LiveAi = () => {
     return "grid-cols-1"; // fallback
   };
 
-  useEffect(() => {
-    const socketInstance = io(import.meta.env.VITE_API_URL);
-    setSocket(socketInstance);
-    socketRef.current = socketInstance; // Store socket in ref
+//   useEffect(() => {
+//     const socketInstance = io(import.meta.env.VITE_API_URL);
+//     setSocket(socketInstance);
+//     socketRef.current = socketInstance; // Store socket in ref
 
-    // Initialize socket events
-    socketInstance.emit("logs");
+//     // Initialize socket events
+//     socketInstance.emit("logs");
 
-    socketInstance.on("log_update", (payload) => {
-      // payload is coming in as an array:
-      // [
-      //   { person_id: 1, camera_id: "Video 1", roi: "inside", event: "entry", timestamp1: "2025-05-06T23:01:23.454" },
-      //   …
-      // ]
-      setLogs(Array.isArray(payload) ? payload : []);
-    });
+//     socketInstance.on("log_update", (payload) => {
+//       // payload is coming in as an array:
+//       // [
+//       //   { person_id: 1, camera_id: "Video 1", roi: "inside", event: "entry", timestamp1: "2025-05-06T23:01:23.454" },
+//       //   …
+//       // ]
+//       setLogs(Array.isArray(payload) ? payload : []);
+//     });
 
-    // Add instruction events
-    socketInstance.on("instruction_saved", () => {
-        setInstrucLoader(false); // Turn off loader when save is confirmed
-    });
+//     // Add instruction events
+//     socketInstance.on("instruction_saved", () => {
+//         setInstrucLoader(false); // Turn off loader when save is confirmed
+//     });
 
-    return () => {
-        socketInstance.disconnect();
-    };
-}, []);
+//     return () => {
+//         socketInstance.disconnect();
+//     };
+// }, []);
 
   // Simulate socket updates every 3 seconds
   useEffect(() => {
@@ -397,9 +421,19 @@ const LiveAi = () => {
   };
 
   const handleStart = async () => {
-
-   
-  };
+        try {
+          await axios.get(`${import.meta.env.VITE_API_URL}/ws/${cameraId}`);
+          console.log(`Pinged /ws/${cameraId} successfully`);
+    
+    
+          socketRef.current.emit("logs", { cameraId });
+    
+          setIsTracking(true);
+        } catch (err) {
+          console.error("Failed to start tracking:", err);
+        }
+      };
+    
   
   const handleReset = async () => {
 

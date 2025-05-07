@@ -20,9 +20,10 @@ function App() {
       <Route path="/live-video" element={
        <LiveVideo />
       } />
-        <Route path="/live-ai" element={
+        <Route path="/live-ai/:cameraId" element={
        <LiveAi />
       } />
+      <Route path="/cameras" element={<CameraRender />} />
   
    
     </Routes>

@@ -627,10 +627,20 @@ export default function CameraRender() {
               </Dialog>}
 
               <button
-              onClick={() => navigate("/live-ai")}
-              style={{padding: "14px 24px"}}
-              className="flex items-center border gap-[10px] rounded-[100px] text-[#666] text-[16px] font-[500]"
-            >
+   onClick={() => {
+      const camId = selectedCamera;
+      if (!camId) {
+        alert("Please select (or maximize) a camera first before going Live AI.");
+        return;
+      }
+      // Push cameraId into the path
+      navigate(`/live-ai/${camId}`, {
+        state: { cameraId: camId }
+      });
+    }}
+     style={{padding: "14px 24px"}}
+     className="flex items-center border gap-[10px] rounded-[100px] text-[#666] text-[16px] font-[500]"
+   >
               <img
                 src="/live.svg"
                 alt="live icon"
