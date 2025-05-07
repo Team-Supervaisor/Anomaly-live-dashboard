@@ -260,13 +260,12 @@ const LiveVideo = () => {
     // 🔄 Listen on the `log_update` channel
 
     socketInstance.on("log_update", (payload) => {
-      // payload is coming in as an array:
-      // [
-      //   { person_id: 1, camera_id: "Video 1", roi: "inside", event: "entry", timestamp1: "2025-05-06T23:01:23.454" },
-      //   …
-      // ]
-      setLogs(Array.isArray(payload) ? payload : []);
+      setLogs(Array.isArray(payload) 
+        ? payload.slice().reverse()   
+        : []);
     });
+    
+    
 
     return () => {
       socketInstance.disconnect();
@@ -319,6 +318,11 @@ const LiveVideo = () => {
   const formatTimestamp = (timestamp) => {
     return format(new Date(timestamp), "HH:mm:ss");
   };
+
+  const sortedLogs = React.useMemo(() => 
+    [...logs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),
+  [logs]);
+  
 
   // Function to get event color
   const getEventColor = (event) => {
@@ -379,17 +383,17 @@ const LiveVideo = () => {
             className="flex-1 overflow-y-auto hide-scrollbar scroll-smooth"
           >
             {logs.length > 0 ? (
-              logs.map((log, idx) => (
-                <div
-                key={`${log.person_id}-${log.timestamp}-${idx}`}
-                className={
-                  `mb-6 p-4 bg-[#F5F9FF] rounded-lg 
-                   border-2 
-                   ${idx === 0 
-                     ? 'border-blue-500'   
-                     : 'border-transparent'} 
-                   transition-all duration-500 ease-in-out`
-                }
+             sortedLogs.map((log, idx) => (
+              <div
+                key={`${log.person_id}-${new Date(log.timestamp).getTime()}`}
+                className={`
+                  mb-6 p-4 bg-[#F5F9FF] rounded-lg 
+                  border-2
+                  transition-colors duration-500 ease-in-out
+                  ${idx === 0 
+                    ? 'border-blue-500' 
+                    : 'border-transparent'}
+                `}
               >
                   <div className="flex justify-between items-start">
                     <span className="text-gray-600">Camera:</span>
