@@ -214,39 +214,52 @@ export default function VideoCanvas({
     if (!ctx) return;
     const active = isMaximized || !showMaximize;
     if (!active) return;
+
+    // Draw existing shapes (dashed lines)
     shapes.forEach(s => {
-      if (s.type === "rectangle") {
-        ctx.strokeStyle = selectedShape?.id === s.id
-          ? "#6366F1"
-          : hoveredShape?.id === s.id
-            ? "#9CA3AF"
-            : "#FFD700";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(s.x, s.y, s.width, s.height);
-        if (s.isColored) {
-          ctx.fillStyle = s.color;
-          ctx.fillRect(s.x, s.y, s.width, s.height);
+        if (s.type === "rectangle") {
+            ctx.strokeStyle = selectedShape?.id === s.id
+                ? "#6366F1"
+                : hoveredShape?.id === s.id
+                    ? "#9CA3AF"
+                    : "#FFD700";
+            ctx.lineWidth = 3; // Increased line width for all shapes
+            ctx.setLineDash([8, 4]); // Apply dashed style to completed shapes
+            ctx.strokeRect(s.x, s.y, s.width, s.height);
+            
+            if (s.isColored) {
+                ctx.fillStyle = s.color;
+                ctx.fillRect(s.x, s.y, s.width, s.height);
+            }
+            if (s.name) {
+                ctx.setLineDash([]); // Reset dash for text
+                ctx.fillStyle = "#FFD700";
+                ctx.font = "14px Arial";
+                const tw = ctx.measureText(s.name).width;
+                ctx.fillText(s.name, s.x + (s.width - tw)/2, s.y + s.height/2 + 7);
+                ctx.setLineDash([8, 4]); // Restore dash pattern after text
+            }
         }
-        if (s.name) {
-          ctx.fillStyle = "#FFD700";
-          ctx.font = "14px Arial";
-          const tw = ctx.measureText(s.name).width;
-          ctx.fillText(s.name, s.x + (s.width - tw)/2, s.y + s.height/2 + 7);
-        }
-      }
     });
+
+    // Draw shape being created (same dashed style)
     if (drawingState.isDrawing && selectedTool === "rectangle") {
-      const w = drawingState.currentX - drawingState.startX;
-      const h = drawingState.currentY - drawingState.startY;
-      ctx.strokeStyle = "rgba(99, 102, 241, 0.6)";
-      ctx.setLineDash([5,3]);
-      ctx.lineWidth = 2;
-      ctx.strokeRect(drawingState.startX, drawingState.startY, w, h);
-      ctx.fillStyle = "rgba(99, 102, 241, 0.1)";
-      ctx.fillRect(drawingState.startX, drawingState.startY, w, h);
-      ctx.setLineDash([]);
+        const w = drawingState.currentX - drawingState.startX;
+        const h = drawingState.currentY - drawingState.startY;
+        
+        ctx.strokeStyle = "#FFD700";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 4]);
+        ctx.strokeRect(drawingState.startX, drawingState.startY, w, h);
+
+        // Add semi-transparent fill
+        ctx.fillStyle = "rgba(255, 215, 0, 0.1)";
+        ctx.fillRect(drawingState.startX, drawingState.startY, w, h);
     }
-  };
+
+    // Reset dash pattern at the end
+    ctx.setLineDash([]);
+};
 
   // --- Hover controls style: map from video pixels → CSS pixels ---
   const hoverStyle = () => {
