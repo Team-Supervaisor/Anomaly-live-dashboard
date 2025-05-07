@@ -159,33 +159,13 @@ export default function CameraRender() {
 
   const handleClearCanvas = () => {
     if (activeTab === "cam") {
-      // Only clear shapes for maximized camera if one is maximized
-      if (maximizedCamera) {
-        setCameraShapes((prev) => ({
-          ...prev,
-          [maximizedCamera]: [], // Clear only maximized camera's shapes
-        }));
-      } else if (selectedCamera) {
-        setCameraShapes((prev) => ({
-          ...prev,
-          [selectedCamera]: [], // Clear only selected camera's shapes
-        }));
-      }
+        // Clear shapes for all cameras
+        setCameraShapes({});
     } else {
-      // Only clear shapes for maximized video if one is maximized
-      if (maximizedVideo) {
-        setVideoShapes((prev) => ({
-          ...prev,
-          [maximizedVideo]: [], // Clear only maximized video's shapes
-        }));
-      } else if (selectedVideo) {
-        setVideoShapes((prev) => ({
-          ...prev,
-          [selectedVideo]: [], // Clear only selected video's shapes
-        }));
-      }
+        // Clear shapes for all videos
+        setVideoShapes({});
     }
-  };
+};
 
   const updateShapesForCamera = (cameraId, shapes) => {
     setCameraShapes((prev) => ({
@@ -562,25 +542,23 @@ export default function CameraRender() {
 
         {/* Toolbar */}
         <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2">
-          <ToolBar
-            selectedTool={selectedTool}
-            setSelectedTool={setSelectedTool}
-            clearCanvas={handleClearCanvas}
-            saveShapes={handleSaveShapes}
-            isOpenSpaceMode={false}
-            setIsOpenSpaceMode={() => {}}
-            hasMaximizedOrSelected={Boolean(
+        <ToolBar
+          selectedTool={selectedTool}
+          setSelectedTool={setSelectedTool}
+          clearCanvas={handleClearCanvas}
+          saveShapes={handleSaveShapes}
+          isOpenSpaceMode={false}
+          setIsOpenSpaceMode={() => {}}
+          hasMaximizedOrSelected={true} // Always enable the button
+          hasShapes={Boolean(
               activeTab === "cam"
-                ? maximizedCamera // Only check for maximized camera
-                : maximizedVideo // Only check for maximized video
-            )}
-            hasShapes={Boolean(
-              activeTab === "cam"
-                ? maximizedCamera && cameraShapes[maximizedCamera]?.length > 0
-                : maximizedVideo && videoShapes[maximizedVideo]?.length > 0
-            )}
-            isSaving={isSaving} // Add this prop
-          />
+                  ? (selectedCamera && cameraShapes[selectedCamera]?.length > 0) || 
+                    (maximizedCamera && cameraShapes[maximizedCamera]?.length > 0)
+                  : (selectedVideo && videoShapes[selectedVideo]?.length > 0) || 
+                    (maximizedVideo && videoShapes[maximizedVideo]?.length > 0)
+          )}
+          isSaving={isSaving}
+      />
         </div>
       </div>
     </div>

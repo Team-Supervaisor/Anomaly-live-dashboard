@@ -207,18 +207,18 @@ export default function ToolBar({
       </div> */}
 
       <div className="flex items-center gap-2 ml-1">
-        <Button
-          variant="outline"
-          onClick={clearCanvas}
-          disabled={!hasMaximizedOrSelected || !hasShapes || isSaving}
-          className={`rounded-md h-9 px-4 text-sm font-medium text-black ${
-            (!hasMaximizedOrSelected || !hasShapes || isSaving) 
+      <Button
+        variant="outline"
+        onClick={clearCanvas}
+        disabled={!hasShapes || isSaving}
+        className={`rounded-md h-9 px-4 text-sm font-medium text-black ${
+            (!hasShapes || isSaving) 
                 ? 'opacity-50 cursor-not-allowed' 
                 : ''
-          }`}
-        >
-          Discard
-        </Button>
+        }`}
+    >
+        Discard
+    </Button>
         <Button
           variant="default"
           onClick={saveShapes}
