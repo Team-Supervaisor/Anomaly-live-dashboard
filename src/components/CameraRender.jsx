@@ -152,6 +152,9 @@ export default function CameraRender() {
           roi_defs: roiDefs,
       };
         await axios.post(endpoint, payload);
+
+               // Add minimum delay of 1 second
+     await new Promise(resolve => setTimeout(resolve, 1000));
         setHasShapesSaved(true);
       } else {
         // Handle video tab
