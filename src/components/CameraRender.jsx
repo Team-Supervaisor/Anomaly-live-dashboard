@@ -82,7 +82,6 @@ export default function CameraRender() {
     setCameraName("");
     setRtspUrl("");
   };
-
   const handleMaximize = (cameraId) => {
     setMaximizedCamera(cameraId);
     setGridKey((prevKey) => prevKey + 1);
@@ -268,9 +267,9 @@ export default function CameraRender() {
       case 2:
         return `grid-cols-2 gap-4 w-[90%] h-[60vh] ${baseStyles} mt-16`;
       case 3:
-        return `grid-cols-2 gap-4 w-[90%] h-[70vh] ${baseStyles} mt-16`;
+        return `grid-cols-2 gap-4 w-[60%] h-[60vh] ${baseStyles} mt-1 mb-10`;
       case 4:
-        return `grid-cols-2 gap-4 w-[90%] h-[75vh] ${baseStyles} mt-16`;
+        return `grid-cols-2 gap-4 w-[60%] h-[60vh] ${baseStyles} mt-1 mb-10`;
       default:
         return `grid-cols-2 gap-4 w-[90%] h-[70vh] ${baseStyles} mt-16`;
     }
