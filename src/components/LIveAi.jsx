@@ -185,12 +185,11 @@ const LiveAi = () => {
       transports: ["websocket"],
       reconnectionAttempts: 5,
     });
-
+  
     socketRef.current.on("connect", () => {
       console.log("✅ Primary socket connected (ready to emit tracking_start)");
     });
     
-  
     socketRef.current.on("frame", (data) => {
       const blob = new Blob([data], { type: "image/jpeg" });
       const url = URL.createObjectURL(blob);
@@ -200,22 +199,24 @@ const LiveAi = () => {
       });
     });
   
-    // — Secondary socket (instructions_changed + anomaly_alert)
+    // — Secondary socket (instructions_changed + anomaly alerts)
     socketRef2.current = io(import.meta.env.VITE_API_URL1, {
       transports: ["websocket"],
       reconnectionAttempts: 3,
     });
   
     socketRef2.current.on("connect", () => {
-      console.log("Instruction socket connected on port 8000");
+      console.log("📡 Instruction socket connected on port 8000");
+      console.log("👂 Listening for anomaly_alert events");
     });
     socketRef2.current.on("connect_error", (err) => {
       console.error("Instruction socket error:", err);
     });
   
-    // CORRECTED anomaly_alert handler:
+    // KEEP this listener alive for anomaly_alert:
     socketRef2.current.on("anomaly_alert", (arg1, arg2) => {
-      // Socket.io sometimes gives you (eventName, payload) or just (payload).
+      console.log("🔔 Received anomaly_alert event");
+      // Normalize payload in case socket.io prepends the event name
       const data =
         typeof arg2 === "undefined" && typeof arg1 === "object"
           ? arg1
@@ -226,17 +227,27 @@ const LiveAi = () => {
       setLoader(false);
     });
   
+    // If you also want to listen for a differently-named event like "anomaly_appear":
+    socketRef2.current.on("anomaly_appear", (data) => {
+      console.log("🔔 Received anomaly_appear event:", data);
+      // handle it just like anomaly_alert, or however you need:
+      setAiAnalyzeitem(prev => [...prev, data]);
+      setLoader(false);
+    });
+  
     socketRef2.current.on("instructions_changed", (data) => {
       setInstrucLoader(false);
-      console.log("Instructions:", data);
+      console.log("📝 Instructions:", data);
     });
   
     return () => {
       socketRef2.current.off("anomaly_alert");
+      socketRef2.current.off("anomaly_appear");
       socketRef2.current.off("instructions_changed");
       socketRef2.current.disconnect();
     };
   }, []);
+  
   
 
   useEffect(() => {
@@ -254,14 +265,14 @@ const LiveAi = () => {
     console.log("Streaming for camera:", cameraId, "with data:", cameraData);
   }, [cameraId, cameraData]);
 
-  console.log("Data from location:", data);
+  // console.log("Data from location:", data);
   const mockLogs = [
     {
       person_id: 1,
       camera_id: 0,
       roi: "entrance",
       event: "entry",
-      timestamp: "2025-05-01T16:43:58.851",
+      timestamp: "2025-05-01T16:43:58.851wewewe",
     },
     {
       person_id: 2,
