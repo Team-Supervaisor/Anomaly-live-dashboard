@@ -150,7 +150,7 @@ const LiveAi = () => {
   const [streamUrl, setStreamUrl] = useState(null);
   const imgRef = useRef(null);
   
-  const wsRef = useRef(null);
+  // const wsRef = useRef(null);
   const location = useLocation();
   const { data } = location.state || {};
   const [logs, setLogs] = useState([]);
@@ -175,7 +175,15 @@ const LiveAi = () => {
           setLogs(payload);
         }
       });
-  
+      socketRef.current.on("frame", (data) => {
+        const blob = new Blob([data], { type: "image/jpeg" });
+        const url = URL.createObjectURL(blob);
+        setStreamUrl(prev => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+      });
+      
       return () => {
         socketRef.current.disconnect();
       };
@@ -427,27 +435,20 @@ const LiveAi = () => {
   };
 
   const handleStart = () => {
-    if (wsRef.current) return;              // already opened
-    const ws = new WebSocket(`ws://localhost:5000/ws/${cameraId}`);
-    ws.binaryType = 'arraybuffer';
-    ws.onopen  = () => setIsTracking(true); // flip your button into “Started”
-    ws.onerror = e  => console.error("WS error", e);
-    ws.onmessage = ({ data }) => {
-      const blob = new Blob([new Uint8Array(data)], { type: "image/jpeg" });
-      const url  = URL.createObjectURL(blob);
-      setStreamUrl(url);
-      // optionally revoke the previous URL here
-    };
-    wsRef.current = ws;
+    if (!socketRef.current) return;
+    socketRef.current.emit("start_tracking", { cameraId });
+    setIsTracking(true);
   };
   const handleReset = () => {
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
+    if (!socketRef.current) return;
+    socketRef.current.emit("end_tracking");
     setIsTracking(false);
-    setStreamUrl(null);
+    setStreamUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
   };
+  
    
   return (
     <div className="flex flex-col h-screen bg-[#F5F9FF]">
