@@ -169,7 +169,7 @@ const LiveAi = () => {
       socketRef.current = io(import.meta.env.VITE_API_URL);
   
       // whenever the server sends us new logs, update state
-      socketRef.current.on("log_update", (payload) => {
+      socketRef.current.on("anomaly_alert", (payload) => {
         if (Array.isArray(payload)) {
           setLogs(payload);
         }
