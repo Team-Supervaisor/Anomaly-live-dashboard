@@ -53,13 +53,6 @@ export default function CameraRender() {
 
   // Add new state at the top with other states
   const [isAdding, setIsAdding] = useState(false);
-  // at top of CameraRender:
-const [cameraDims, setCameraDims] = useState({});
-
-const handleDimensionsReady = (cameraId, dims) => {
-  setCameraDims(d => ({ ...d, [cameraId]: dims }));
-};
-
 
   const handleSubmit = async () => {
     setIsAdding(true);
@@ -122,60 +115,102 @@ const handleDimensionsReady = (cameraId, dims) => {
     const apiUrl = import.meta.env.VITE_API_URL;
     const endpoint = `${apiUrl}/start-stream/`;
   
-    if (activeTab === "cam") {
-      const camId = maximizedCamera || selectedCamera;
-      const camera = cameras.find(c => c.id === camId);
-      const dims  = cameraDims[camId];
-      if (!dims) {
-        console.warn("No dims for camera", camId);
-        return;
-      }
+    try {
+      if (activeTab === "cam") {
+        const camId = maximizedCamera || selectedCamera;
+        const camera = cameras.find((c) => c.id === camId) || {};
+        const firstFrame = camera.firstFrame || "";
   
-      const { origW, origH, canvasW, canvasH } = dims;
-      const scaleX = origW / canvasW;
-      const scaleY = origH / canvasH;
-  
-      // remap each rect
-      const roiDefs = (cameraShapes[camId] || [])
-        .filter(s => s.type === "rectangle")
-        .map(r => {
-          const x = Math.round(r.x * scaleX);
-          const y = Math.round(r.y * scaleY);
-          const w = Math.round(r.width * scaleX);
-          const h = Math.round(r.height * scaleY);
+        // Get ROI definitions for camera shapes
+        const roiDefs = Object.entries(cameraShapes).map(([cameraId, shapes]) => {
+          // Find the correct camera using string comparison since cameraId might be a string
+          const camera = cameras.find((c) => c.id === cameraId || c.id.toString() === cameraId);
+          const rects = shapes.filter((s) => s.type === "rectangle");
+          
           return {
-            type: "camera",
-            source: { id: camera.id, name: camera.name, url: camera.url },
-            regions: [{
+              type: "camera",
+              source: {
+                  id: camera.id,
+                  name: camera.name,
+                  url: camera.url, // Using url instead of hlsUrl since we're working with base64
+              },
+              regions: rects.map((r) => ({
+                  Region_name: r.name || `Region ${r.id}`,
+                  Region_Cords: {
+                      vertices: [
+                          [r.x, r.y],
+                          [r.x, r.y + r.height],
+                          [r.x + r.width, r.y + r.height],
+                          [r.x + r.width, r.y],
+                      ],
+                  },
+              })),
+          };
+      });
+      
+      // Update the payload to include firstFrame
+      const payload = {
+          camera_name: camera.name || "",
+          rtsp_url: camera.url || "",
+          first_frame: camera.firstFrame, // Include the base64 first frame
+          camera_id: camId,
+          roi_defs: roiDefs,
+      };
+        await axios.post(endpoint, payload);
+
+               // Add minimum delay of 1 second
+     await new Promise(resolve => setTimeout(resolve, 1000));
+        setHasShapesSaved(true);
+      } else {
+        // Handle video tab
+        const formData = new FormData();
+        uploadedVideos.forEach((video) => {
+          formData.append("video", video.file);
+        });
+  
+        // Get ROI definitions for video shapes - same structure as camera shapes
+        const videoShapesData = Object.entries(videoShapes).map(([videoId, shapes]) => {
+          const video = uploadedVideos.find((v) => v.id === videoId);
+          const rects = shapes.filter((s) => s.type === "rectangle");
+          
+          return {
+            type: "video",
+            source: {
+              id: video.id,
+              name: video.file.name,
+              url: video.url,
+            },
+            regions: rects.map((r) => ({
               Region_name: r.name || `Region ${r.id}`,
               Region_Cords: {
                 vertices: [
-                  [x,      y],
-                  [x,      y + h],
-                  [x + w,  y + h],
-                  [x + w,  y],
-                ]
-              }
-            }]
+                  [r.x, r.y],
+                  [r.x, r.y + r.height],
+                  [r.x + r.width, r.y + r.height],
+                  [r.x + r.width, r.y],
+                ],
+              },
+            })),
           };
         });
   
-      const payload = {
-        camera_name: camera.name,
-        rtsp_url:    camera.url,
-        first_frame: camera.firstFrame,
-        camera_id:   camId,
-        roi_defs:    roiDefs,
-      };
+        formData.append("roi_defs", JSON.stringify(videoShapesData));
   
-      await axios.post(endpoint, payload);
-      await new Promise(r => setTimeout(r, 1000)); 
-      setHasShapesSaved(true);
+        const res = await fetch(`${apiUrl}/upload_config`, {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json();
+        navigate("/live-video", { state: { data } });
+      }
+    } catch (err) {
+      console.error("Error saving shapes:", err);
+    } finally {
+      setIsSaving(false);
     }
-  
-    setIsSaving(false);
   };
-  
 
 
 
@@ -409,7 +444,6 @@ const handleDimensionsReady = (cameraId, dims) => {
               showMaximize={cameras.length > 1}
               selectedTool={selectedTool}
               shapes={cameraShapes[camera.id] || []}
-              onDimensionsReady={handleDimensionsReady}
               onShapesChange={(shapes) =>
                 updateShapesForCamera(camera.id, shapes)
               }

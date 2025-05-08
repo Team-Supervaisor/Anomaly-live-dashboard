@@ -23,8 +23,7 @@ export default function VideoCanvas({
     showMaximize,
     selectedTool,
     shapes = [],
-    onShapesChange,
-    onDimensionsReady = () => {},
+    onShapesChange
 }) {
     const canvasRef = useRef(null)
     const videoRef = useRef(null)
@@ -32,7 +31,6 @@ export default function VideoCanvas({
     const animationFrameRef = useRef(null)
     const [isVideoPlaying, setIsVideoPlaying] = useState(false)
     const firstFrameImageRef = useRef(null)
-    const dimsReportedRef    = useRef(false)
     
     // Store playback state in a ref to persist across renders
     const playbackStateRef = useRef({
@@ -61,38 +59,26 @@ export default function VideoCanvas({
     const [fillColor, setFillColor] = useState("#6366F1")
     
     // Load the base64 image when component mounts or cameraData changes
-    // VideoCanvas.jsx (inside your first useEffect)
-useEffect(() => {
-    if (!cameraData.firstFrame) return;
-    const img = new Image();
-    img.onload = () => {
-             // stash the raw image
-                    firstFrameImageRef.current = {
-                      image: img,
-                      width: img.width,
-                      height: img.height
-                    };
-                // if canvas is already sized, fire dims callback
-                    const canvas = canvasRef.current;
-                    if (canvas && !dimsReportedRef.current) {
-                      const { width: canvasW, height: canvasH } = canvas;
-                      onDimensionsReady(cameraData.id, {
-                        origW: img.width,
-                        origH: img.height,
-                        canvasW,
-                        canvasH
-                      });
-                      dimsReportedRef.current = true;
-                    }
-                };
-    img.src = `data:image/jpeg;base64,${cameraData.firstFrame}`;
-  }, [cameraData.firstFrame, cameraData.id, onDimensionsReady]);
-  
+    useEffect(() => {
+        if (!cameraData.firstFrame) return;
+        
+        const img = new Image();
+        img.onload = () => {
+            // Store image dimensions for later use
+            firstFrameImageRef.current = {
+                image: img,
+                width: img.width,
+                height: img.height,
+                aspectRatio: img.width / img.height
+            };
+        };
+        img.src = `data:image/jpeg;base64,${cameraData.firstFrame}`;
+    }, [cameraData.firstFrame]);
 
     // Setup canvas rendering loop
     useEffect(() => {
         const canvas = canvasRef.current
-       
+        
         if (!canvas) return
 
         const ctx = canvas.getContext('2d')
@@ -102,20 +88,45 @@ useEffect(() => {
             const rect = canvas.getBoundingClientRect()
             canvas.width = rect.width
             canvas.height = rect.height
-          // report dims if we have the image loaded but haven’t yet reported
-            if (firstFrameImageRef.current && !dimsReportedRef.current) {
-              const { width: origW, height: origH } = firstFrameImageRef.current;
-              onDimensionsReady(cameraData.id, {
-                origW, origH,
-                canvasW: rect.width,
-                canvasH: rect.height
-              });
-              dimsReportedRef.current = true;
-            }
         }
         resizeCanvas()
 
-    }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, cameraData.id, onDimensionsReady])
+        // Animation loop for smooth rendering
+        function renderFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            
+            // Draw the base64 image if available, otherwise fallback to video
+            if (firstFrameImageRef.current) {
+                const img = firstFrameImageRef.current.image
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+            } else if (videoRef.current && videoRef.current.readyState >= 2) {
+                ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)
+            }
+            
+            // Draw shapes on top of the image/video
+            drawShapes(ctx, canvas.width, canvas.height)
+            
+            animationFrameRef.current = requestAnimationFrame(renderFrame)
+        }
+
+        // Start render loop
+        renderFrame()
+
+        // Handle window resize to ensure canvas dimensions are correct
+        const handleResize = () => {
+            resizeCanvas()
+        }
+        
+        window.addEventListener('resize', handleResize)
+
+        // Cleanup
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current)
+            }
+            window.removeEventListener('resize', handleResize)
+        }
+    }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape]) // Re-run on maximize state change or shapes change
 
     // Add keyboard event listener for Escape key to minimize
     useEffect(() => {
