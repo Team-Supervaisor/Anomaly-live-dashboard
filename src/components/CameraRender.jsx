@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useState, useRef, useEffect } from "react"; // Import useEffect
 import ToolBar from "./tool-bar";
-import { Plus, X, Upload, Maximize2, Minimize2 } from "lucide-react";
+import { Plus, X, Upload, Maximize2, Minimize2, Loader2 } from "lucide-react";
 import VideoCanvas from "./VideoCanvas";
 import VideoSection from "./VideoSection";
 import { useNavigate } from "react-router-dom";
@@ -51,7 +51,11 @@ export default function CameraRender() {
   // Add loading state
   const [isSaving, setIsSaving] = useState(false);
 
+  // Add new state at the top with other states
+  const [isAdding, setIsAdding] = useState(false);
+
   const handleSubmit = async () => {
+    setIsAdding(true);
     const apiUrl = import.meta.env.VITE_API_URL;
     const startStreamEndpoint = `${apiUrl}/start-stream/`;
   
@@ -70,18 +74,20 @@ export default function CameraRender() {
         firstFrame: first_frame, // Store the base64 image
         // Remove hlsUrl since we won't be using it
       };
-  
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setCameras((prev) => [...prev, newCamera]);
       setMaximizedCamera(camera_id);
       setGridKey((prev) => prev + 1);
+      setOpen(false);
+      setCameraName("");
+      setRtspUrl("");
     } catch (error) {
       console.error("start-stream failed:", error);
+    } finally {
+      setIsAdding(false);
     }
-  
-    setOpen(false);
-    setCameraName("");
-    setRtspUrl("");
   };
+
   const handleMaximize = (cameraId) => {
     setMaximizedCamera(cameraId);
     setGridKey((prevKey) => prevKey + 1);
@@ -572,7 +578,14 @@ export default function CameraRender() {
           <div className="absolute flex items-center gap-3" style={{ top: '34px', right: '34px' }}>
             
             
-              {  cameras.length < 4 && <Dialog open={open} onOpenChange={setOpen}>
+              {  cameras.length < 4 && <Dialog open={open}  onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (!isOpen) {
+        setIsAdding(false);
+        setCameraName("");
+        setRtspUrl("");
+      }
+    }}>
                 <DialogTrigger asChild>
                 <button
               
@@ -594,38 +607,48 @@ export default function CameraRender() {
                     </DialogTitle>
                   </div>
 
-                  <div className="p-4 space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Enter the camera name:
-                      </label>
-                      <Input
-                        value={cameraName}
-                        onChange={(e) => setCameraName(e.target.value)}
-                        className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
-                        placeholder="Camera name"
-                      />
-                    </div>
+                  
+                    <div className="p-4 space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          Enter the camera name:
+                        </label>
+                        <Input
+                          value={cameraName}
+                          onChange={(e) => setCameraName(e.target.value)}
+                          className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
+                          placeholder="Camera name"
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Enter the RTSP URL:
-                      </label>
-                      <Input
-                        value={rtspUrl}
-                        onChange={(e) => setRtspUrl(e.target.value)}
-                        className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
-                        placeholder="rtsp://"
-                      />
-                    </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          Enter the RTSP URL:
+                        </label>
+                        <Input
+                          value={rtspUrl}
+                          onChange={(e) => setRtspUrl(e.target.value)}
+                          className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
+                          placeholder="rtsp://"
+                        />
+                      </div>
 
-                    <button
-                      onClick={handleSubmit}
-                      className="w-full py-2 px-4 bg-[#717AEA] text-white rounded-[4rem] hover:bg-[#5961e0] transition-colors mt-4"
-                    >
-                      Add
-                    </button>
-                  </div>
+                      <button
+                        onClick={handleSubmit}
+                        className="w-full py-2 px-4 bg-[#717AEA] text-white rounded-[4rem] hover:bg-[#717AEA] transition-colors mt-4 flex items-center justify-center gap-2"
+                        disabled={isAdding}
+                      >
+                        {isAdding ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Adding Camera...</span>
+                          </>
+                        ) : (
+                          'Add'
+                        )}
+                      </button>
+                    </div>
+               
                 </DialogContent>
               </Dialog>}
 
