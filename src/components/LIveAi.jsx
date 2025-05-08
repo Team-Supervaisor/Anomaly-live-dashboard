@@ -555,7 +555,7 @@ const LiveAi = () => {
             />
           </div>
           <span className="text-gray-600 text-lg font-medium mt-4">
-            AI analyzing video...
+            AI analyzing video
           </span>
         </div>
       )}
