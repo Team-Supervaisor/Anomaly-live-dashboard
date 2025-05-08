@@ -59,21 +59,24 @@ export default function VideoCanvas({
     const [fillColor, setFillColor] = useState("#6366F1")
     
     // Load the base64 image when component mounts or cameraData changes
-    useEffect(() => {
-        if (!cameraData.firstFrame) return;
-        
-        const img = new Image();
-        img.onload = () => {
-            // Store image dimensions for later use
-            firstFrameImageRef.current = {
-                image: img,
-                width: img.width,
-                height: img.height,
-                aspectRatio: img.width / img.height
-            };
-        };
-        img.src = `data:image/jpeg;base64,${cameraData.firstFrame}`;
-    }, [cameraData.firstFrame]);
+    // VideoCanvas.jsx (inside your first useEffect)
+useEffect(() => {
+    if (!cameraData.firstFrame) return;
+    const img = new Image();
+    img.onload = () => {
+      // tell parent “here’s the raw image size, and here’s the canvas size”
+      const canvas = canvasRef.current;
+      onDimensionsReady(cameraData.id, {
+        origW: img.width,
+        origH: img.height,
+        canvasW: canvas.width,
+        canvasH: canvas.height,
+      });
+      firstFrameImageRef.current = { image: img, width: img.width, height: img.height };
+    };
+    img.src = `data:image/jpeg;base64,${cameraData.firstFrame}`;
+  }, [cameraData.firstFrame]);
+  
 
     // Setup canvas rendering loop
     useEffect(() => {
