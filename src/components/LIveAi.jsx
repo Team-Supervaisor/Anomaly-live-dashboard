@@ -438,10 +438,10 @@ const LiveAi = () => {
   };
 
   const handleStart = () => {
-    const ctrlSocket = io("http://localhost:5000");
+    const ctrlSocket = io("http://localhost:8000");
     ctrlSocket.on("connect", () => {
       ctrlSocket.emit("frontend-connect", { cameraId });
-      console.log("✅ Sent frontend-connect");
+      console.log("Sent frontend-connect");
     });
     ctrlSocketRef.current = ctrlSocket;
 
