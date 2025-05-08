@@ -161,6 +161,7 @@ const LiveAi = () => {
   const [instructionset, setInstructionset] = useState('');
   const [instrucLoader, setInstrucLoader] = useState(false);
   const socketRef = useRef(null);
+  const socketRef2 = useRef(null);
   const [isTracking, setIsTracking] = useState(false);
   const { cameraId } = useParams();
   const { state } = useLocation();
@@ -169,7 +170,8 @@ const LiveAi = () => {
 
     useEffect(() => {
       socketRef.current = io(import.meta.env.VITE_API_URL);
-  
+      socketRef.current2= io(import.meta.env.VITE_API_URL1);
+      
       // whenever the server sends us new logs, update state
       socketRef.current.on("anomaly_alert", (payload) => {
         if (Array.isArray(payload)) {
@@ -385,14 +387,14 @@ const LiveAi = () => {
   };
 
   const handleSaveInstruction = (instruction) => {
-    if (!socketRef.current) {
+    if (!socketRef2.current) {
         console.error("Socket connection not established");
         return;
     }
     
     setInstructionset(instruction);
     setInstrucLoader(true);
-    socketRef.current.emit("instructions_changed", instruction);
+    socketRef2.current.emit("instructions_changed", instruction);
     setShowInstructionModal(false);
 };
 
