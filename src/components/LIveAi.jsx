@@ -19,7 +19,7 @@ const VideoCanvasPlayer = ({ hlsUrl, id }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const hlsRef = useRef(null);
-
+  
   const playbackStateRef = useRef({
     currentTime: playbackPositions[id] || 0,
     isInitialized: false,

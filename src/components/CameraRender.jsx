@@ -112,50 +112,57 @@ export default function CameraRender() {
 
   const handleSaveShapes = async () => {
     setIsSaving(true);
-    const apiUrl = import.meta.env.VITE_API_URL;
-    const endpoint = `${apiUrl}/start-stream/`;
+    const apiUrl  = import.meta.env.VITE_API_URL;
+    const endpoint= `${apiUrl}/start-stream/`;
   
     try {
       if (activeTab === "cam") {
-        const camId = maximizedCamera || selectedCamera;
-        const camera = cameras.find((c) => c.id === camId) || {};
-        const firstFrame = camera.firstFrame || "";
+        const camId   = maximizedCamera || selectedCamera;
+        const camera  = cameras.find((c) => c.id === camId) || {};
   
-        // Get ROI definitions for camera shapes
-        const roiDefs = Object.entries(cameraShapes).map(([cameraId, shapes]) => {
-          // Find the correct camera using string comparison since cameraId might be a string
-          const camera = cameras.find((c) => c.id === cameraId || c.id.toString() === cameraId);
+        // ── 1) grab your canvas dimensions ───────────────────────────
+        const wrapper   = document.getElementById(`camera-${camId}`);
+        const canvasEl  = wrapper?.querySelector("canvas");
+        const { width: canvas_width, height: canvas_height } =
+          canvasEl?.getBoundingClientRect() || { width: 0, height: 0 };
+        // ──────────────────────────────────────────────────────────────
+  
+        // Build your ROI definitions exactly as before…
+        const roiDefs = Object.entries(cameraShapes).map(([_, shapes]) => {
           const rects = shapes.filter((s) => s.type === "rectangle");
-          
           return {
-              type: "camera",
-              source: {
-                  id: camera.id,
-                  name: camera.name,
-                  url: camera.url, // Using url instead of hlsUrl since we're working with base64
+            type: "camera",
+            source: {
+              id:   camera.id,
+              name: camera.name,
+              url:  camera.url,
+            },
+            regions: rects.map((r) => ({
+              Region_name: r.name || `Region ${r.id}`,
+              Region_Cords: {
+                vertices: [
+                  [r.x,             r.y],
+                  [r.x,             r.y + r.height],
+                  [r.x + r.width,   r.y + r.height],
+                  [r.x + r.width,   r.y],
+                ],
               },
-              regions: rects.map((r) => ({
-                  Region_name: r.name || `Region ${r.id}`,
-                  Region_Cords: {
-                      vertices: [
-                          [r.x, r.y],
-                          [r.x, r.y + r.height],
-                          [r.x + r.width, r.y + r.height],
-                          [r.x + r.width, r.y],
-                      ],
-                  },
-              })),
+            })),
           };
-      });
-      
-      // Update the payload to include firstFrame
-      const payload = {
-          camera_name: camera.name || "",
-          rtsp_url: camera.url || "",
-          first_frame: camera.firstFrame, // Include the base64 first frame
-          camera_id: camId,
-          roi_defs: roiDefs,
-      };
+        });
+  
+        // ── 2) include those dimensions in your payload ──────────────
+        const payload = {
+          camera_name:   camera.name || "",
+          rtsp_url:      camera.url  || "",
+          first_frame:   camera.firstFrame || "",
+          camera_id:     camId,
+          roi_defs:      roiDefs,
+          canvas_width:  Math.round(canvas_width),
+          canvas_height: Math.round(canvas_height),
+        };
+        // ──────────────────────────────────────────────────────────────
+  
         await axios.post(endpoint, payload);
 
                // Add minimum delay of 1 second
@@ -167,45 +174,52 @@ export default function CameraRender() {
         uploadedVideos.forEach((video) => {
           formData.append("video", video.file);
         });
-  
-        // Get ROI definitions for video shapes - same structure as camera shapes
-        const videoShapesData = Object.entries(videoShapes).map(([videoId, shapes]) => {
-          const video = uploadedVideos.find((v) => v.id === videoId);
-          const rects = shapes.filter((s) => s.type === "rectangle");
-          
-          return {
-            type: "video",
-            source: {
-              id: video.id,
-              name: video.file.name,
-              url: video.url,
-            },
-            regions: rects.map((r) => ({
-              Region_name: r.name || `Region ${r.id}`,
-              Region_Cords: {
-                vertices: [
-                  [r.x, r.y],
-                  [r.x, r.y + r.height],
-                  [r.x + r.width, r.y + r.height],
-                  [r.x + r.width, r.y],
-                ],
+      
+        const videoShapesData = Object.entries(videoShapes).map(
+          ([videoId, shapes]) => {
+            const video = uploadedVideos.find((v) => v.id === videoId);
+            const rects = shapes.filter((s) => s.type === "rectangle");
+            return {
+              type: "video",
+              source: {
+                id: video.id,
+                name: video.file.name,
+                url: video.url,
               },
-            })),
-          };
-        });
-  
-        formData.append("roi_defs", JSON.stringify(videoShapesData));
-  
+              regions: rects.map((r) => ({
+                Region_name: r.name || `Region ${r.id}`,
+                Region_Cords: {
+                  vertices: [
+                    [r.x, r.y],
+                    [r.x, r.y + r.height],
+                    [r.x + r.width, r.y + r.height],
+                    [r.x + r.width, r.y],
+                  ],
+                },
+              })),
+            };
+          }
+        );
+      
+        // grab the actual canvas size for this video
+        const wrapper    = document.getElementById(`video-${selectedVideo}`);
+        const canvasEl   = wrapper.querySelector("canvas");
+        const { width: canvas_width, height: canvas_height } =
+          canvasEl.getBoundingClientRect();
+      
+        formData.append("canvas_width",  Math.round(canvas_width));
+        formData.append("canvas_height", Math.round(canvas_height));
+        formData.append("roi_defs",      JSON.stringify(videoShapesData));
+      
         const res = await fetch(`${apiUrl}/upload_config`, {
           method: "POST",
           body: formData,
         });
-        
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const data = await res.json();
         navigate("/live-video", { state: { data } });
       }
-    } catch (err) {
+          } catch (err) {
       console.error("Error saving shapes:", err);
     } finally {
       setIsSaving(false);
@@ -429,11 +443,10 @@ export default function CameraRender() {
 
         return (
           <div
-            key={camera.id}
-            className={`relative rounded-lg overflow-hidden ${
-              isVisible ? "" : "hidden"
-            }`}
-          >
+              key={camera.id}
+              id={`camera-${camera.id}`}
+              className={`relative rounded-lg overflow-hidden ${isVisible ? "" : "hidden"}`}
+            >
             <VideoCanvas
               cameraData={camera}
               isSelected={selectedCamera === camera.id}
@@ -466,11 +479,11 @@ export default function CameraRender() {
                     !maximizedVideo || video.id === maximizedVideo;
 
                   return (
-                    <div
-                      key={video.id}
-                      className={`relative rounded-lg overflow-visible ${isVisible ? '' : 'hidden'}`}
-                    >
-                      <VideoSection
+                       <div
+                         key={video.id}
+                         id={`video-${video.id}`}
+                         className={`relative rounded-lg overflow-visible ${isVisible ? "" : "hidden"}`}
+                      >                      <VideoSection
                         videoData={video}
                         isSelected={selectedVideo === video.id}
                         onSelect={setSelectedVideo}
