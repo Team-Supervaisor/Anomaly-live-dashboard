@@ -10,6 +10,7 @@ import Hls from "hls.js";
 import axios from "axios";
 import { Edit2, Loader2, Play, RotateCcw } from 'lucide-react';
 import InstructionModal from './InstructionModal';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 
 const playbackPositions = {};
@@ -513,10 +514,10 @@ const LiveAi = () => {
 
       <div className="flex flex-1 p-4 pt-0 gap-4 overflow-hidden ">
         {/* Left Section */}
-        <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1 overflow-hidden">
+        {/* <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1 overflow-hidden">
 
           <div className="flex justify-between">
-            {/* hls videos */}  
+         
 
             <div className="w-full flex justify-center p-4">
           <img
@@ -530,7 +531,37 @@ const LiveAi = () => {
         </div>
 
           </div>
+        </div> */}
+        <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1  justify-center
+        overflow-hidden">
+  <div className="flex justify-between">
+    <div className="w-full flex flex-col justify-center items-center p-4">
+      {streamUrl ? (
+        <img
+          ref={imgRef}
+          src={streamUrl}
+          width={640}
+          height={480}
+          alt="Live stream"
+          className="rounded-xl border"
+        />
+      ) : (
+        <div className="flex flex-col items-center ">
+          <div className="w-[100px] h-[100px]">
+            <DotLottieReact
+              src="https://lottie.host/f8ebbd51-92be-41df-b006-c9b7f84bebe1/AEO0yOumqr.lottie"
+              loop
+              autoplay
+            />
+          </div>
+          <span className="text-gray-600 text-lg font-medium mt-4">
+            AI analyzing video...
+          </span>
         </div>
+      )}
+    </div>
+  </div>
+</div>
 
         {/* Right Section with Instructions and AI Analysis */}
         <div className="flex flex-col gap-4 w-[360px]">
