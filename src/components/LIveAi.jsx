@@ -194,17 +194,17 @@ const LiveAi = () => {
     });
 
     socketRef2.current.on("connect", () => {
-      console.log("✅ Instruction socket connected on port 8000");
+      console.log("Instruction socket connected on port 8000");
     });
     socketRef2.current.on("connect_error", (err) => {
-      console.error("❌ Instruction socket error:", err);
+      console.error(" Instruction socket error:", err);
     });
 
     // Clean up both sockets on unmount
     return () => {
       socketRef.current.disconnect();
       socketRef2.current.disconnect();
-      console.log("🛑 All sockets disconnected");
+      console.log("All sockets disconnected");
     };
   }, []);
 
@@ -409,16 +409,13 @@ const LiveAi = () => {
       return;
     }
 
-    // Update UI state
     setInstructionset(instruction);
     setInstrucLoader(true);
 
-    // Pump the new instruction over WebSocket
     instrSocket.emit(
       "instructions_changed",
       instruction,
       (acknowledgement) => {
-        // Optional server ACK handler
         console.log("Server ACK:", acknowledgement);
         setInstrucLoader(false);
         setShowInstructionModal(false);
@@ -465,17 +462,29 @@ const LiveAi = () => {
     return out;
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {                      
     const ctrlSocket = io("http://localhost:8000");
     ctrlSocket.on("connect", () => {
       ctrlSocket.emit("frontend_connect", { cameraId });
       console.log("Sent frontend-connect");
     });
     ctrlSocketRef.current = ctrlSocket;
-
-    if (!socketRef.current) return;
-    socketRef.current.emit("start_tracking", { cameraId });
-    setIsTracking(true);
+  
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/tracking_start`,  
+        {}                                                  
+      );
+      console.log(" tracking_start POST successful");
+    } catch (err) {
+      console.error(" tracking_start POST failed:", err);
+      return;                                              
+    }
+    
+    if (socketRef.current) {
+      socketRef.current.emit("start_tracking", { cameraId });
+      setIsTracking(true);
+    }
   };
 
   const handleReset = () => {
