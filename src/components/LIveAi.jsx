@@ -506,13 +506,14 @@ const LiveAi = () => {
             </button>
             
             <button
-              onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2 border border-[#717AEA] rounded-[4rem] 
-                        text-[#7900F3] font-medium hover:bg-[#7900F3]/5 transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset
-            </button>
+          onClick={handleReset}
+          className="flex items-center gap-2 px-4 py-2 border rounded-[4rem] 
+                    text-[#717171] text-[16px] font-[500] hover:bg-[#7171711A] 
+                    transition-colors"
+        >
+          <RotateCcw className="w-4 h-4 text-[#717171]" />
+          Reset
+        </button>
           </div>
 
         {/* Add empty div to balance the layout */}
@@ -571,15 +572,16 @@ const LiveAi = () => {
         />
       ) : (
         <div className="flex flex-col items-center ">
-          <div className="w-[100px] h-[100px]">
-            <DotLottieReact
-              src="https://lottie.host/f8ebbd51-92be-41df-b006-c9b7f84bebe1/AEO0yOumqr.lottie"
-              loop
-              autoplay
-            />
+          <div className="w-[120px] h-[120px]">
+            
+          <DotLottieReact
+            src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
+            loop
+            autoplay
+           />
           </div>
-          <span className="text-gray-600 text-lg font-medium mt-4">
-            AI analyzing video...
+          <span className="text-gray-600 text-lg font-medium mt-1">
+            AI analyzing video
           </span>
         </div>
       )}
