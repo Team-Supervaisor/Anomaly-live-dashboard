@@ -185,6 +185,11 @@ const LiveAi = () => {
       transports: ["websocket"],
       reconnectionAttempts: 5,
     });
+
+    socketRef.current.on("connect", () => {
+      console.log("✅ Primary socket connected (ready to emit tracking_start)");
+    });
+    
   
     socketRef.current.on("frame", (data) => {
       const blob = new Blob([data], { type: "image/jpeg" });
@@ -207,20 +212,29 @@ const LiveAi = () => {
     socketRef2.current.on("connect_error", (err) => {
       console.error("Instruction socket error:", err);
     });
+  
+    // CORRECTED anomaly_alert handler:
+    socketRef2.current.on("anomaly_alert", (arg1, arg2) => {
+      // Socket.io sometimes gives you (eventName, payload) or just (payload).
+      const data =
+        typeof arg2 === "undefined" && typeof arg1 === "object"
+          ? arg1
+          : arg2;
+      console.log("▶ anomaly_alert payload:", data);
+  
+      setAiAnalyzeitem(prev => [...prev, data]);
+      setLoader(false);
+    });
+  
     socketRef2.current.on("instructions_changed", (data) => {
       setInstrucLoader(false);
       console.log("Instructions:", data);
     });
-    socketRef2.current.on("anomaly_alert", handleAnomalyAlert);
   
-    // Clean up both sockets on unmount
     return () => {
-      socketRef.current.disconnect();
-  
-      socketRef2.current.off("anomaly_alert", handleAnomalyAlert);
+      socketRef2.current.off("anomaly_alert");
+      socketRef2.current.off("instructions_changed");
       socketRef2.current.disconnect();
-  
-      console.log("All sockets disconnected");
     };
   }, []);
   
@@ -503,16 +517,16 @@ const LiveAi = () => {
       ctrlSocket.emit("frontend_connect", { cameraId });
       console.log("Sent frontend_connect");
   
-      ctrlSocket.emit("tracking_start", { cameraId }, (ack) => {
-        console.log("tracking_start ack:", ack);
-      });
+      // ctrlSocket.emit("tracking_start", { cameraId }, (ack) => {
+      //   console.log("tracking_start ack:", ack);
+      // });
       console.log("Sent tracking_start");
   
-      if (socketRef.current) {
-        socketRef.current.emit("start_tracking", { cameraId });
+       if (socketRef.current) {
+        socketRef.current.emit("tracking_start");
         setIsTracking(true);
         console.log("start_tracking emitted on primary socket");
-      }
+       }
     });
   
     ctrlSocket.on("connect_error", (err) => {
@@ -530,7 +544,7 @@ const LiveAi = () => {
     // }
 
     if (ctrlSocketRef.current) {
-      ctrlSocketRef.current.emit("frontend-disconnect", { cameraId });
+      ctrlSocketRef.current.emit("frontend-disconnect");
       ctrlSocketRef.current.disconnect();
       ctrlSocketRef.current = null;
       console.log("Sent frontend-disconnect and disconnected control socket");
