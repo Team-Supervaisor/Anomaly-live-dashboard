@@ -491,8 +491,25 @@ const LiveAi = () => {
           </div>
 
         {/* Add empty div to balance the layout */}
-        <div className="flex-none w-[150px]"></div>
-      </header>
+          <button
+            style={{padding: "14px 24px"}}
+                className="flex items-center justify-center 
+                          border border-[#F20A0A] rounded-[100px] bg-[#FFDDDB]
+                          text-[#F20A0A] font-medium text-base hover:bg-[#FFE8E7] 
+                          transition-colors gap-[10px]"
+              >
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full 
+                                  rounded-full bg-[#F20A0A] opacity-75">
+                  </span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 
+                                  bg-[#F20A0A]">
+                  </span>
+                </span>
+                Live AI
+              </button>
+   
+          </header>
 
       <div className="flex flex-1 p-4 pt-0 gap-4 overflow-hidden ">
         {/* Left Section */}
