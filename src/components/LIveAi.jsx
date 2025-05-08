@@ -448,7 +448,7 @@ const LiveAi = () => {
       return null;
     });
   };
-  
+  {}
    
   return (
     <div className="flex flex-col h-screen bg-[#F5F9FF]">
