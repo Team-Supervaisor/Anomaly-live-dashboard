@@ -161,23 +161,31 @@ const LiveAi = () => {
   const [instructionset, setInstructionset] = useState('');
   const [instrucLoader, setInstrucLoader] = useState(false);
   const socketRef = useRef(null);
+  const [aiAnalyzeitem, setAiAnalyzeitem] = useState([]);
   const socketRef2 = useRef(null);
   const [isTracking, setIsTracking] = useState(false);
   const { cameraId } = useParams();
   const { state } = useLocation();
   const { cameraData } = state || {};
+  const anomalyScrollContainerRef = useRef(null);
+  const [showAllAnamoly, setShowAllAnamoly] = useState(false);
+  const [loader,setLoader] = useState(false);
 
+
+  const handleAnomalyAlert = data => {
+    console.log("Anomaly alert received:", data);
+    setAiAnalyzeitem(prev => [...prev, data]);
+    setLoader(false);
+  };
+  
 
   useEffect(() => {
-    // — Primary socket (anomaly + frame feeds)
+    // — Primary socket (frame feeds only)
     socketRef.current = io(import.meta.env.VITE_API_URL, {
       transports: ["websocket"],
       reconnectionAttempts: 5,
     });
-
-    socketRef.current.on("anomaly_alert", (payload) => {
-      if (Array.isArray(payload)) setLogs(payload);
-    });
+  
     socketRef.current.on("frame", (data) => {
       const blob = new Blob([data], { type: "image/jpeg" });
       const url = URL.createObjectURL(blob);
@@ -186,29 +194,48 @@ const LiveAi = () => {
         return url;
       });
     });
-
-    // — Secondary socket (instructions_changed on port 8000)
+  
+    // — Secondary socket (instructions_changed + anomaly_alert)
     socketRef2.current = io(import.meta.env.VITE_API_URL1, {
       transports: ["websocket"],
       reconnectionAttempts: 3,
     });
-
+  
     socketRef2.current.on("connect", () => {
       console.log("Instruction socket connected on port 8000");
     });
     socketRef2.current.on("connect_error", (err) => {
-      console.error(" Instruction socket error:", err);
+      console.error("Instruction socket error:", err);
     });
-
+    socketRef2.current.on("instructions_changed", (data) => {
+      setInstrucLoader(false);
+      console.log("Instructions:", data);
+    });
+    socketRef2.current.on("anomaly_alert", handleAnomalyAlert);
+  
     // Clean up both sockets on unmount
     return () => {
       socketRef.current.disconnect();
+  
+      socketRef2.current.off("anomaly_alert", handleAnomalyAlert);
       socketRef2.current.disconnect();
+  
       console.log("All sockets disconnected");
     };
   }, []);
+  
 
-    
+  useEffect(() => {
+    if (anomalyScrollContainerRef.current && aiAnalyzeitem.length > 0) {
+      // Using smooth scroll behavior
+      anomalyScrollContainerRef.current.scrollTo({
+        top: anomalyScrollContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [aiAnalyzeitem]);
+  
+
   useEffect(() => {
     console.log("Streaming for camera:", cameraId, "with data:", cameraData);
   }, [cameraId, cameraData]);
@@ -280,6 +307,10 @@ const LiveAi = () => {
     },
   ];
 
+  const handleRefreshAi = () => {
+    setAiAnalyzeitem([]);
+    setLoader(false);
+  };
   // useEffect(() => {
   //   const startStream = async () => {
   //     const apiUrl = import.meta.env.VITE_API_URL;
@@ -462,30 +493,35 @@ const LiveAi = () => {
     return out;
   };
 
-  const handleStart = async () => {                      
-    const ctrlSocket = io("http://localhost:8000");
+  const handleStart = () => {
+    const ctrlSocket = io("http://localhost:8000", {
+      transports: ["websocket"],
+      reconnectionAttempts: 3,
+    });
+  
     ctrlSocket.on("connect", () => {
       ctrlSocket.emit("frontend_connect", { cameraId });
-      console.log("Sent frontend-connect");
-    });
-    ctrlSocketRef.current = ctrlSocket;
+      console.log("Sent frontend_connect");
   
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/tracking_start`,  
-        {}                                                  
-      );
-      console.log(" tracking_start POST successful");
-    } catch (err) {
-      console.error(" tracking_start POST failed:", err);
-      return;                                              
-    }
-    
-    if (socketRef.current) {
-      socketRef.current.emit("start_tracking", { cameraId });
-      setIsTracking(true);
-    }
+      ctrlSocket.emit("tracking_start", { cameraId }, (ack) => {
+        console.log("tracking_start ack:", ack);
+      });
+      console.log("Sent tracking_start");
+  
+      if (socketRef.current) {
+        socketRef.current.emit("start_tracking", { cameraId });
+        setIsTracking(true);
+        console.log("start_tracking emitted on primary socket");
+      }
+    });
+  
+    ctrlSocket.on("connect_error", (err) => {
+      console.error("Control socket connection error:", err);
+    });
+  
+    ctrlSocketRef.current = ctrlSocket;
   };
+  
 
   const handleReset = () => {
     // if (wsRef.current) {
@@ -653,81 +689,197 @@ const LiveAi = () => {
           </div>
 
           {/* AI Analysis Card */}
-          <div className="bg-white rounded-[26px]  flex flex-col max-h-[440px]">
-            <div className="flex items-center justify-between p-4 pt-[24px] pb-[13px] mb-[13px] border-b border-[#EFF4FE]">
-              <div className="flex items-center">
+          <div className="bg-white rounded-[26px] p-4 max-h-[380px] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <div
+                className="flex items-center cursor-pointer"
+                onClick={() => setShowAllAnamoly(true)}
+              >
                 <div className="w-6 h-6 rounded-full flex items-center justify-center mr-2">
                   <img src={ai} alt="AI" className="w-4 h-4" />
                 </div>
-                <h2 className="font-[400] text-[#1B1F4F] text-[14px]">AI Analysis</h2>
+                <h2 className="font-medium text-lg">AI Analysis</h2>
+                {loader && (
+                  <Loader2 className="animate-spin text-indigo-500 w-4 h-4 ml-2" />
+                )}
+              </div>
+              <button
+                onClick={handleRefreshAi}
+                className="p-2 bg-[#EBECFF] rounded hover:bg-[#DDE2FD] transition"
+                title="Refresh AI analysis"
+              >
+                <RefreshCw className="w-5 h-5 text-[#5A62C8]" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div
+              ref={anomalyScrollContainerRef}
+              className="space-y-4 bg-[#EFF4FF] p-[12px] rounded-[12px] overflow-y-auto scrollbar-hidden flex-1"
+            >
+              <div className="flex flex-col gap-2">
+                {aiAnalyzeitem.map((item, index) => {
+                  return (
+                    <React.Fragment key={index}>
+                      {item.type === "Operation" ? (
+                        <>
+                          <div
+                            key={index}
+                            className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
+                          >
+                            <div
+                              onClick={() => setShowAllAnamoly(true)}
+                              className="flex gap-2 mb-1 cursor-pointer"
+                            >
+                              <span className="font-medium">{index + 1}.</span>
+                              <span className="text-black-700 font-semibold">
+                                {item.cp}
+                              </span>
+                            </div>
+
+                            <ul
+                              onClick={() => setShowAllAnamoly(true)}
+                              className=" rounded-md p-2 mt-1 text-black list-disc list-inside cursor-pointer"
+                            >
+                              <li>Checkpoint: {item.cp}</li>
+                              <li>Operation: {item.op}</li>
+                              <li>Expected: {item.exp}</li>
+                              <li>Actual: {item.act.toFixed(4)}</li>
+                              <li>
+                                Deviation (sec): {item.dev_sec.toFixed(4)}
+                              </li>
+                              <li>Operation ID: {item.OpID}</li>
+                            </ul>
+                            <div
+                              className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
+                              // onClick={() => openAimodal(item)}
+                            >
+                              <span className="text-[#5A62C8]">
+                                {item.type}
+                              </span>
+                              <button className="text-xs text-[#5A62C8]">
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      ) : item.type === "Time Event" ? (
+                        <>
+                          <div
+                            key={index}
+                            className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
+                          >
+                            <div
+                              onClick={() => setShowAllAnamoly(true)}
+                              className="flex gap-2 mb-1 cursor-pointer"
+                            >
+                              <span className="font-medium">{index + 1}.</span>
+                              <span className="text-black-700 font-semibold">
+                                {item.type}
+                              </span>
+                            </div>
+
+                            <p>{item.reason}</p>
+                            <div
+                              className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
+                              // onClick={() => openAimodal(item)}
+                            >
+                              <span className="text-[#5A62C8]">
+                                {item.type}
+                              </span>
+                              <button className="text-xs text-[#5A62C8]">
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      ) : item.type === "Checkpoint" ? (
+                        <>
+                          <div
+                            key={index}
+                            className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
+                          >
+                            <div
+                              onClick={() => setShowAllAnamoly(true)}
+                              className="flex gap-2 mb-1 cursor-pointer"
+                            >
+                              <span className="font-medium">{index + 1}.</span>
+                              <span className="text-black-700 font-semibold">
+                                {item.type}
+                              </span>
+                            </div>
+
+                            <ul
+                              onClick={() => setShowAllAnamoly(true)}
+                              className="rounded-md p-2 mt-1 text-black list-disc list-inside cursor-pointer"
+                            >
+                              {/* Extra section as a list item */}
+                              <li>
+                                <span className="font-medium">Extra:</span>
+                                <ul className="list-disc list-inside ml-4 mt-1">
+                                  {item.extra.length > 0 ? (
+                                    item.extra.map((cp, i) => (
+                                      <li key={`extra-${i}`}>{cp}</li>
+                                    ))
+                                  ) : (
+                                    <li>N/A</li>
+                                  )}
+                                </ul>
+                              </li>
+
+                              {/* Order section as a list item */}
+                              <li>
+                                <span className="font-medium">Order:</span>
+                                <div className="flex flex-wrap items-center ml-5 mt-1">
+                                  {item.order.map((cp, i) => (
+                                    <React.Fragment key={`order-${i}`}>
+                                      <span>{cp}</span>
+                                      {i !== item.order.length - 1 && (
+                                        <span className="mx-1">→</span>
+                                      )}
+                                    </React.Fragment>
+                                  ))}
+                                </div>
+                              </li>
+
+                              {/* Current Anomaly section as a list item */}
+                              <li>
+                                <span className="font-medium">
+                                  Current Anomaly:
+                                </span>
+                                <ul className="list-disc list-inside ml-4 mt-1">
+                                  <li>
+                                    Position: {item.current_anomaly.position}
+                                  </li>
+                                  <li>
+                                    Expected: {item.current_anomaly.expected}
+                                  </li>
+                                  <li>Actual: {item.current_anomaly.actual}</li>
+                                </ul>
+                              </li>
+                            </ul>
+
+                            <div
+                              className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
+                              // onClick={() => openAimodal(item)}
+                            >
+                              <span className="text-[#5A62C8]">
+                                {item.type}
+                              </span>
+                              <button className="text-xs text-[#5A62C8]">
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      ) : null}
+                    </React.Fragment>
+                  );
+                })}
+                
+                
               </div>
             </div>
-
-            {/* Logs Display with custom scrollbar */}
-        
-            <div
-              ref={logsContainerRef}
-         
-              className="flex-1 overflow-y-auto p-4  hide-scrollbar scroll-smooth"
-            >
-              {logs.length > 0 ? (
-                logs.map((log, idx) => (
-                  <div
-                  key={`${log.person_id}-${log.timestamp}-${idx}`}
-                  className={
-                    `mb-6 p-4 bg-[#F5F9FF] rounded-lg 
-                     border-2 
-                     ${idx === 0 
-                       ? 'border-blue-500'   
-                       : 'border-transparent'} 
-                     transition-all duration-500 ease-in-out`
-                  }
-                >
-                    <div className="flex justify-between items-start">
-                      <span className="text-[#464646] text-[13.32px] font-[400]">Camera:</span>
-                      <span className="text-[#464646] text-[13.32px] font-[600]">
-                        {log.camera_id}
-                      </span>
-                    </div>
-                    <div className="space-y-0 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-[#464646] text-[13.32px] font-[400]">Region:</span>
-                        <span className="text-[#464646] text-[13.32px] font-[600]">
-                          {log.roi}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[#464646] text-[13.32px] font-[400]">Event:</span>
-                        <span
-                          // className={`font-medium ${
-                          //   log.event === "entry"
-                          //     ? "text-green-600"
-                          //     : log.event === "exit"
-                          //     ? "text-red-600"
-                          //     : "text-blue-600"
-                          // }`}
-                          className="text-[#F20A0A] text-[13.32px] font-[700]"
-                        >
-                          {log.event}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[#464646] text-[13.32px] font-[400]">Timestamp:</span>
-                        <span className="text-[#464646] text-[13.32px] font-[600]">
-                          {format(new Date(log.timestamp), "EEE, HH:mm:ss")}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-500 mt-4">
-                  Waiting for events...
-                </div>
-              )}
-            </div>
-
-           
           </div>
         </div>
       </div>
