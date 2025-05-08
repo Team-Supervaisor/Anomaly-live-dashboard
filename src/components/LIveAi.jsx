@@ -168,29 +168,45 @@ const LiveAi = () => {
   const { cameraData } = state || {};
 
 
-    useEffect(() => {
-      socketRef.current = io(import.meta.env.VITE_API_URL);
-      socketRef.current2= io(import.meta.env.VITE_API_URL1);
-      
-      // whenever the server sends us new logs, update state
-      socketRef.current.on("anomaly_alert", (payload) => {
-        if (Array.isArray(payload)) {
-          setLogs(payload);
-        }
+  useEffect(() => {
+    // — Primary socket (anomaly + frame feeds)
+    socketRef.current = io(import.meta.env.VITE_API_URL, {
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+    });
+
+    socketRef.current.on("anomaly_alert", (payload) => {
+      if (Array.isArray(payload)) setLogs(payload);
+    });
+    socketRef.current.on("frame", (data) => {
+      const blob = new Blob([data], { type: "image/jpeg" });
+      const url = URL.createObjectURL(blob);
+      setStreamUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
       });
-      socketRef.current.on("frame", (data) => {
-        const blob = new Blob([data], { type: "image/jpeg" });
-        const url = URL.createObjectURL(blob);
-        setStreamUrl(prev => {
-          if (prev) URL.revokeObjectURL(prev);
-          return url;
-        });
-      });
-      
-      return () => {
-        socketRef.current.disconnect();
-      };
-    }, []);
+    });
+
+    // — Secondary socket (instructions_changed on port 8000)
+    socketRef2.current = io(import.meta.env.VITE_API_URL1, {
+      transports: ["websocket"],
+      reconnectionAttempts: 3,
+    });
+
+    socketRef2.current.on("connect", () => {
+      console.log("✅ Instruction socket connected on port 8000");
+    });
+    socketRef2.current.on("connect_error", (err) => {
+      console.error("❌ Instruction socket error:", err);
+    });
+
+    // Clean up both sockets on unmount
+    return () => {
+      socketRef.current.disconnect();
+      socketRef2.current.disconnect();
+      console.log("🛑 All sockets disconnected");
+    };
+  }, []);
 
     
   useEffect(() => {
@@ -387,16 +403,28 @@ const LiveAi = () => {
   };
 
   const handleSaveInstruction = (instruction) => {
-    if (!socketRef2.current) {
-        console.error("Socket connection not established");
-        return;
+    const instrSocket = socketRef2.current;
+    if (!instrSocket || !instrSocket.connected) {
+      console.error("Socket for instructions not connected");
+      return;
     }
-    
+
+    // Update UI state
     setInstructionset(instruction);
     setInstrucLoader(true);
-    socketRef2.current.emit("instructions_changed", instruction);
-    setShowInstructionModal(false);
-};
+
+    // Pump the new instruction over WebSocket
+    instrSocket.emit(
+      "instructions_changed",
+      instruction,
+      (acknowledgement) => {
+        // Optional server ACK handler
+        console.log("Server ACK:", acknowledgement);
+        setInstrucLoader(false);
+        setShowInstructionModal(false);
+      }
+    );
+  };
 
   const formatInstructionHtml = (markdown) => {
     if (!markdown) return "<p>N/A</p>";
@@ -440,7 +468,7 @@ const LiveAi = () => {
   const handleStart = () => {
     const ctrlSocket = io("http://localhost:8000");
     ctrlSocket.on("connect", () => {
-      ctrlSocket.emit("frontend-connect", { cameraId });
+      ctrlSocket.emit("frontend_connect", { cameraId });
       console.log("Sent frontend-connect");
     });
     ctrlSocketRef.current = ctrlSocket;
