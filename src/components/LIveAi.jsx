@@ -151,6 +151,8 @@ const LiveAi = () => {
   const imgRef = useRef(null);
   
   const wsRef = useRef(null);
+  const ctrlSocketRef = useRef(null);
+  
   const location = useLocation();
   const { data } = location.state || {};
   const [logs, setLogs] = useState([]);
@@ -427,26 +429,48 @@ const LiveAi = () => {
   };
 
   const handleStart = () => {
-    if (wsRef.current) return;              // already opened
+    if (wsRef.current) return; 
+
+    const ctrlSocket = io("http://localhost:5000");
+    ctrlSocket.on("connect", () => {
+      ctrlSocket.emit("frontend-connect", { cameraId });
+      console.log("✅ Sent frontend-connect");
+    });
+    ctrlSocketRef.current = ctrlSocket;
+
     const ws = new WebSocket(`ws://localhost:5000/ws/${cameraId}`);
-    ws.binaryType = 'arraybuffer';
-    ws.onopen  = () => setIsTracking(true); // flip your button into “Started”
-    ws.onerror = e  => console.error("WS error", e);
+    ws.binaryType = "arraybuffer";
+    ws.onopen = () => setIsTracking(true);
+    ws.onerror = (e) => console.error("WS error", e);
     ws.onmessage = ({ data }) => {
       const blob = new Blob([new Uint8Array(data)], { type: "image/jpeg" });
-      const url  = URL.createObjectURL(blob);
-      setStreamUrl(url);
-      // optionally revoke the previous URL here
+      const url = URL.createObjectURL(blob);
+      setStreamUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
     };
     wsRef.current = ws;
   };
+
   const handleReset = () => {
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
+
+    if (ctrlSocketRef.current) {
+      ctrlSocketRef.current.emit("frontend-disconnect", { cameraId });
+      ctrlSocketRef.current.disconnect();
+      ctrlSocketRef.current = null;
+      console.log("Sent frontend-disconnect and disconnected control socket");
+    }
+
     setIsTracking(false);
-    setStreamUrl(null);
+    if (streamUrl) {
+      URL.revokeObjectURL(streamUrl);
+      setStreamUrl(null);
+    }
   };
    
   return (
