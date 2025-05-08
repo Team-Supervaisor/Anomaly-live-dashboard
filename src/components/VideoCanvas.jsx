@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import Hls from 'hls.js'
-import { Maximize, Minimize, PencilIcon, Trash2 } from "lucide-react"
+import { Maximize, Minimize, PencilIcon, Trash2 } from "lucide-react";
+import RegionModal from "./AddRegionModal";
 
 // Define cursor map similar to DrawCanvasDrawer
 const cursorMap = {
@@ -450,31 +451,43 @@ export default function VideoCanvas({
     }
 
     // Handle edit shape
+    // const handleEditShape = () => {
+    //     if (!hoveredShape) return
+        
+    //     // Calculate the center of the rectangle for dialog positioning
+    //     const normalizedRect = {
+    //         x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
+    //         y: hoveredShape.height < 0 ? hoveredShape.y + hoveredShape.height : hoveredShape.y,
+    //         width: Math.abs(hoveredShape.width),
+    //         height: Math.abs(hoveredShape.height)
+    //     }
+        
+    //     const centerX = normalizedRect.x + (normalizedRect.width / 2)
+    //     const centerY = normalizedRect.y + (normalizedRect.height / 2)
+        
+    //     setShapeDialog({
+    //         isOpen: true,
+    //         x: centerX,
+    //         y: centerY,
+    //         shapeId: hoveredShape.id,
+    //         name: hoveredShape.name || "",
+    //     })
+        
+    //     setSelectedShape(hoveredShape)
+    //     setHoveredShape(null)
+    // }
+
     const handleEditShape = () => {
-        if (!hoveredShape) return
-        
-        // Calculate the center of the rectangle for dialog positioning
-        const normalizedRect = {
-            x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
-            y: hoveredShape.height < 0 ? hoveredShape.y + hoveredShape.height : hoveredShape.y,
-            width: Math.abs(hoveredShape.width),
-            height: Math.abs(hoveredShape.height)
-        }
-        
-        const centerX = normalizedRect.x + (normalizedRect.width / 2)
-        const centerY = normalizedRect.y + (normalizedRect.height / 2)
+        if (!hoveredShape) return;
         
         setShapeDialog({
             isOpen: true,
-            x: centerX,
-            y: centerY,
             shapeId: hoveredShape.id,
-            name: hoveredShape.name || "",
-        })
-        
-        setSelectedShape(hoveredShape)
-        setHoveredShape(null)
-    }
+            name: hoveredShape.name || ""
+        });
+        setSelectedShape(hoveredShape);
+        setHoveredShape(null);
+    };
     
     // Handle delete shape
     const handleDeleteShape = () => {
@@ -487,17 +500,17 @@ export default function VideoCanvas({
     }
     
     // Handle shape dialog save
-    const handleShapeDialogSave = () => {
-        // Update the shape with the new name
-        const updatedShapes = shapes.map(shape => 
-            shape.id === shapeDialog.shapeId
-                ? { ...shape, name: shapeDialog.name }
-                : shape
-        )
+    // const handleShapeDialogSave = () => {
+    //     // Update the shape with the new name
+    //     const updatedShapes = shapes.map(shape => 
+    //         shape.id === shapeDialog.shapeId
+    //             ? { ...shape, name: shapeDialog.name }
+    //             : shape
+    //     )
         
-        onShapesChange(updatedShapes)
-        setShapeDialog({ ...shapeDialog, isOpen: false })
-    }
+    //     onShapesChange(updatedShapes)
+    //     setShapeDialog({ ...shapeDialog, isOpen: false })
+    // }
     
     // Close shape dialog
     const closeShapeDialog = () => {
@@ -509,11 +522,11 @@ export default function VideoCanvas({
         return cursorMap[selectedTool] || "";
     }
 
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter') {
-            handleShapeDialogSave();
-        }
-    };
+    // const handleKeyPress = (e) => {
+    //     if (e.key === 'Enter') {
+    //         handleShapeDialogSave();
+    //     }
+    // };
 
     // Calculate hover menu position
     const calculateHoverPosition = () => {
@@ -604,13 +617,17 @@ export default function VideoCanvas({
                 <div style={calculateHoverPosition()}>
                     <div className="relative group">
                         <button
-                            className="w-8 h-8 rounded-full bg-indigo-400 hover:bg-indigo-500 flex items-center justify-center shadow-md"
+                            className="w-8 h-8 rounded-full flex items-center justify-center shadow-md"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleEditShape();
                             }}
                         >
-                            <PencilIcon className="text-white w-4 h-4" />
+                             <img
+                            src="/pen.svg"
+                            alt="live icon"
+                            className=""
+                            />
                         </button>
                         <div className="absolute w-[65px] left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded">
                             Edit Info.
@@ -619,7 +636,7 @@ export default function VideoCanvas({
                 
                     <div className="relative group">
                         <button
-                            className="w-8 h-8 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
+                            className="w-7 h-7 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteShape();
@@ -635,7 +652,7 @@ export default function VideoCanvas({
             )}
             
             {/* Shape dialog for editing */}
-            {shapeDialog.isOpen && (
+            {/* {shapeDialog.isOpen && (
                 <div
                     className="absolute bg-white p-4 rounded-2xl shadow-xl w-[320px] z-100"
                     style={{
@@ -685,6 +702,24 @@ export default function VideoCanvas({
                         </div>
                     </div>
                 </div>
+            )} */}
+
+            {shapeDialog.isOpen && (
+                <RegionModal
+                    isOpen={shapeDialog.isOpen}
+                    onClose={closeShapeDialog}
+                    onSave={(name) => {
+                        const updatedShapes = shapes.map(shape => 
+                            shape.id === shapeDialog.shapeId
+                                ? { ...shape, name: name }
+                                : shape
+                        );
+                        onShapesChange(updatedShapes);
+                        setShapeDialog({ ...shapeDialog, isOpen: false });
+                    }}
+                    initialValue={shapeDialog.name}
+                    title="Enter name"
+                />
             )}
         </div>
     )

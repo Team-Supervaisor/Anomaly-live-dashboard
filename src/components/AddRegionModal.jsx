@@ -22,15 +22,15 @@ const RegionModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden rounded-3xl">
-        <div className="flex justify-between items-center p-5 border-b border-[#0000001A]">
+    <Dialog open={isOpen} onOpenChange={onClose} >
+      <DialogContent className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden rounded-2xl ">
+        <div className="p-5 border-b border-[#0000001A]">
           <DialogTitle className="text-[20px] font-medium">
             {title}
           </DialogTitle>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="p-[15.9px] ">
           <div className="space-y-2">
             <label className="block text-[14px] font-medium text-gray-700">
               Enter the region name
