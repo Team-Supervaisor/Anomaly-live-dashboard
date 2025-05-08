@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { X, Mic } from 'lucide-react';
 import icon from '../assets/instruction.png';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 const InstructionModal = ({ onClose, onSave, data }) => {
   const editorRef = useRef(null);
@@ -218,6 +219,21 @@ const InstructionModal = ({ onClose, onSave, data }) => {
           className="h-[300px] overflow-y-auto bg-transparent border border-gray-300 focus:outline-none p-4 rounded"
           onKeyDown={handleKeyDown}
         />
+
+{isRecording && (
+  <div className="absolute inset-0 flex items-center justify-center  rounded">
+    <div className="flex flex-col items-center">
+      <div className="w-[200px] h-[200px]">
+        <DotLottieReact
+          src="https://lottie.host/bbaba2ef-5cc8-4bba-a181-acfaa0fe8722/32DGaHBRvH.lottie"
+          loop
+          autoplay
+        />
+      </div>
+      
+    </div>
+  </div>
+)}
 
         <div className="mt-4 flex justify-between items-center space-x-2">
           <button
