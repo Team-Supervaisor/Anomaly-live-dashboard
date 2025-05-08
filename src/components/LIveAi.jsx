@@ -557,36 +557,32 @@ const LiveAi = () => {
 
           </div>
         </div> */}
-        <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1  justify-center
-        overflow-hidden">
-  <div className="flex justify-between">
-    <div className="w-full flex flex-col justify-center items-center p-4">
-      {streamUrl ? (
-        <img
-          ref={imgRef}
-          src={streamUrl}
-          width={640}
-          height={480}
-          alt="Live stream"
-          className="rounded-xl border"
-        />
-      ) : (
-        <div className="flex flex-col items-center ">
-          <div className="w-[120px] h-[120px]">
-            
+        <div className="bg-white w-full rounded-[26px] overflow-hidden">
+  {streamUrl ? (
+    <div className="w-full h-full">
+      <img
+        ref={imgRef}
+        src={streamUrl}
+        className="w-full h-full  rounded-xl"
+        alt="Live stream"
+      />
+    </div>
+  ) : (
+    <div className="w-full h-full min-h-[600px] flex items-center justify-center">
+      <div className="flex flex-col items-center">
+        <div className="w-[120px] h-[120px]">
           <DotLottieReact
             src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
             loop
             autoplay
-           />
-          </div>
-          <span className="text-gray-600 text-lg font-medium mt-1">
-            AI analyzing video
-          </span>
+          />
         </div>
-      )}
+        <span className="text-gray-600 text-lg font-medium mt-1">
+          AI analyzing video
+        </span>
+      </div>
     </div>
-  </div>
+  )}
 </div>
 
         {/* Right Section with Instructions and AI Analysis */}
