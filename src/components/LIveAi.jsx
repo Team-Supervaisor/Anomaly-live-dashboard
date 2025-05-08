@@ -482,13 +482,14 @@ const LiveAi = () => {
             </button>
             
             <button
-              onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2 border border-[#717AEA] rounded-[4rem] 
-                        text-[#7900F3] font-medium hover:bg-[#7900F3]/5 transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset
-            </button>
+          onClick={handleReset}
+          className="flex items-center gap-2 px-4 py-2 border rounded-[4rem] 
+                    text-[#717171] text-[16px] font-[500] hover:bg-[#7171711A] 
+                    transition-colors"
+        >
+          <RotateCcw className="w-4 h-4 text-[#717171]" />
+          Reset
+        </button>
           </div>
 
         {/* Add empty div to balance the layout */}
