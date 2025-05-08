@@ -469,8 +469,8 @@ const LiveAi = () => {
               disabled={isTracking}
               className={`flex items-center gap-2 px-4 py-2 rounded-[4rem] font-medium transition-colors
                 ${isTracking 
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : 'bg-[#7900F3] text-white hover:bg-[#6600CC]'}`}
+                  ? 'bg-[#717AEA] text-white hover:bg-[#717AEA]' 
+                  : 'bg-[#717AEA] text-white hover:bg-[#717AEA]'}`}
             >
               {isTracking ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -482,7 +482,7 @@ const LiveAi = () => {
             
             <button
               onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2 border border-[#7900F3] rounded-[4rem] 
+              className="flex items-center gap-2 px-4 py-2 border border-[#717AEA] rounded-[4rem] 
                         text-[#7900F3] font-medium hover:bg-[#7900F3]/5 transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
@@ -492,7 +492,7 @@ const LiveAi = () => {
 
         {/* Add empty div to balance the layout */}
           <button
-            style={{padding: "14px 24px"}}
+            style={{padding: "8px 18px"}}
                 className="flex items-center justify-center 
                           border border-[#F20A0A] rounded-[100px] bg-[#FFDDDB]
                           text-[#F20A0A] font-medium text-base hover:bg-[#FFE8E7] 
@@ -535,9 +535,11 @@ const LiveAi = () => {
         {/* Right Section with Instructions and AI Analysis */}
         <div className="flex flex-col gap-4 w-[360px]">
           {/* Instructions Card */}
-          <div className="bg-white rounded-[26px] p-4 max-h-[380px] flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="font-medium">Instructions</h2>
+          <div className="bg-white rounded-[26px] max-h-[380px] flex flex-col">
+            <div
+         
+             className="flex justify-between items-center p-4 pt-[16px] pb-[13px] border-b border-[#EFF4FE]">
+              <h2 className="font-[600] text-[16px]">Instructions</h2>
               {instrucLoader ? (
                 <Loader2 className="animate-spin text-indigo-500 w-4 h-4" />
               ) : (
@@ -549,30 +551,36 @@ const LiveAi = () => {
                 </button>
               )}
             </div>
+            <div className="w-full h-[12px]"></div>
+            <div className="pt-0 pr-[4px] pl-[4px] pb-[12px]">
             <div
               onClick={() => setShowInstructionModal(true)}
-              className="max-h-96 overflow-y-auto p-4 rounded-lg scrollbar-hidden cursor-pointer"
+              className="max-h-96 overflow-y-auto p-[14.34px] rounded-lg scrollbar-hidden cursor-pointer"
               dangerouslySetInnerHTML={{
                 __html: formatInstructionHtml(instructionset),
               }}
             />
+
+            </div>
           </div>
 
           {/* AI Analysis Card */}
-          <div className="bg-white rounded-[26px] p-4 flex flex-col max-h-[440px]">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-[26px]  flex flex-col max-h-[440px]">
+            <div className="flex items-center justify-between p-4 pt-[24px] pb-[13px] mb-[13px] border-b border-[#EFF4FE]">
               <div className="flex items-center">
                 <div className="w-6 h-6 rounded-full flex items-center justify-center mr-2">
                   <img src={ai} alt="AI" className="w-4 h-4" />
                 </div>
-                <h2 className="font-medium text-lg">AI Analysis</h2>
+                <h2 className="font-[400] text-[#1B1F4F] text-[14px]">AI Analysis</h2>
               </div>
             </div>
 
             {/* Logs Display with custom scrollbar */}
+        
             <div
               ref={logsContainerRef}
-              className="flex-1 overflow-y-auto hide-scrollbar scroll-smooth"
+         
+              className="flex-1 overflow-y-auto p-4  hide-scrollbar scroll-smooth"
             >
               {logs.length > 0 ? (
                 logs.map((log, idx) => (
@@ -588,35 +596,36 @@ const LiveAi = () => {
                   }
                 >
                     <div className="flex justify-between items-start">
-                      <span className="text-gray-600">Camera:</span>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-[#464646] text-[13.32px] font-[400]">Camera:</span>
+                      <span className="text-[#464646] text-[13.32px] font-[600]">
                         {log.camera_id}
                       </span>
                     </div>
                     <div className="space-y-0 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Region:</span>
-                        <span className="font-medium text-gray-800">
+                        <span className="text-[#464646] text-[13.32px] font-[400]">Region:</span>
+                        <span className="text-[#464646] text-[13.32px] font-[600]">
                           {log.roi}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Event:</span>
+                        <span className="text-[#464646] text-[13.32px] font-[400]">Event:</span>
                         <span
-                          className={`font-medium ${
-                            log.event === "entry"
-                              ? "text-green-600"
-                              : log.event === "exit"
-                              ? "text-red-600"
-                              : "text-blue-600"
-                          }`}
+                          // className={`font-medium ${
+                          //   log.event === "entry"
+                          //     ? "text-green-600"
+                          //     : log.event === "exit"
+                          //     ? "text-red-600"
+                          //     : "text-blue-600"
+                          // }`}
+                          className="text-[#F20A0A] text-[13.32px] font-[700]"
                         >
                           {log.event}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Timestamp:</span>
-                        <span className="font-medium text-gray-800">
+                        <span className="text-[#464646] text-[13.32px] font-[400]">Timestamp:</span>
+                        <span className="text-[#464646] text-[13.32px] font-[600]">
                           {format(new Date(log.timestamp), "EEE, HH:mm:ss")}
                         </span>
                       </div>
@@ -629,6 +638,8 @@ const LiveAi = () => {
                 </div>
               )}
             </div>
+
+           
           </div>
         </div>
       </div>

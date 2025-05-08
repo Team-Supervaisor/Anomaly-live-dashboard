@@ -364,77 +364,82 @@ const LiveVideo = () => {
         </div>
 
         {/* AI Analysis Card */}
-        <div className="bg-white rounded-[26px] p-4 w-[360px] flex flex-col ">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center mr-2">
-                <img src={ai} alt="AI" className="w-4 h-4" />
-              </div>
-              <h2 className="font-medium text-lg">AI Analysis</h2>
-            </div>
-          </div>
-
-          {/* Logs Display with custom scrollbar */}
-          <div
-            ref={logsContainerRef}
-            className="flex-1 overflow-y-auto hide-scrollbar scroll-smooth"
-          >
-            {logs.length > 0 ? (
-              logs.map((log, idx) => (
-                <div
-                key={`${log.person_id}-${log.timestamp}-${idx}`}
-                className={
-                  `mb-6 p-4 bg-[#F5F9FF] rounded-lg 
-                   border-2 
-                   ${idx === 0 
-                     ? 'border-blue-500'   
-                     : 'border-transparent'} 
-                   transition-all duration-500 ease-in-out`
-                }
-              >
-                  <div className="flex justify-between items-start">
-                    <span className="text-gray-600">Camera:</span>
-                    <span className="text-sm text-gray-500">
-                      {log.camera_id}
-                    </span>
-                  </div>
-                  <div className="space-y-0 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Region:</span>
-                      <span className="font-medium text-gray-800">
-                        {log.roi}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Event:</span>
-                      <span
-                        className={`font-medium ${
-                          log.event === "entry"
-                            ? "text-green-600"
-                            : log.event === "exit"
-                            ? "text-red-600"
-                            : "text-blue-600"
-                        }`}
-                      >
-                        {log.event}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Timestamp:</span>
-                      <span className="font-medium text-gray-800">
-                        {format(new Date(log.timestamp), "EEE, HH:mm:ss")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center text-gray-500 mt-4">
-                Waiting for events...
-              </div>
-            )}
-          </div>
-        </div>
+        <div className="bg-white rounded-[26px]  flex flex-col w-[360px] ">
+                   <div className="flex items-center justify-between p-4 pt-[24px] pb-[13px] mb-[13px] border-b border-[#EFF4FE]">
+                     <div className="flex items-center">
+                       <div className="w-6 h-6 rounded-full flex items-center justify-center mr-2">
+                         <img src={ai} alt="AI" className="w-4 h-4" />
+                       </div>
+                       <h2 className="font-[400] text-[#1B1F4F] text-[14px]">AI Analysis</h2>
+                     </div>
+                   </div>
+       
+                   {/* Logs Display with custom scrollbar */}
+               
+                   <div
+                     ref={logsContainerRef}
+                
+                     className="flex-1 overflow-y-auto p-4  hide-scrollbar scroll-smooth"
+                   >
+                     {logs.length > 0 ? (
+                       logs.map((log, idx) => (
+                         <div
+                         key={`${log.person_id}-${log.timestamp}-${idx}`}
+                         className={
+                           `mb-6 p-4 bg-[#F5F9FF] rounded-lg 
+                            border-2 
+                            ${idx === 0 
+                              ? 'border-blue-500'   
+                              : 'border-transparent'} 
+                            transition-all duration-500 ease-in-out`
+                         }
+                       >
+                           <div className="flex justify-between items-start">
+                             <span className="text-[#464646] text-[13.32px] font-[400]">Camera:</span>
+                             <span className="text-[#464646] text-[13.32px] font-[600]">
+                               {log.camera_id}
+                             </span>
+                           </div>
+                           <div className="space-y-0 text-sm">
+                             <div className="flex justify-between">
+                               <span className="text-[#464646] text-[13.32px] font-[400]">Region:</span>
+                               <span className="text-[#464646] text-[13.32px] font-[600]">
+                                 {log.roi}
+                               </span>
+                             </div>
+                             <div className="flex justify-between">
+                               <span className="text-[#464646] text-[13.32px] font-[400]">Event:</span>
+                               <span
+                                 // className={`font-medium ${
+                                 //   log.event === "entry"
+                                 //     ? "text-green-600"
+                                 //     : log.event === "exit"
+                                 //     ? "text-red-600"
+                                 //     : "text-blue-600"
+                                 // }`}
+                                 className="text-[#F20A0A] text-[13.32px] font-[700]"
+                               >
+                                 {log.event}
+                               </span>
+                             </div>
+                             <div className="flex justify-between">
+                               <span className="text-[#464646] text-[13.32px] font-[400]">Timestamp:</span>
+                               <span className="text-[#464646] text-[13.32px] font-[600]">
+                                 {format(new Date(log.timestamp), "EEE, HH:mm:ss")}
+                               </span>
+                             </div>
+                           </div>
+                         </div>
+                       ))
+                     ) : (
+                       <div className="text-center text-gray-500 mt-4">
+                         Waiting for events...
+                       </div>
+                     )}
+                   </div>
+       
+                  
+                 </div>
       </div>
     </div>
   );
