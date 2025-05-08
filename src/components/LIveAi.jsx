@@ -154,6 +154,7 @@ const LiveAi = () => {
   const location = useLocation();
   const { data } = location.state || {};
   const [logs, setLogs] = useState([]);
+  const ctrlSocketRef = useRef(null);
   const [socket, setSocket] = useState(null);
   const logsContainerRef = useRef(null);
   const [showInstructionModal, setShowInstructionModal] = useState(false);
@@ -435,20 +436,38 @@ const LiveAi = () => {
   };
 
   const handleStart = () => {
+    const ctrlSocket = io("http://localhost:5000");
+    ctrlSocket.on("connect", () => {
+      ctrlSocket.emit("frontend-connect", { cameraId });
+      console.log("✅ Sent frontend-connect");
+    });
+    ctrlSocketRef.current = ctrlSocket;
+
     if (!socketRef.current) return;
     socketRef.current.emit("start_tracking", { cameraId });
     setIsTracking(true);
   };
 
   const handleReset = () => {
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
+    // if (wsRef.current) {
+    //   wsRef.current.close();
+    //   wsRef.current = null;
+    // }
+
+    if (ctrlSocketRef.current) {
+      ctrlSocketRef.current.emit("frontend-disconnect", { cameraId });
+      ctrlSocketRef.current.disconnect();
+      ctrlSocketRef.current = null;
+      console.log("Sent frontend-disconnect and disconnected control socket");
     }
+
     setIsTracking(false);
-    setStreamUrl(null);
+    if (streamUrl) {
+      URL.revokeObjectURL(streamUrl);
+      setStreamUrl(null);
+    }
   };
-  {}
+
    
   return (
     <div className="flex flex-col h-screen bg-[#F5F9FF]">
