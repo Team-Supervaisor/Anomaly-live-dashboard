@@ -140,7 +140,7 @@ export default function ToolBar({
   };
 
   return (
-    <div className="bg-white rounded-full shadow-lg p-2 px-4 flex items-center gap-2 border border-[#0000001A]">
+    <div  style={{borderRadius: "19.556px"}} className="bg-white  shadow-lg p-[10.67px] px-4 flex items-center gap-2 border border-[#0000001A]">
       <div className="flex items-center gap-2 mr-1">
         {tools.map((tool) => (
           <div className="relative group">
@@ -151,7 +151,7 @@ export default function ToolBar({
           onClick={() => handleToolClick(tool.name)}
           className={`rounded-md h-9 w-9 ${
             (tool.name === "open-space" && isOpenSpaceMode) || selectedTool === tool.name
-              ? "bg-[#6366F1] ring-2 ring-blue-300 hover:bg-[#6366F1]"
+              ? "bg-[#717AEA] ring-2 ring-[#717AEA] hover:bg-[#717AEA]"
               : ""
           }`}
         >
@@ -224,7 +224,7 @@ export default function ToolBar({
           variant="default"
           onClick={saveShapes}
           disabled={isSaving}
-          className="rounded-md h-9 px-4 bg-[#6366F1] hover:bg-[#5558E3] text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-md h-9 px-4 bg-[#717AEA] hover:bg-[#717AEA]  text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving ? (
             <>
