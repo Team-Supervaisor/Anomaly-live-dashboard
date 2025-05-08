@@ -630,28 +630,32 @@ export default function CameraRender() {
                 </DialogContent>
               </Dialog>}
 
+              {hasShapesSaved && (
               <button
-   onClick={() => {
-      const camId = selectedCamera;
-      if (!camId) {
-        alert("Please select (or maximize) a camera first before going Live AI.");
-        return;
-      }
-      // Push cameraId into the path
-      navigate(`/live-ai/${camId}`, {
-        state: { cameraId: camId }
-      });
-    }}
-     style={{padding: "14px 24px"}}
-     className="flex items-center border gap-[10px] rounded-[100px] text-[#666] text-[16px] font-[500]"
-   >
-              <img
-                src="/live.svg"
-                alt="live icon"
-                className="w-4 h-4 mr-2"
-              />
-              Live AI
-            </button>
+                onClick={() => {
+                  const camId = selectedCamera;
+                  if (!camId) {
+                    alert("Please select (or maximize) a camera first before going Live AI.");
+                    return;
+                  }
+                  navigate(`/live-ai/${camId}`, {
+                    state: { cameraId: camId }
+                  });
+                }}
+                style={{padding: "14px 24px"}}
+                className="flex items-center border  gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
+              >
+                <img
+                  src="/live.svg"
+                  alt="live icon"
+                  className="w-4 h-4 mr-2"
+                  style={{
+                    filter: 'invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(114%)'
+                  }}
+                />
+                Live AI
+              </button>
+            )}
 
              
             </div>
