@@ -548,13 +548,14 @@ const LiveAi = () => {
       ) : (
         <div className="flex flex-col items-center ">
           <div className="w-[100px] h-[100px]">
-            <DotLottieReact
-              src="https://lottie.host/f8ebbd51-92be-41df-b006-c9b7f84bebe1/AEO0yOumqr.lottie"
+            
+              <DotLottieReact
+              src="https://lottie.host/ab3097fc-10ed-43ec-889a-f0abcf89431c/1z5z9CEry0.lottie"
               loop
               autoplay
             />
           </div>
-          <span className="text-gray-600 text-lg font-medium mt-4">
+          <span className="text-gray-600 text-lg font-medium mt-1">
             AI analyzing video
           </span>
         </div>
