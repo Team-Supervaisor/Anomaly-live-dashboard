@@ -191,6 +191,14 @@ const LiveAi = () => {
     });
     
     socketRef.current.on("frame", (data) => {
+          // log the raw payload size so you can spot zero-length or tiny frames
+    console.log("🔍 Incoming frame byte length:", data.byteLength);
+
+    // skip any payload that looks too small to be a valid JPEG
+    if (!data || data.byteLength < 1000) {
+      console.warn("⚠️ Suspiciously small frame, skipping render");
+      return;
+    }
       const blob = new Blob([data], { type: "image/jpeg" });
       const url = URL.createObjectURL(blob);
       setStreamUrl(prev => {
