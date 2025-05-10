@@ -556,25 +556,35 @@ const LiveAi = () => {
   };
   
 
-  const handleReset = () => {
-    // if (wsRef.current) {
-    //   wsRef.current.close();
-    //   wsRef.current = null;
-    // }
-
+  const handleReset = async () => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/reset`,
+        { method: 'GET' }
+      );
+      if (!res.ok) {
+        console.error('Backend reset failed:', await res.text());
+      } else {
+        console.log('Backend reset successful');
+      }
+    } catch (err) {
+      console.error('Error calling /reset:', err);
+    }
+  
     if (ctrlSocketRef.current) {
-      ctrlSocketRef.current.emit("frontend-disconnect");
+      ctrlSocketRef.current.emit('frontend-disconnect');
       ctrlSocketRef.current.disconnect();
       ctrlSocketRef.current = null;
-      console.log("Sent frontend-disconnect and disconnected control socket");
+      console.log('Sent frontend-disconnect and disconnected control socket');
     }
-
+  
     setIsTracking(false);
     if (streamUrl) {
       URL.revokeObjectURL(streamUrl);
       setStreamUrl(null);
     }
   };
+  
 
    
   return (
@@ -847,7 +857,7 @@ const LiveAi = () => {
                               className="rounded-md p-2 mt-1 text-black list-disc list-inside cursor-pointer"
                             >
                               {/* Extra section as a list item */}
-                              <li>
+                              {/* <li>
                                 <span className="font-medium">Extra:</span>
                                 <ul className="list-disc list-inside ml-4 mt-1">
                                   {item.extra.length > 0 ? (
@@ -858,7 +868,7 @@ const LiveAi = () => {
                                     <li>N/A</li>
                                   )}
                                 </ul>
-                              </li>
+                              </li> */}
 
                               {/* Order section as a list item */}
                               <li>
