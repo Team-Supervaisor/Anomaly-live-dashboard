@@ -685,7 +685,7 @@ export default function CameraRender() {
           <span className="text-black">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
         </button> */}
 
-              {cameras.length < 4 && (
+              {cameras.length <1 && (
                 <Dialog
                   open={open}
                   onOpenChange={(isOpen) => {
