@@ -700,7 +700,7 @@ const LiveAi = () => {
 </div>
 
         {/* Right Section with Instructions and AI Analysis */}
-        <div className="flex flex-col gap-4 w-[360px]">
+        <div className="flex flex-col gap-4 w-[650px]">
           {/* Instructions Card */}
           <div className="bg-white rounded-[26px] max-h-[380px] flex flex-col">
             <div
