@@ -12,6 +12,7 @@ import { Edit2, Loader2, Play, RotateCcw } from 'lucide-react';
 import InstructionModal from './InstructionModal';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import AiModal from "./AiModal";
+import FullscreenToggle from "./ui/Fullscreentoggle";
 
 
 const playbackPositions = {};
@@ -661,6 +662,9 @@ const LiveAi = () => {
           </div>
 
         {/* Add empty div to balance the layout */}
+           <div className="p-3 space-y-4">
+            <FullscreenToggle />
+          </div>
           <button
             style={{padding: "8px 18px"}}
                 className="flex items-center justify-center 
