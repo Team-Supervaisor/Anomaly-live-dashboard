@@ -35,6 +35,7 @@ export default function CameraRender() {
   const [hasShapesSaved, setHasShapesSaved] = useState(false);
   const [hasVideoShapesSaved, setHasVideoShapesSaved] = useState(false);
   const [videoConfigData, setVideoConfigData] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Add this state to track the next video number
   const [nextVideoNumber, setNextVideoNumber] = useState(1);
@@ -389,6 +390,26 @@ export default function CameraRender() {
     setVideoConfigData(null);
   };
 
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+  
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   return (
     <div className="relative w-full h-full flex flex-col items-center">
       <div className="relative flex flex-col items-center w-screen h-screen">
@@ -510,8 +531,27 @@ export default function CameraRender() {
               </div>
             </div>
           )}
+          
+          
           {activeTab === "video" && (
   <div className="absolute flex items-center gap-3" style={{ top: '34px', right: '34px' }}>
+
+     {/* Fullscreen */}
+  
+    <button
+      onClick={toggleFullscreen}
+      style={{padding: "14px 24px"}}
+      className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
+    >
+      {isFullscreen ? (
+        <Minimize2 className="w-4 h-4 text-black" />
+      ) : (
+        <Maximize2 className="w-4 h-4 text-black" />
+      )}
+      <span className="text-black">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+    </button>
+
+            
   <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
       <DialogTrigger asChild>
         <button
@@ -614,16 +654,30 @@ export default function CameraRender() {
           {/* Add Camera Button */}
           {activeTab === "cam" && (
           <div className="absolute flex items-center gap-3" style={{ top: '34px', right: '34px' }}>
-            
-            
-              {  cameras.length < 4 && <Dialog open={open}  onOpenChange={(isOpen) => {
-      setOpen(isOpen);
-      if (!isOpen) {
-        setIsAdding(false);
-        setCameraName("");
-        setRtspUrl("");
-      }
-    }}>
+
+          {/* Fullscreen */}
+          <button
+          onClick={toggleFullscreen}
+          style={{padding: "14px 24px"}}
+          className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
+        >
+          {isFullscreen ? (
+            <Minimize2 className="w-4 h-4 text-black" />
+          ) : (
+            <Maximize2 className="w-4 h-4 text-black" />
+          )}
+          <span className="text-black">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+        </button>
+                
+              {  cameras.length < 4 && 
+              <Dialog open={open}  onOpenChange={(isOpen) => {
+              setOpen(isOpen);
+              if (!isOpen) {
+                setIsAdding(false);
+                setCameraName("");
+                setRtspUrl("");
+              }
+            }}>
                 <DialogTrigger asChild>
                 <button
               
