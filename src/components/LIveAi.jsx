@@ -11,6 +11,7 @@ import axios from "axios";
 import { Edit2, Loader2, Play, RotateCcw } from 'lucide-react';
 import InstructionModal from './InstructionModal';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import AiModal from "./AiModal";
 
 
 const playbackPositions = {};
@@ -160,6 +161,8 @@ const LiveAi = () => {
   const [showInstructionModal, setShowInstructionModal] = useState(false);
   const [instructionset, setInstructionset] = useState('');
   const [instrucLoader, setInstrucLoader] = useState(false);
+  const [aiModal, setAiModal] = useState(false);
+  const [aiData, setAiData] = useState({});
   const socketRef = useRef(null);
   const [aiAnalyzeitem, setAiAnalyzeitem] = useState([]);
   const socketRef2 = useRef(null);
@@ -584,7 +587,34 @@ const LiveAi = () => {
       setStreamUrl(null);
     }
   };
+
+
+  const openAimodal = (item) => {
+    console.log("AI Modal item:", item);
+    setAiData(item);
+    setAiModal(true);
+  };
+  // const handleSaveAiModal = (instruction) => {
+  //   console.log("Saved instruction:", instruction);
+  //   //emit soccket
+  //   socketRef.current.emit("feedback", instruction);
+  //   setAiModal(false);
+  // };
+
+  const handleSaveAiModal = (instruction) => {
+    if (!socketRef2.current || !socketRef2.current.connected) {
+      console.error("Feedback socket not connected");
+      return;
+    }
   
+    console.log("Sending feedback:", instruction);
+    
+
+    socketRef2.current.emit("feedback", instruction, (acknowledgement) => {
+      console.log("Feedback acknowledgement:", acknowledgement);
+      setAiModal(false);
+    });
+  };
 
    
   return (
@@ -795,7 +825,7 @@ const LiveAi = () => {
                             </ul>
                             <div
                               className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                              // onClick={() => openAimodal(item)}
+                              onClick={() => openAimodal(item)}
                             >
                               <span className="text-[#5A62C8]">
                                 {item.type}
@@ -825,7 +855,7 @@ const LiveAi = () => {
                             <p>{item.reason}</p>
                             <div
                               className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                              // onClick={() => openAimodal(item)}
+                              onClick={() => openAimodal(item)}
                             >
                               <span className="text-[#5A62C8]">
                                 {item.type}
@@ -904,7 +934,7 @@ const LiveAi = () => {
 
                             <div
                               className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                              // onClick={() => openAimodal(item)}
+                              onClick={() => openAimodal(item)}
                             >
                               <span className="text-[#5A62C8]">
                                 {item.type}
@@ -933,6 +963,16 @@ const LiveAi = () => {
           onClose={() => setShowInstructionModal(false)}
           onSave={handleSaveInstruction}
           data={instructionset}
+        />
+      )}
+
+
+        {/* AI Modal */}
+        {aiModal && (
+        <AiModal
+          data={aiData}
+          onClose={() => setAiModal(false)}
+          onSave={handleSaveAiModal}
         />
       )}
     </div>
