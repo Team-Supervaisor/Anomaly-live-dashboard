@@ -288,7 +288,7 @@ export default function CameraRender() {
         return "";
       case 1:
         return activeTab === "video" 
-          ? `w-[60%] h-[70vh] ${baseStyles} mb-15 mt-14` // Video styles
+          ? `w-[60%] h-[470px] ${baseStyles} mt-2 2xl:mb-15` // Video styles
           : `w-[80%] h-[70vh] ${baseStyles} mt-16 mb-10`; // Camera styles
       case 2:
         return `grid-cols-2 gap-4 w-[90%] h-[60vh] ${baseStyles} mt-16`;
@@ -777,7 +777,7 @@ export default function CameraRender() {
         </div>
 
         {/* Toolbar */}
-        <div className="fixed" style={{ bottom: '34px', left: '50%', transform: 'translateX(-50%)' }}>
+        <div className="fixed" style={{ bottom: '25px', left: '50%', transform: 'translateX(-50%)' }}>
           <ToolBar
             selectedTool={selectedTool}
             setSelectedTool={setSelectedTool}
