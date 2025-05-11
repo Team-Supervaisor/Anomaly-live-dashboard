@@ -33,6 +33,8 @@ export default function CameraRender() {
   const [maximizedVideo, setMaximizedVideo] = useState(null);
   const navigate = useNavigate();
   const [hasShapesSaved, setHasShapesSaved] = useState(false);
+  const [hasVideoShapesSaved, setHasVideoShapesSaved] = useState(false);
+  const [videoConfigData, setVideoConfigData] = useState(null);
 
   // Add this state to track the next video number
   const [nextVideoNumber, setNextVideoNumber] = useState(1);
@@ -217,7 +219,10 @@ export default function CameraRender() {
         });
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const data = await res.json();
-        navigate("/live-video", { state: { data } });
+        setHasVideoShapesSaved(true);
+        setVideoConfigData(data);
+        // navigate("/live-video", { state: { data } });
+
       }
           } catch (err) {
       console.error("Error saving shapes:", err);
@@ -282,7 +287,7 @@ export default function CameraRender() {
         return "";
       case 1:
         return activeTab === "video" 
-          ? `w-[60%] h-[70vh] ${baseStyles} mb-15 mt-3` // Video styles
+          ? `w-[60%] h-[70vh] ${baseStyles} mb-15 mt-14` // Video styles
           : `w-[80%] h-[70vh] ${baseStyles} mt-16 mb-10`; // Camera styles
       case 2:
         return `grid-cols-2 gap-4 w-[90%] h-[60vh] ${baseStyles} mt-16`;
@@ -380,6 +385,8 @@ export default function CameraRender() {
     setHasShapesSaved(false);
     setCameraShapes({});
     setVideoShapes({});
+    setHasVideoShapesSaved(false);
+    setVideoConfigData(null);
   };
 
   return (
@@ -583,6 +590,24 @@ export default function CameraRender() {
       />
       Live AI
     </button> */}
+
+    {hasVideoShapesSaved && (
+      <button
+        onClick={() => navigate("/live-video", { state: { data: videoConfigData } })}
+        style={{padding: "14px 24px"}}
+        className="flex items-center border gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
+      >
+        <img
+          src="/live.svg"
+          alt="live icon"
+          className="w-4 h-4 mr-2"
+          style={{
+            filter: 'invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(114%)'
+          }}
+        />
+        Live AI
+      </button>
+    )}
   </div>
 )}
 
