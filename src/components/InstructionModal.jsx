@@ -12,6 +12,7 @@ const InstructionModal = ({ onClose, onSave, data }) => {
   });
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef(null);
+  const currentTextRef = useRef('');
 
   // -----------------------
   // Convert markdown → HTML
@@ -47,6 +48,7 @@ const InstructionModal = ({ onClose, onSave, data }) => {
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.innerHTML = markupToHtml(data);
+      currentTextRef.current = editorRef.current.innerText || '';
       editorRef.current.focus();
       const range = document.createRange();
       range.selectNodeContents(editorRef.current);
@@ -57,6 +59,24 @@ const InstructionModal = ({ onClose, onSave, data }) => {
     }
   }, [data]);
 
+  // Track changes in the editor content
+  useEffect(() => {
+    const handleInput = () => {
+      if (editorRef.current) {
+        currentTextRef.current = editorRef.current.innerText || '';
+      }
+    };
+
+    if (editorRef.current) {
+      editorRef.current.addEventListener('input', handleInput);
+    }
+
+    return () => {
+      if (editorRef.current) {
+        editorRef.current.removeEventListener('input', handleInput);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const updateFormats = () => {
@@ -82,7 +102,6 @@ const InstructionModal = ({ onClose, onSave, data }) => {
     }
   };
 
-
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -92,22 +111,56 @@ const InstructionModal = ({ onClose, onSave, data }) => {
     recog.continuous = true;
     recog.interimResults = true;
     recog.lang = 'en-US';
-    let finalTranscript = '';
+    
+    // Store transcript data for the current recording session only
+    const transcriptData = {
+      finalText: '',
+      interimText: '',
+      startingEditorContent: ''
+    };
+
+    recog.onstart = () => {
+      // Capture current content when recording starts
+      if (editorRef.current) {
+        transcriptData.startingEditorContent = editorRef.current.innerText || '';
+        transcriptData.finalText = '';
+        transcriptData.interimText = '';
+      }
+    };
 
     recog.onresult = (evt) => {
-      let interimTranscript = '';
+      // Process the latest results only
+      transcriptData.interimText = '';
+      
       for (let i = evt.resultIndex; i < evt.results.length; i++) {
         const result = evt.results[i];
         const text = result[0].transcript;
+        
         if (result.isFinal) {
-          finalTranscript += text + ' ';
+          transcriptData.finalText += text + ' ';
         } else {
-          interimTranscript += text;
+          transcriptData.interimText += text;
         }
       }
-      const combined = (finalTranscript + interimTranscript).trim();
+      
       if (editorRef.current) {
-        editorRef.current.innerText = combined;
+        // Prepare the full text without unnecessary spaces or line breaks
+        let fullText = '';
+        
+        // Only add a space between starting content and new text if starting content exists
+        if (transcriptData.startingEditorContent && transcriptData.startingEditorContent.trim() !== '') {
+          fullText = transcriptData.startingEditorContent.trim() + ' ' + 
+                    transcriptData.finalText.trim() + 
+                    (transcriptData.interimText ? ' ' + transcriptData.interimText.trim() : '');
+        } else {
+          // If editor was empty or only contained whitespace, just add the new text
+          fullText = transcriptData.finalText.trim() + 
+                    (transcriptData.interimText ? ' ' + transcriptData.interimText.trim() : '');
+        }
+        
+        editorRef.current.innerText = fullText;
+        currentTextRef.current = fullText;
+        
         // Move cursor to end
         const range = document.createRange();
         range.selectNodeContents(editorRef.current);
@@ -121,13 +174,13 @@ const InstructionModal = ({ onClose, onSave, data }) => {
     recognitionRef.current = recog;
   }, []);
 
-
   const toggleRecording = () => {
     if (!recognitionRef.current) return;
     if (isRecording) {
       recognitionRef.current.stop();
       setIsRecording(false);
     } else {
+      // The current editor content will be captured in the onstart handler
       recognitionRef.current.start();
       setIsRecording(true);
     }
