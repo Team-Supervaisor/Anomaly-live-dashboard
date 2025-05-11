@@ -945,7 +945,38 @@ const LiveAi = () => {
                             </div>
                           </div>
                         </>
-                      ) : null}
+                      ) : item.type === "ActionAnomaly" ? (
+                          <>
+                          <div
+                            key={index}
+                            className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
+                          >
+                            <div
+                              onClick={() => setShowAllAnamoly(true)}
+                              className="flex gap-2 mb-1 cursor-pointer"
+                            >
+                              <span className="font-medium">{index + 1}.</span>
+                              <span className="text-black-700 font-semibold">
+                                {item.type}
+                              </span>
+                            </div>
+
+                            <p>{item.detail}</p>
+                            <div
+                              className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
+                              onClick={() => openAimodal(item)}
+                            >
+                              <span className="text-[#5A62C8]">
+                                {item.type}
+                              </span>
+                              <button className="text-xs text-[#5A62C8]">
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                                              
+                          </>
+                      ) :null}
                     </React.Fragment>
                   );
                 })}
