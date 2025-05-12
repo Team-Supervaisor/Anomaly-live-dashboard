@@ -8,6 +8,7 @@ const cursorMap = {
     pointer: "cursor-pointer",
     rectangle: "cursor-crosshair",
     fill: "custom-fill",
+    caligraphy: "cursor-crosshair"
 };
 
 // Create a global store to persist playback positions across remounts
@@ -57,6 +58,10 @@ export default function VideoCanvas({
         name: "",
     })
     const [fillColor, setFillColor] = useState("#6366F1")
+    const [polygonPoints, setPolygonPoints] = useState([]);
+    const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
+    const [previewPoint, setPreviewPoint] = useState(null);
+    const [nearStartPoint, setNearStartPoint] = useState(false);
     
     // Load the base64 image when component mounts or cameraData changes
     useEffect(() => {
@@ -126,7 +131,8 @@ export default function VideoCanvas({
             }
             window.removeEventListener('resize', handleResize)
         }
-    }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape]) // Re-run on maximize state change or shapes change
+    }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, showMaximize, 
+        polygonPoints, isDrawingPolygon, previewPoint]) // Re-run on maximize state change or shapes change
 
     // Add keyboard event listener for Escape key to minimize
     useEffect(() => {
@@ -175,6 +181,53 @@ export default function VideoCanvas({
                     ctx.fillText(s.name, s.x + (s.width - tw)/2, s.y + s.height/2 + 7);
                     ctx.setLineDash([8, 4]); // Restore dash pattern after text
                 }
+            } else  if (s.type === "caligraphy") {
+                ctx.beginPath();
+                ctx.strokeStyle = selectedShape?.id === s.id
+                  ? "#6366F1"
+                  : hoveredShape?.id === s.id
+                    ? "#9CA3AF"
+                    : "#FFD700";
+                ctx.lineWidth = 3;
+                ctx.setLineDash([8, 4]);
+                
+                // Draw the polygon lines
+                s.points.forEach((point, index) => {
+                    if (index === 0) {
+                        ctx.moveTo(point.x, point.y);
+                    } else {
+                        ctx.lineTo(point.x, point.y);
+                    }
+                });
+                
+                ctx.closePath();
+                ctx.stroke();
+                
+                // Draw the points on the polygon
+                s.points.forEach((point, index) => {
+                    ctx.beginPath();
+                    ctx.setLineDash([]); // Remove dash pattern for points
+                    ctx.fillStyle = index === 0 ? "#FF4444" : "#FFD700"; // First point red, others yellow
+                    ctx.arc(point.x, point.y, index === 0 ? 6 : 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = "#FFFFFF"; // White border around points
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                });
+                
+                if (s.isColored) {
+                    ctx.fillStyle = s.color;
+                    ctx.fill();
+                }
+                
+                if (s.name) {
+                    const center = getPolygonCenter(s.points);
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = "#00FFFF";
+                    ctx.font = "12px Urbanist";
+                    const tw = ctx.measureText(s.name).width;
+                    ctx.fillText(s.name, center.x - tw/2, center.y);
+                }
             }
         }); 
         
@@ -192,6 +245,44 @@ export default function VideoCanvas({
             ctx.fillStyle = "rgba(255, 215, 0, 0.1)";
             ctx.fillRect(drawingState.startX, drawingState.startY, w, h);
         }
+
+      
+       // Update the drawing section in drawShapes function
+    //  console.log('isDrawingPolygon' ,isDrawingPolygon, 'polygonPoints', polygonPoints)
+    if (isDrawingPolygon && polygonPoints.length > 0) {
+        ctx.beginPath();
+        ctx.strokeStyle = "#FFD700";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        
+        // Draw lines between points
+        polygonPoints.forEach((point, index) => {
+            if (index === 0) {
+                ctx.moveTo(point.x, point.y);
+            } else {
+                ctx.lineTo(point.x, point.y);
+            }
+        });
+        
+        // Draw preview line
+        if (previewPoint) {
+            ctx.lineTo(previewPoint.x, previewPoint.y);
+            
+            // Highlight start point if nearby
+            if (nearStartPoint) {
+                ctx.lineTo(polygonPoints[0].x, polygonPoints[0].y);
+            }
+        }
+        ctx.stroke();
+        
+        // Draw points with different style for start point
+        polygonPoints.forEach((point, index) => {
+            ctx.beginPath();
+            ctx.fillStyle = index === 0 ? "#FF4444" : "#FFD700";
+            ctx.arc(point.x, point.y, index === 0 ? 6 : 4, 0, Math.PI * 2);
+            ctx.fill();
+        });
+          }
         ctx.setLineDash([]);
     }
 
@@ -345,6 +436,18 @@ export default function VideoCanvas({
                 ) {
                     return shape
                 }
+            } else if (shape.type === "caligraphy") {
+                let inside = false;
+                for (let j = 0, k = shape.points.length - 1; j < shape.points.length; k = j++) {
+                    const xi = shape.points[j].x, yi = shape.points[j].y;
+                    const xj = shape.points[k].x, yj = shape.points[k].y;
+                    
+                    if (((yi > y) !== (yj > y)) &&
+                        (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+                        inside = !inside;
+                    }
+                }
+                if (inside) return shape;
             }
         }
         return null
@@ -358,7 +461,37 @@ export default function VideoCanvas({
         e.stopPropagation() // Prevent triggering parent onClick
         const { x, y } = getCanvasCoordinates(e)
         
-        if (selectedTool === "pointer") {
+        if (selectedTool === "caligraphy") {
+            console.log("Starting caligraphy at:", x, y); // Debug log
+            
+            if (!isDrawingPolygon) {
+                // Starting a new polygon
+                setPolygonPoints([{ x, y }]);
+                setIsDrawingPolygon(true);
+                console.log("Starting new polygon"); // Debug log
+            } else {
+                const startPoint = polygonPoints[0];
+                const distance = Math.hypot(x - startPoint.x, y - startPoint.y);
+                
+                if (distance < 20 && polygonPoints.length >= 3) {
+                    // Closing the polygon
+                    const newShape = {
+                        id: nextId,
+                        type: "caligraphy",
+                        points: [...polygonPoints],
+                        isColored: false
+                    };
+                    onShapesChange([...shapes, newShape]);
+                    setPolygonPoints([]);
+                    setIsDrawingPolygon(false);
+                    setPreviewPoint(null);
+                } else {
+                    // Adding a new point
+                    setPolygonPoints(prevPoints => [...prevPoints, { x, y }]);
+                    console.log("Adding point to polygon"); // Debug log
+                }
+            }
+        } else if (selectedTool === "pointer") {
             const clickedShape = findShapeAtPosition(x, y)
             setHoveredShape(null)
             setSelectedShape(clickedShape)
@@ -382,7 +515,16 @@ export default function VideoCanvas({
         const { x, y } = getCanvasCoordinates(e)
         
         // Update drawing state if currently drawing
-        if (drawingState.isDrawing && selectedTool === "rectangle") {
+        if (selectedTool === "caligraphy" && isDrawingPolygon) {
+            setPreviewPoint({ x, y });
+            
+            if (polygonPoints.length >= 2) {
+                const startPoint = polygonPoints[0];
+                const distance = Math.hypot(x - startPoint.x, y - startPoint.y);
+                setNearStartPoint(distance < 20);
+            }
+            // console.log("Moving with polygon points:", polygonPoints.length); // Debug log
+        } else if (drawingState.isDrawing && selectedTool === "rectangle") {
             setDrawingState({
                 ...drawingState,
                 currentX: x,
@@ -518,10 +660,16 @@ export default function VideoCanvas({
     }
 
     // Get cursor style based on selected tool
-    const getCursorStyle = () => {
-        return cursorMap[selectedTool] || "";
-    }
+    // const getCursorStyle = () => {
+    //     return cursorMap[selectedTool] || "";
+    // }
 
+    const getCursorStyle = () => {
+        if (selectedTool === "caligraphy" && nearStartPoint && polygonPoints.length >= 2) {
+            return "cursor-pointer";
+        }
+        return cursorMap[selectedTool] || "";
+    };
     // const handleKeyPress = (e) => {
     //     if (e.key === 'Enter') {
     //         handleShapeDialogSave();
@@ -529,31 +677,76 @@ export default function VideoCanvas({
     // };
 
     // Calculate hover menu position
+    // const calculateHoverPosition = () => {
+    //     if (!hoveredShape || !canvasRef.current) return {};
+        
+    //     const canvas = canvasRef.current;
+        
+    //     // Calculate normalized position
+    //     const normalizedRect = {
+    //         x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
+    //         y: hoveredShape.height < 0 ? hoveredShape.y + hoveredShape.height : hoveredShape.y,
+    //         width: Math.abs(hoveredShape.width),
+    //         height: Math.abs(hoveredShape.height)
+    //     };
+        
+    //     return {
+    //         position: "absolute",
+    //         left: hoveredShape.x + hoveredShape.width + 2 > canvas.width - 50 
+    //             ? hoveredShape.x - 33 
+    //             : hoveredShape.x + hoveredShape.width - 35,
+    //         top: hoveredShape.y + 2,
+    //         zIndex: 10,
+    //         display: "flex",
+    //         flexDirection: "column",
+    //         alignItems: "center",
+    //         gap: "8px",
+    //     };
+    // };
+
     const calculateHoverPosition = () => {
         if (!hoveredShape || !canvasRef.current) return {};
         
         const canvas = canvasRef.current;
         
-        // Calculate normalized position
-        const normalizedRect = {
-            x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
-            y: hoveredShape.height < 0 ? hoveredShape.y + hoveredShape.height : hoveredShape.y,
-            width: Math.abs(hoveredShape.width),
-            height: Math.abs(hoveredShape.height)
-        };
+        if (hoveredShape.type === "rectangle") {
+            const normalizedRect = {
+                x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
+                y: hoveredShape.height < 0 ? hoveredShape.y + hoveredShape.height : hoveredShape.y,
+                width: Math.abs(hoveredShape.width),
+                height: Math.abs(hoveredShape.height)
+            };
+            
+            return {
+                position: "absolute",
+                left: normalizedRect.x + normalizedRect.width + 2 > canvas.width - 50 
+                    ? normalizedRect.x - 33 
+                    : normalizedRect.x + normalizedRect.width - 35,
+                top: normalizedRect.y + 2,
+                zIndex: 10,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "8px",
+            };
+        } else if (hoveredShape.type === "caligraphy") {
+            const center = getPolygonCenter(hoveredShape.points);
+            
+            return {
+                position: "absolute",
+                left: center.x + 2 > canvas.width - 50 
+                    ? center.x - 33 
+                    : center.x + 10,
+                top: center.y + 2,
+                zIndex: 10,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "8px",
+            };
+        }
         
-        return {
-            position: "absolute",
-            left: hoveredShape.x + hoveredShape.width + 2 > canvas.width - 50 
-                ? hoveredShape.x - 33 
-                : hoveredShape.x + hoveredShape.width - 35,
-            top: hoveredShape.y + 2,
-            zIndex: 10,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "8px",
-        };
+        return {};
     };
 
     return (
@@ -724,3 +917,10 @@ export default function VideoCanvas({
         </div>
     )
 }
+
+// Add helper function for polygon center calculation
+const getPolygonCenter = (points) => {
+    const x = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+    const y = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+    return { x, y };
+};

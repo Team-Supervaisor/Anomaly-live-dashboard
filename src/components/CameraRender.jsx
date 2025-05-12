@@ -92,6 +92,7 @@ export default function CameraRender() {
     }
   };
 
+
   const handleMaximize = (cameraId) => {
     setMaximizedCamera(cameraId);
     setGridKey((prevKey) => prevKey + 1);
@@ -112,26 +113,24 @@ export default function CameraRender() {
     setGridVideoKey((prevKey) => prevKey + 1);
   };
 
+
   const handleSaveShapes = async () => {
     setIsSaving(true);
     const apiUrl = import.meta.env.VITE_API_URL;
     const endpoint = `${apiUrl}/start-stream/`;
-
+  
     try {
       if (activeTab === "cam") {
         const camId = maximizedCamera || selectedCamera;
         const camera = cameras.find((c) => c.id === camId) || {};
-
-        // ── 1) grab your canvas dimensions ───────────────────────────
+  
         const wrapper = document.getElementById(`camera-${camId}`);
         const canvasEl = wrapper?.querySelector("canvas");
         const { width: canvas_width, height: canvas_height } =
           canvasEl?.getBoundingClientRect() || { width: 0, height: 0 };
-        // ──────────────────────────────────────────────────────────────
-
-        // Build your ROI definitions exactly as before…
+  
+        // Modified to handle both shape types
         const roiDefs = Object.entries(cameraShapes).map(([_, shapes]) => {
-          const rects = shapes.filter((s) => s.type === "rectangle");
           return {
             type: "camera",
             source: {
@@ -139,21 +138,32 @@ export default function CameraRender() {
               name: camera.name,
               url: camera.url,
             },
-            regions: rects.map((r) => ({
-              Region_name: r.name || `Region ${r.id}`,
-              Region_Cords: {
-                vertices: [
-                  [r.x, r.y],
-                  [r.x, r.y + r.height],
-                  [r.x + r.width, r.y + r.height],
-                  [r.x + r.width, r.y],
-                ],
-              },
-            })),
+            regions: shapes.map(shape => {
+              if (shape.type === "rectangle") {
+                return {
+                  Region_name: shape.name || `Region ${shape.id}`,
+                  Region_Cords: {
+                    vertices: [
+                      [shape.x, shape.y],
+                      [shape.x, shape.y + shape.height],
+                      [shape.x + shape.width, shape.y + shape.height],
+                      [shape.x + shape.width, shape.y],
+                    ],
+                  },
+                };
+              } else if (shape.type === "caligraphy") {
+                return {
+                  Region_name: shape.name || `Region ${shape.id}`,
+                  Region_Cords: {
+                    vertices: shape.points.map(point => [point.x, point.y])
+                  },
+                };
+              }
+              return null;
+            }).filter(Boolean)
           };
         });
-
-        // ── 2) include those dimensions in your payload ──────────────
+  
         const payload = {
           camera_name: camera.name || "",
           rtsp_url: camera.url || "",
@@ -163,24 +173,21 @@ export default function CameraRender() {
           canvas_width: Math.round(canvas_width),
           canvas_height: Math.round(canvas_height),
         };
-        // ──────────────────────────────────────────────────────────────
-
+  
         await axios.post(endpoint, payload);
-
-        // Add minimum delay of 1 second
         await new Promise((resolve) => setTimeout(resolve, 1000));
         setHasShapesSaved(true);
+  
       } else {
-        // Handle video tab
+        // Handle video tab - similar modifications for video shapes
         const formData = new FormData();
         uploadedVideos.forEach((video) => {
           formData.append("video", video.file);
         });
-
+  
         const videoShapesData = Object.entries(videoShapes).map(
           ([videoId, shapes]) => {
             const video = uploadedVideos.find((v) => v.id === videoId);
-            const rects = shapes.filter((s) => s.type === "rectangle");
             return {
               type: "video",
               source: {
@@ -188,31 +195,42 @@ export default function CameraRender() {
                 name: video.file.name,
                 url: video.url,
               },
-              regions: rects.map((r) => ({
-                Region_name: r.name || `Region ${r.id}`,
-                Region_Cords: {
-                  vertices: [
-                    [r.x, r.y],
-                    [r.x, r.y + r.height],
-                    [r.x + r.width, r.y + r.height],
-                    [r.x + r.width, r.y],
-                  ],
-                },
-              })),
+              regions: shapes.map(shape => {
+                if (shape.type === "rectangle") {
+                  return {
+                    Region_name: shape.name || `Region ${shape.id}`,
+                    Region_Cords: {
+                      vertices: [
+                        [shape.x, shape.y],
+                        [shape.x, shape.y + shape.height],
+                        [shape.x + shape.width, shape.y + shape.height],
+                        [shape.x + shape.width, shape.y],
+                      ],
+                    },
+                  };
+                } else if (shape.type === "caligraphy") {
+                  return {
+                    Region_name: shape.name || `Region ${shape.id}`,
+                    Region_Cords: {
+                      vertices: shape.points.map(point => [point.x, point.y])
+                    },
+                  };
+                }
+                return null;
+              }).filter(Boolean)
             };
           }
         );
-
-        // grab the actual canvas size for this video
+  
         const wrapper = document.getElementById(`video-${selectedVideo}`);
         const canvasEl = wrapper.querySelector("canvas");
         const { width: canvas_width, height: canvas_height } =
           canvasEl.getBoundingClientRect();
-
+  
         formData.append("canvas_width", Math.round(canvas_width));
         formData.append("canvas_height", Math.round(canvas_height));
         formData.append("roi_defs", JSON.stringify(videoShapesData));
-
+  
         const res = await fetch(`${apiUrl}/upload_config`, {
           method: "POST",
           body: formData,
@@ -221,7 +239,6 @@ export default function CameraRender() {
         const data = await res.json();
         setHasVideoShapesSaved(true);
         setVideoConfigData(data);
-        // navigate("/live-video", { state: { data } });
       }
     } catch (err) {
       console.error("Error saving shapes:", err);
@@ -229,7 +246,6 @@ export default function CameraRender() {
       setIsSaving(false);
     }
   };
-
   const handleClearCanvas = () => {
     if (activeTab === "cam") {
       // Clear shapes for all cameras
