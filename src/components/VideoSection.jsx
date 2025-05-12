@@ -399,6 +399,32 @@ export default function VideoCanvas({
 };
 
   // --- Hover controls style: map from video pixels → CSS pixels ---
+  // const hoverStyle = () => {
+  //   if (!canvasRef.current || !videoRef.current || !hoveredShape) return {};
+    
+  //   const rect = canvasRef.current.getBoundingClientRect();
+  //   const vw = videoRef.current.videoWidth;
+  //   const vh = videoRef.current.videoHeight;
+    
+  //   // Convert shape coordinates to CSS pixels
+  //   const cssX = hoveredShape.x / vw * rect.width;
+  //   const cssY = hoveredShape.y / vh * rect.height;
+  //   const cssW = hoveredShape.width / vw * rect.width;
+    
+  //   return {
+  //     position: 'absolute',
+  //     right: `${rect.width - (cssX + cssW) + 12}px`, // 12px from right edge of shape
+  //     top: `${cssY + 12}px`, // 12px from top of shape
+  //     zIndex: 10,
+  //     display: 'flex',
+  //     flexDirection: 'column',
+  //     alignItems: 'center',
+  //     gap: '8px'
+  //   };
+  // };
+
+
+
   const hoverStyle = () => {
     if (!canvasRef.current || !videoRef.current || !hoveredShape) return {};
     
@@ -406,42 +432,75 @@ export default function VideoCanvas({
     const vw = videoRef.current.videoWidth;
     const vh = videoRef.current.videoHeight;
     
-    // Convert shape coordinates to CSS pixels
-    const cssX = hoveredShape.x / vw * rect.width;
-    const cssY = hoveredShape.y / vh * rect.height;
-    const cssW = hoveredShape.width / vw * rect.width;
+    // Calculate position based on shape type
+    if (hoveredShape.type === "rectangle") {
+      // Convert shape coordinates to CSS pixels
+      const cssX = hoveredShape.x / vw * rect.width;
+      const cssY = hoveredShape.y / vh * rect.height;
+      const cssW = hoveredShape.width / vw * rect.width;
+      
+      return {
+        position: 'absolute',
+        right: `${rect.width - (cssX + cssW) + 12}px`,
+        top: `${cssY + 12}px`,
+        zIndex: 10,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '8px'
+      };
+    } else if (hoveredShape.type === "caligraphy") {
+      // For polygon/caligraphy shapes, use the center point
+      const center = getPolygonCenter(hoveredShape.points);
+      const cssX = center.x / vw * rect.width;
+      const cssY = center.y / vh * rect.height;
+      
+      return {
+        position: 'absolute',
+        left: `${cssX + 12}px`,
+        top: `${cssY + 12}px`,
+        zIndex: 10,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '8px'
+      };
+    }
     
-    return {
-      position: 'absolute',
-      right: `${rect.width - (cssX + cssW) + 12}px`, // 12px from right edge of shape
-      top: `${cssY + 12}px`, // 12px from top of shape
-      zIndex: 10,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '8px'
-    };
+    return {};
   };
   // --- Edit/Delete handlers ---
   const handleEditShape = () => {
     if (!hoveredShape) return;
-    const norm = {
-      x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
-      y: hoveredShape.height< 0 ? hoveredShape.y + hoveredShape.height: hoveredShape.y,
-      width: Math.abs(hoveredShape.width),
-      height: Math.abs(hoveredShape.height)
-    };
+    
+    let dialogX, dialogY;
+    
+    if (hoveredShape.type === "rectangle") {
+      const norm = {
+        x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
+        y: hoveredShape.height < 0 ? hoveredShape.y + hoveredShape.height : hoveredShape.y,
+        width: Math.abs(hoveredShape.width),
+        height: Math.abs(hoveredShape.height)
+      };
+      dialogX = norm.x + norm.width/2;
+      dialogY = norm.y + norm.height/2;
+    } else if (hoveredShape.type === "caligraphy") {
+      const center = getPolygonCenter(hoveredShape.points);
+      dialogX = center.x;
+      dialogY = center.y;
+    }
+  
     setShapeDialog({
       isOpen: true,
-      x: norm.x + norm.width/2,
-      y: norm.y + norm.height/2,
+      x: dialogX,
+      y: dialogY,
       shapeId: hoveredShape.id,
       name: hoveredShape.name || ""
     });
     setSelectedShape(hoveredShape);
     setHoveredShape(null);
   };
-
+  
   const handleDeleteShape = () => {
     if (!hoveredShape) return;
     onShapesChange(shapes.filter(s => s.id !== hoveredShape.id));
@@ -460,11 +519,16 @@ export default function VideoCanvas({
   // };
 
   const handleShapeDialogSave = (name) => {  // Add name parameter here
-    onShapesChange(shapes.map(s =>
-      s.id === shapeDialog.shapeId
-        ? { ...s, name: name }  // Use the received name
-        : s
-    ));
+    onShapesChange(shapes.map(s => {
+      if (s.id === shapeDialog.shapeId) {
+        if (s.type === "rectangle") {
+          return { ...s, name: name };
+        } else if (s.type === "caligraphy") {
+          return { ...s, name: name };
+        }
+      }
+      return s;
+    }));
     setShapeDialog({ ...shapeDialog, isOpen: false });
   };
 
