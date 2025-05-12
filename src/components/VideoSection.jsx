@@ -316,31 +316,44 @@ export default function VideoCanvas({
           ctx.lineWidth = 3;
           ctx.setLineDash([8, 4]);
           
+          // Draw the polygon lines
           s.points.forEach((point, index) => {
-            if (index === 0) {
-              ctx.moveTo(point.x, point.y);
-            } else {
-              ctx.lineTo(point.x, point.y);
-            }
+              if (index === 0) {
+                  ctx.moveTo(point.x, point.y);
+              } else {
+                  ctx.lineTo(point.x, point.y);
+              }
           });
           
           ctx.closePath();
           ctx.stroke();
           
+          // Draw the points on the polygon
+          s.points.forEach((point, index) => {
+              ctx.beginPath();
+              ctx.setLineDash([]); // Remove dash pattern for points
+              ctx.fillStyle = index === 0 ? "#FF4444" : "#FFD700"; // First point red, others yellow
+              ctx.arc(point.x, point.y, index === 0 ? 6 : 4, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.strokeStyle = "#FFFFFF"; // White border around points
+              ctx.lineWidth = 1;
+              ctx.stroke();
+          });
+          
           if (s.isColored) {
-            ctx.fillStyle = s.color;
-            ctx.fill();
+              ctx.fillStyle = s.color;
+              ctx.fill();
           }
           
           if (s.name) {
-            const center = getPolygonCenter(s.points);
-            ctx.setLineDash([]);
-            ctx.fillStyle = "#00FFFF";
-            ctx.font = "12px Urbanist";
-            const tw = ctx.measureText(s.name).width;
-            ctx.fillText(s.name, center.x - tw/2, center.y);
+              const center = getPolygonCenter(s.points);
+              ctx.setLineDash([]);
+              ctx.fillStyle = "#00FFFF";
+              ctx.font = "12px Urbanist";
+              const tw = ctx.measureText(s.name).width;
+              ctx.fillText(s.name, center.x - tw/2, center.y);
           }
-        }
+      }
     });
 
     // Draw shape being created (same dashed style)
