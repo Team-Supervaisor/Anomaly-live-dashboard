@@ -237,7 +237,7 @@ export default function VideoCanvas({
             const h = drawingState.currentY - drawingState.startY;
             
             ctx.strokeStyle = "#FFD700";
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 5;
             ctx.setLineDash([8, 4]);
             ctx.strokeRect(drawingState.startX, drawingState.startY, w, h);
     
@@ -252,7 +252,7 @@ export default function VideoCanvas({
     if (isDrawingPolygon && polygonPoints.length > 0) {
         ctx.beginPath();
         ctx.strokeStyle = "#FFD700";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 5;
         ctx.setLineDash([5, 5]);
         
         // Draw lines between points
