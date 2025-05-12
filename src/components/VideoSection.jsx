@@ -7,6 +7,7 @@ const cursorMap = {
   pointer: "cursor-pointer",
   rectangle: "cursor-crosshair",
   fill: "custom-fill",
+  caligraphy: "cursor-crosshair", // Add this line
 };
 
 // Create a global store to persist playback positions across remounts
@@ -51,6 +52,11 @@ export default function VideoCanvas({
     isInitialized: false
   });
 
+  const [polygonPoints, setPolygonPoints] = useState([]);
+  const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
+  const [previewPoint, setPreviewPoint] = useState(null);
+  const [nearStartPoint, setNearStartPoint] = useState(false);
+
   // --- Resize & render loop ---
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -88,7 +94,7 @@ export default function VideoCanvas({
       cancelAnimationFrame(animationFrameRef.current);
       window.removeEventListener('resize', resizeCanvas);
     };
-  }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, showMaximize]);
+  }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, showMaximize, polygonPoints, previewPoint]); // Added dependencies
 
   // --- Keyboard Escape to minimize ---
   useEffect(() => {
@@ -151,6 +157,19 @@ export default function VideoCanvas({
           y >= norm.y &&
           y <= norm.y + norm.height
         ) return s;
+      } else if (s.type === "caligraphy") {
+        // Basic polygon hit test
+        let inside = false;
+        for (let j = 0, k = s.points.length - 1; j < s.points.length; k = j++) {
+          const xi = s.points[j].x, yi = s.points[j].y;
+          const xj = s.points[k].x, yj = s.points[k].y;
+          
+          if (((yi > y) !== (yj > y)) &&
+              (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+            inside = !inside;
+          }
+        }
+        if (inside) return s;
       }
     }
     return null;
@@ -161,7 +180,36 @@ export default function VideoCanvas({
     if (!selectedTool || (!isMaximized && showMaximize)) return;
     e.stopPropagation();
     const { x, y } = getCanvasCoordinates(e);
-    if (selectedTool === "pointer") {
+    if (selectedTool === "caligraphy") {
+      if (!isDrawingPolygon) {
+        // Start new polygon
+        setPolygonPoints([{ x, y }]);
+        setIsDrawingPolygon(true);
+      } else {
+        // Check if clicking near start point to close polygon
+        const startPoint = polygonPoints[0];
+        const distance = Math.hypot(x - startPoint.x, y - startPoint.y);
+        
+        if (distance < 20 && polygonPoints.length >= 3) {
+          // Close the polygon
+          const newShape = {
+            id: nextId,
+            type: "caligraphy",
+            points: [...polygonPoints],
+            isColored: false
+          };
+          onShapesChange([...shapes, newShape]);
+          setNextId(nextId + 1);
+          setPolygonPoints([]);
+          setIsDrawingPolygon(false);
+          setPreviewPoint(null);
+        } else {
+          // Add new point
+          setPolygonPoints([...polygonPoints, { x, y }]);
+        }
+      }
+    }
+    else if (selectedTool === "pointer") {
       setSelectedShape(findShapeAtPosition(x, y));
       setHoveredShape(null);
     } else if (selectedTool === "rectangle") {
@@ -180,14 +228,32 @@ export default function VideoCanvas({
 
   const handleMouseMove = (e) => {
     const { x, y } = getCanvasCoordinates(e);
-    if (drawingState.isDrawing && selectedTool === "rectangle") {
+    
+    if (selectedTool === "caligraphy" && isDrawingPolygon) {
+        setPreviewPoint({ x, y });
+        
+        // Check if near start point
+        if (polygonPoints.length >= 2) {
+            const startPoint = polygonPoints[0];
+            const distance = Math.hypot(x - startPoint.x, y - startPoint.y);
+            setNearStartPoint(distance < 20);
+        }
+    } else if (drawingState.isDrawing && selectedTool === "rectangle") {
       setDrawingState({ ...drawingState, currentX: x, currentY: y });
     }
+    
     if (selectedTool === "pointer" && !drawingState.isDrawing && (isMaximized || !showMaximize)) {
       setHoveredShape(findShapeAtPosition(x, y));
     } else {
       setHoveredShape(null);
     }
+  };
+
+
+  const getPolygonCenter = (points) => {
+    const x = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+    const y = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+    return { x, y };
   };
 
   const handleMouseUp = (e) => {
@@ -240,6 +306,40 @@ export default function VideoCanvas({
                 ctx.fillText(s.name, s.x + (s.width - tw)/2, s.y + s.height/2 + 7);
                 ctx.setLineDash([8, 4]); // Restore dash pattern after text
             }
+        } else if (s.type === "caligraphy") {
+          ctx.beginPath();
+          ctx.strokeStyle = selectedShape?.id === s.id
+            ? "#6366F1"
+            : hoveredShape?.id === s.id
+              ? "#9CA3AF"
+              : "#FFD700";
+          ctx.lineWidth = 3;
+          ctx.setLineDash([8, 4]);
+          
+          s.points.forEach((point, index) => {
+            if (index === 0) {
+              ctx.moveTo(point.x, point.y);
+            } else {
+              ctx.lineTo(point.x, point.y);
+            }
+          });
+          
+          ctx.closePath();
+          ctx.stroke();
+          
+          if (s.isColored) {
+            ctx.fillStyle = s.color;
+            ctx.fill();
+          }
+          
+          if (s.name) {
+            const center = getPolygonCenter(s.points);
+            ctx.setLineDash([]);
+            ctx.fillStyle = "#00FFFF";
+            ctx.font = "12px Urbanist";
+            const tw = ctx.measureText(s.name).width;
+            ctx.fillText(s.name, center.x - tw/2, center.y);
+          }
         }
     });
 
@@ -257,6 +357,42 @@ export default function VideoCanvas({
         ctx.fillStyle = "rgba(255, 215, 0, 0.1)";
         ctx.fillRect(drawingState.startX, drawingState.startY, w, h);
     }
+
+
+    if (isDrawingPolygon && polygonPoints.length > 0) {
+      ctx.beginPath();
+      ctx.strokeStyle = "#FFD700";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      
+      // Draw lines between points
+      polygonPoints.forEach((point, index) => {
+          if (index === 0) {
+              ctx.moveTo(point.x, point.y);
+          } else {
+              ctx.lineTo(point.x, point.y);
+          }
+      });
+      
+      // Draw preview line
+      if (previewPoint) {
+          ctx.lineTo(previewPoint.x, previewPoint.y);
+          
+          // Highlight start point if nearby
+          if (nearStartPoint) {
+              ctx.lineTo(polygonPoints[0].x, polygonPoints[0].y);
+          }
+      }
+      ctx.stroke();
+      
+      // Draw points with different style for start point
+      polygonPoints.forEach((point, index) => {
+          ctx.beginPath();
+          ctx.fillStyle = index === 0 ? "#FF4444" : "#FFD700";
+          ctx.arc(point.x, point.y, index === 0 ? 6 : 4, 0, Math.PI * 2);
+          ctx.fill();
+      });
+  }
 
     // Reset dash pattern at the end
     ctx.setLineDash([]);
@@ -339,7 +475,13 @@ export default function VideoCanvas({
 };
 
 
-  const getCursorStyle = () => cursorMap[selectedTool] || "";
+  // const getCursorStyle = () => cursorMap[selectedTool] || "";
+  const getCursorStyle = () => {
+    if (selectedTool === "caligraphy" && nearStartPoint && polygonPoints.length >= 3) {
+        return "cursor-pointer";
+    }
+    return cursorMap[selectedTool] || "";
+};
 
   return (
     <div

@@ -9,7 +9,8 @@ import {
   Redo,
   CircleFadingPlus,
   Circle,
-  Loader2
+  Loader2,
+  MousePointer2, 
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
@@ -50,6 +51,10 @@ export default function ToolBar({
               alt="pointer"
           />
       )
+  },
+  {
+    name: "caligraphy",
+    icon: <MousePointer2 size={18} color="#333" />
   },
     { name: "rectangle", icon: <Square size={18} color="#333" /> },
     // { name: "circle", icon: <Circle size={18} color="#333" /> },
