@@ -181,13 +181,13 @@ export default function VideoCanvas({
                     ctx.fillText(s.name, s.x + (s.width - tw)/2, s.y + s.height/2 + 7);
                     ctx.setLineDash([8, 4]); // Restore dash pattern after text
                 }
-            } else  if (s.type === "caligraphy") {
+            } else if (s.type === "caligraphy") {
                 ctx.beginPath();
                 ctx.strokeStyle = selectedShape?.id === s.id
-                  ? "#6366F1"
-                  : hoveredShape?.id === s.id
-                    ? "#9CA3AF"
-                    : "#FFD700";
+                    ? "#6366F1"
+                    : hoveredShape?.id === s.id
+                        ? "#9CA3AF"
+                        : "#FFD700";
                 ctx.lineWidth = 5;
                 ctx.setLineDash([8, 4]);
                 
@@ -200,26 +200,31 @@ export default function VideoCanvas({
                     }
                 });
                 
+                // Important: Close the path before filling
                 ctx.closePath();
-                ctx.stroke();
                 
-                // Draw the points on the polygon
-                s.points.forEach((point, index) => {
-                    ctx.beginPath();
-                    ctx.setLineDash([]); // Remove dash pattern for points
-                    ctx.fillStyle = index === 0 ? "#FF4444" : "#FFD700"; // First point red, others yellow
-                    ctx.arc(point.x, point.y, index === 0 ? 6 : 4, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = "#FFFFFF"; // White border around points
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                });
-                
+                // Fill first if colored
                 if (s.isColored) {
                     ctx.fillStyle = s.color;
                     ctx.fill();
                 }
                 
+                // Then stroke the border
+                ctx.stroke();
+                
+                // Draw points last
+                s.points.forEach((point, index) => {
+                    ctx.beginPath();
+                    ctx.setLineDash([]); // Remove dash pattern for points
+                    ctx.fillStyle = index === 0 ? "#FF4444" : "#FFD700";
+                    ctx.strokeStyle = "#FFFFFF";
+                    ctx.lineWidth = 1;
+                    ctx.arc(point.x, point.y, index === 0 ? 6 : 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+                
+                // Draw name if exists
                 if (s.name) {
                     const center = getPolygonCenter(s.points);
                     ctx.setLineDash([]);
@@ -578,19 +583,19 @@ export default function VideoCanvas({
 
     // Handle fill tool
     const handleFill = (x, y) => {
-        const clickedShape = findShapeAtPosition(x, y)
+        const clickedShape = findShapeAtPosition(x, y);
         
         if (clickedShape) {
-            // Update the shape's color
+            // Update the shape's color, works for both rectangle and caligraphy
             const updatedShapes = shapes.map(shape => 
                 shape.id === clickedShape.id 
                     ? { ...shape, color: fillColor, isColored: true } 
                     : shape
-            )
+            );
             
-            onShapesChange(updatedShapes)
+            onShapesChange(updatedShapes);
         }
-    }
+    };
 
     // Handle edit shape
     // const handleEditShape = () => {
