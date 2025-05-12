@@ -188,7 +188,7 @@ export default function VideoCanvas({
                   : hoveredShape?.id === s.id
                     ? "#9CA3AF"
                     : "#FFD700";
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 5;
                 ctx.setLineDash([8, 4]);
                 
                 // Draw the polygon lines
