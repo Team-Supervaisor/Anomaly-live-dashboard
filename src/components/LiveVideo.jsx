@@ -165,21 +165,21 @@ const LiveVideo = () => {
   
 
   // Scroll whenever logs update
-  useEffect(() => {
-    setLogs(mockLogs);
+  // useEffect(() => {
+  //   setLogs(mockLogs);
 
-    const interval = setInterval(() => {
-      // Rotate the logs array to simulate updates
-      setLogs((prevLogs) => {
-        const rotated = [...prevLogs];
-        const last = rotated.pop();
-        if (last) rotated.unshift(last);
-        return rotated;
-      });
-    }, 3000);
+  //   const interval = setInterval(() => {
+  //     // Rotate the logs array to simulate updates
+  //     setLogs((prevLogs) => {
+  //       const rotated = [...prevLogs];
+  //       const last = rotated.pop();
+  //       if (last) rotated.unshift(last);
+  //       return rotated;
+  //     });
+  //   }, 3000);
 
-    return () => clearInterval(interval);
-  }, []);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   // Function to format the timestamp
   const formatTimestamp = (timestamp) => {
