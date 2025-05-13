@@ -228,18 +228,45 @@ const LiveAi = () => {
     // KEEP this listener alive for anomaly_alert:
     socketRef2.current.on("anomaly_alert", (arg1, arg2) => {
       console.log("🔔 Received anomaly_alert event");
-      // Normalize payload in case socket.io prepends the event name
-      const data =
-        typeof arg2 === "undefined" && typeof arg1 === "object"
-          ? arg1
-          : arg2;
-      console.log("▶ anomaly_alert payload:", data);
-  
-      setAiAnalyzeitem(prev => [...prev, data]);
+      console.log("New alert", arg1);
+      console.log("New alert", arg2);
+    
+      // 1) pick the real payload (socket.io sometimes puts it in arg2)
+      const payload = (typeof arg2 === "undefined" && typeof arg1 === "object")
+        ? arg1
+        : arg2;
+      console.log("▶️ anomaly_alert payload:", payload);
+    
+      // 2) build an array of one or two normalized anomaly items
+      const newItems = [];
+    
+      // nested case: both anomaly_time + anomaly_action present
+      if (payload.anomaly_time && payload.anomaly_action) {
+        newItems.push({
+          ...payload.anomaly_time,
+          type: payload.anomaly_time.type || "Operation",
+        });
+        newItems.push({
+          ...payload.anomaly_action,
+          type: payload.anomaly_action.type || "ActionAnomaly",
+        });
+      }
+      // flat case: a single anomaly object
+      else {
+        const item = { ...payload };
+        // strip any "Action<<sep>>" prefix on op
+        if (typeof item.op === "string" && item.op.includes("<<sep>>")) {
+          item.op = item.op.split("<<sep>>")[1];
+        }
+        newItems.push(item);
+      }
+    
+      // 3) append all new items at once
+      setAiAnalyzeitem(prev => [...prev, ...newItems]);
       setLoader(false);
-    });
-  
-    // If you also want to listen for a differently-named event like "anomaly_appear":
+    
+      console.log("Anomaly data queued:", newItems);
+    });    // If you also want to listen for a differently-named event like "anomaly_appear":
     socketRef2.current.on("anomaly_appear", (data) => {
       console.log("🔔 Received anomaly_appear event:", data);
       // handle it just like anomaly_alert, or however you need:
