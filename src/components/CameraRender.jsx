@@ -230,15 +230,19 @@ export default function CameraRender() {
         formData.append("canvas_width", Math.round(canvas_width));
         formData.append("canvas_height", Math.round(canvas_height));
         formData.append("roi_defs", JSON.stringify(videoShapesData));
-  
-        const res = await fetch(`${apiUrl}/upload_config`, {
+        
+        // console.log("FormData contents:");
+        // for (const [key, value] of formData.entries()) {
+        //   console.log(key, value);
+        // }
+        const res = await fetch(`${apiUrl}/tracking_details`, {
           method: "POST",
           body: formData,
         });
         if (!res.ok) throw new Error(`Status ${res.status}`);
-        const data = await res.json();
+        // const data = await res.json();
         setHasVideoShapesSaved(true);
-        setVideoConfigData(data);
+        // setVideoConfigData(data);
       }
     } catch (err) {
       console.error("Error saving shapes:", err);
@@ -656,9 +660,7 @@ export default function CameraRender() {
               {hasVideoShapesSaved && (
                 <button
                   onClick={() =>
-                    navigate("/live-video", {
-                      state: { data: videoConfigData },
-                    })
+                    navigate("/live-video")
                   }
                   style={{ padding: "14px 24px" }}
                   className="flex items-center border gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
