@@ -199,52 +199,56 @@ const LiveVideo = () => {
   };
 
   // Socket connection setup
-  useEffect(() => {
-    socketRef.current = io(import.meta.env.VITE_API_URL, {
-      transports: ["websocket"],
-      reconnectionAttempts: 5,
+ // Update the socket effect with enhanced logging
+useEffect(() => {
+  socketRef.current = io(import.meta.env.VITE_API_URL, {
+    transports: ["websocket"],
+    reconnectionAttempts: 5,
+  });
+
+  socketRef.current.on("connect", () => {
+    console.log("Socket connected");
+  });
+
+  // Listen for frames with logging
+  socketRef.current.on("frames", (data) => {
+    console.log("Received frame data:", {
+      received: !!data,
+      byteLength: data?.byteLength,
+      timestamp: new Date().toISOString()
     });
 
-    socketRef.current.on("connect", () => {
-      console.log("Socket connected");
+    if (!data || data.byteLength < 1000) {
+      console.warn("Invalid frame data received");
+      return;
+    }
+
+    const blob = new Blob([data], { type: "image/jpeg" });
+    const url = URL.createObjectURL(blob);
+    setStreamUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev);
+      return url;
     });
+  });
 
-    // Listen for frames
-    socketRef.current.on("frames", (data) => {
-      if (!data || data.byteLength < 1000) {
-        console.warn("Invalid frame data received");
-        return;
-      }
-
-      const blob = new Blob([data], { type: "image/jpeg" });
-      const url = URL.createObjectURL(blob);
-      setStreamUrl(prev => {
-        if (prev) URL.revokeObjectURL(prev);
-        return url;
-      });
+  // Listen for logs with enhanced logging
+  socketRef.current.on("logs", (logData) => {
+    console.log("Received log data:", {
+      data: logData,
+      // type: logData?.event_type,
+      // timestamp: new Date().toISOString()
     });
+    
+    // Don't append to previous logs, just set the new log
+    setLogs([logData]);
+  });
 
-    // Listen for logs
-    // socketRef.current.on("logs", (logData) => {
-    //   setLogs(prevLogs => {
-    //     const newLog = {
-    //       ...logData,
-    //       timestamp: new Date(logData.timestamp || logData.start_timestamp).getTime()
-    //     };
-    //     return [...prevLogs, newLog].sort((a, b) => b.timestamp - a.timestamp);
-    //   });
-    // });
-    socketRef.current.on("logs", (logData) => {
-      // Don't append to previous logs, just set the new log
-      setLogs([logData]);
-    });
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
-  }, []);
+  return () => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+  };
+}, []);
 
   const handleStart = () => {
     if (socketRef.current) {
