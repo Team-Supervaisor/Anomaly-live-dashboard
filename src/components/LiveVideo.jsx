@@ -8,138 +8,10 @@ import { RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import Hls from "hls.js";
 import axios from "axios";
+import { Loader2, Play } from "lucide-react";
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
-const playbackPositions = {};
 
-const VideoCanvasPlayer = ({ hlsUrl, id }) => {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const hlsRef = useRef(null);
-
-  const playbackStateRef = useRef({
-    currentTime: playbackPositions[id] || 0,
-    isInitialized: false,
-  });
-
-  // HLS setup
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !hlsUrl) return;
-
-    if (Hls.isSupported()) {
-      // Store current time before setting up new HLS instance
-      if (hlsRef.current && videoRef.current) {
-        playbackStateRef.current.currentTime = videoRef.current.currentTime;
-        playbackPositions[id] = videoRef.current.currentTime;
-      }
-
-      const hls = new Hls({
-        maxBufferSize: 30 * 1000 * 1000, // 30MB buffer
-        maxBufferLength: 60, // 60 seconds buffer
-        enableWorker: true, // Enable web worker
-        lowLatencyMode: true, // Enable low latency mode
-        backBufferLength: 90, // 90 seconds backward buffer
-        startPosition: playbackStateRef.current.currentTime, // Start from saved position
-      });
-
-      hlsRef.current = hls;
-
-      hls.loadSource(hlsUrl);
-      hls.attachMedia(video);
-
-      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-        // Only set the time if we've played before
-        if (
-          playbackStateRef.current.isInitialized &&
-          playbackStateRef.current.currentTime > 0
-        ) {
-          video.currentTime = playbackStateRef.current.currentTime;
-        }
-
-        video
-          .play()
-          .then(() => {
-            playbackStateRef.current.isInitialized = true;
-          })
-          .catch((err) => console.error("Play failed:", err));
-      });
-
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              hls.recoverMediaError();
-              break;
-            default:
-              hls.destroy();
-              break;
-          }
-        }
-      });
-
-      // Store current time periodically to maintain position
-      const timeUpdateHandler = () => {
-        if (video.currentTime > 0) {
-          playbackStateRef.current.currentTime = video.currentTime;
-          playbackPositions[id] = video.currentTime;
-        }
-      };
-
-      video.addEventListener("timeupdate", timeUpdateHandler);
-
-      return () => {
-        video.removeEventListener("timeupdate", timeUpdateHandler);
-        // Don't destroy HLS here to maintain state between renders
-      };
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = hlsUrl;
-      video.addEventListener("loadedmetadata", () => {
-        if (playbackStateRef.current.currentTime > 0) {
-          video.currentTime = playbackStateRef.current.currentTime;
-        }
-        video.play().catch((err) => console.error("Play failed:", err));
-      });
-    }
-  }, [hlsUrl, id]); // Re-run if URL changes
-
-  // Save playback position before unmount
-  useEffect(() => {
-    return () => {
-      if (videoRef.current) {
-        const currentTime = videoRef.current.currentTime;
-        if (currentTime > 0) {
-          playbackStateRef.current.currentTime = currentTime;
-          playbackPositions[id] = currentTime;
-        }
-      }
-
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-    };
-  }, [id]);
-
-  return (
-    <div className="relative w-full h-full max-h-full rounded-xl overflow-hidden bg-black">
-
-      <canvas
-        ref={canvasRef}
-        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
-      />
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-        className="w-full h-full object-contain"
-      />
-    </div>
-  );
-};
 
 const LiveVideo = () => {
   const location = useLocation();
@@ -147,8 +19,12 @@ const LiveVideo = () => {
   const [logs, setLogs] = useState([]);
   const [socket, setSocket] = useState(null);
   const logsContainerRef = useRef(null);
+  const [isTracking, setIsTracking] = useState(false);
+  const [streamUrl, setStreamUrl] = useState(null);
+  const socketRef = useRef(null);
+  const imgRef = useRef(null);
 
-  console.log("Data from location:", data);
+  // console.log("Data from location:", data);
   // Mock data for testing
   const mockLogs = [
     {
@@ -216,19 +92,19 @@ const LiveVideo = () => {
     },
   ];
 
-  useEffect(() => {
-    const startStream = async () => {
-      const apiUrl = import.meta.env.VITE_API_URL;
-      try {
-        await axios.post(`${apiUrl}/start_tracking`);
-        console.log("Stream started successfully");
-      } catch (error) {
-        console.error("Failed to start stream:", error);
-      }
-    };
+  // useEffect(() => {
+  //   const startStream = async () => {
+  //     const apiUrl = import.meta.env.VITE_API_URL;
+  //     try {
+  //       await axios.post(`${apiUrl}/start_tracking`);
+  //       console.log("Stream started successfully");
+  //     } catch (error) {
+  //       console.error("Failed to start stream:", error);
+  //     }
+  //   };
 
-    startStream();
-  }, []);
+  //   startStream();
+  // }, []);
 
   // Helper function to convert data object to array format
   const formatVideoData = (data) => {
@@ -274,21 +150,7 @@ const LiveVideo = () => {
   }, []);
 
   // Simulate socket updates every 3 seconds
-  useEffect(() => {
-    setLogs(mockLogs);
-
-    const interval = setInterval(() => {
-      // Rotate the logs array to simulate updates
-      setLogs((prevLogs) => {
-        const rotated = [...prevLogs];
-        const last = rotated.pop();
-        if (last) rotated.unshift(last);
-        return rotated;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
+ 
 
   // Add this effect to handle auto-scrolling
   useEffect(() => {
@@ -336,10 +198,79 @@ const LiveVideo = () => {
     }
   };
 
+  // Socket connection setup
+  useEffect(() => {
+    socketRef.current = io(import.meta.env.VITE_API_URL, {
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+    });
+
+    socketRef.current.on("connect", () => {
+      console.log("Socket connected");
+    });
+
+    // Listen for frames
+    socketRef.current.on("frames", (data) => {
+      if (!data || data.byteLength < 1000) {
+        console.warn("Invalid frame data received");
+        return;
+      }
+
+      const blob = new Blob([data], { type: "image/jpeg" });
+      const url = URL.createObjectURL(blob);
+      setStreamUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+    });
+
+    // Listen for logs
+    // socketRef.current.on("logs", (logData) => {
+    //   setLogs(prevLogs => {
+    //     const newLog = {
+    //       ...logData,
+    //       timestamp: new Date(logData.timestamp || logData.start_timestamp).getTime()
+    //     };
+    //     return [...prevLogs, newLog].sort((a, b) => b.timestamp - a.timestamp);
+    //   });
+    // });
+    socketRef.current.on("logs", (logData) => {
+      // Don't append to previous logs, just set the new log
+      setLogs([logData]);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  const handleStart = () => {
+    if (socketRef.current) {
+      console.log("Starting tracking...");
+      socketRef.current.emit("start_tracking");
+      setIsTracking(true);
+    }
+  };
+
+  const formatTimeStamp = (timestamp) => {
+    try {
+      if (!timestamp) return 'N/A';
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      return format(date, "EEE, HH:mm:ss");
+    } catch (error) {
+      console.error('Error formatting timestamp:', error);
+      return 'Invalid Date';
+    }
+  };
+  
+
   return (
     <div className="flex flex-col h-screen bg-[#F5F9FF]">
-      <header className="flex justify-between items-center p-4 pb-2 ">
-        <Link to="/">
+       <header className="flex items-center justify-between p-4 pb-2 relative">
+        <Link to="/" className="flex-none">
           <div className="flex items-center space-x-2 cursor-pointer">
             <div className="rounded">
               <img className="h-8 w-8" src={logo} alt="Logo" />
@@ -349,22 +280,56 @@ const LiveVideo = () => {
             </h2>
           </div>
         </Link>
+        
+        {/* Center the button absolutely */}
+        <div className="absolute left-1/2 transform -translate-x-1/2">
+          <button
+            onClick={handleStart}
+            disabled={isTracking}
+            className={`flex items-center gap-2 px-4 py-2 mt-5 rounded-[4rem] font-medium transition-colors
+              ${isTracking 
+                ? 'bg-[#717AEA] text-white hover:bg-[#717AEA]' 
+                : 'bg-[#717AEA] text-white hover:bg-[#717AEA]'}`}
+          >
+            {isTracking ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
+            {isTracking ? 'Started' : 'Start'}
+          </button>
+        </div>
+        
+        {/* Add an empty div to maintain flex spacing */}
+        <div className="flex-none w-[100px]"></div>
       </header>
 
       <div className="flex flex-1 p-4 gap-4 overflow-hidden mt-2">
         {/* Left Section */}
         <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1 overflow-hidden">
-
-          <div className="flex justify-between">
-            {/* hls videos */}  
-
-            <div className={`grid ${gridClasses()} gap-4 w-full p-4`}>
-              {data &&
-                formatVideoData(data).map((video, idx) => (
-                  <VideoCanvasPlayer key={idx} hlsUrl={video.hlsUrl} id={idx} />
-                ))}
+          {streamUrl ? (
+            <img
+              ref={imgRef}
+              src={streamUrl}
+              className="w-full h-full rounded-xl"
+              alt="Live stream"
+            />
+          ) : (
+           <div className="w-full h-full min-h-[600px] flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <div className="w-[120px] h-[120px]">
+              <DotLottieReact
+                src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
+                loop
+                autoplay
+              />
             </div>
+            <span className="text-gray-600 text-lg font-medium mt-1">
+              AI analyzing video
+            </span>
           </div>
+        </div>
+          )}
         </div>
 
         {/* AI Analysis Card */}
@@ -383,34 +348,46 @@ const LiveVideo = () => {
             className="space-y-4 bg-[#EFF4FF] p-[12px] rounded-[12px] overflow-y-auto scrollbar-hidden flex-1"
           >
             <div className="flex flex-col gap-2">
-              {logs.map((log, index) => (
-                <div
-                  key={`${log.person_id}-${log.timestamp}-${index}`}
-                  className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
-                >
-                  <div className="flex gap-2 mb-1">
-                    {/* <span className="font-medium">{index + 1}.</span> */}
-                    <span className="text-black-700 font-semibold">
-                      {log.camera_id}
-                    </span>
-                  </div>
+          {logs.map((log, index) => (
+            <div
+              key={`${log.person_id}-${log.event_type}-${index}`}
+              className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
+            >
+              <div className="flex gap-2 mb-1">
+                <span className="text-black-700 font-semibold">
+                  {log.camera_id}
+                </span>
+              </div>
 
-                  <ul className="rounded-md p-2 mt-1 text-black list-disc list-inside">
-                    <li>Camera: {log.camera_id}</li>
-                    <li>Region: {log.roi}</li>
-                    <li>Event: {log.event}</li>
-                    <li>Time: {format(new Date(log.timestamp), "EEE, HH:mm:ss")}</li>
-                    {/* <li>Person ID: {log.person_id}</li> */}
-                  </ul>
+              <ul className="rounded-md p-2 mt-1 text-black list-disc list-inside">
+                <li>Camera: {log.camera_id}</li>
+                <li>Region: {log.roi}</li>
+                {log.event_value && <li>Event Type: {log.event_value}</li>}
+                {log.person_id && (
+                  <li>Person ID: {log.person_id}</li>
+                )}
+                {log.event_type === "region" ? (
+                  log.timestamp && <li>Time: {formatTimeStamp(log.timestamp)}</li>
+                ) : (
+                  <>
+                    {log.start_timestamp && (
+                      <li>Start: {formatTimeStamp(log.start_timestamp)}</li>
+                    )}
+                    {log.end_timestamp && (
+                      <li>End: {formatTimeStamp(log.end_timestamp)}</li>
+                    )}
+                  </>
+                )}
+              </ul>
 
-                  <div className="bg-[#EEEFFF] rounded-md p-2 mt-1 flex justify-center items-center gap-2">
-                    <span className="text-[#5A62C8]">
-                      {log.event.charAt(0).toUpperCase() + log.event.slice(1)}
-                    </span>
-                  </div>
-                </div>
-              ))}
+              <div className="bg-[#EEEFFF] rounded-md p-2 mt-1 flex justify-center items-center gap-2">
+                <span className="text-[#5A62C8]">
+                  {log?.event?.charAt(0).toUpperCase() + log?.event?.slice(1)}
+                </span>
+              </div>
             </div>
+          ))}
+        </div>
           </div>
         </div>
       </div>
