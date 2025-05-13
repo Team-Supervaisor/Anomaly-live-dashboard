@@ -118,15 +118,22 @@ const LiveVideo = () => {
     }));
   };
 
-  const gridClasses = () => {
-    if (!data || !data.hls_urls) return "grid-cols-1";
+  // const gridClasses = () => {
+  //   if (!data || !data.hls_urls) return "grid-cols-1";
 
-    const len = Object.keys(data.hls_urls).length;
-    if (len === 1) return "grid-cols-1 grid-rows-1";
-    if (len === 2) return "grid-cols-2 grid-rows-1";
-    if (len <= 4) return "grid-cols-2 grid-rows-2";
-    if (len <= 6) return "grid-cols-3 grid-rows-2";
-    return "grid-cols-1"; // fallback
+  //   const len = Object.keys(data.hls_urls).length;
+  //   if (len === 1) return "grid-cols-1 grid-rows-1";
+  //   if (len === 2) return "grid-cols-2 grid-rows-1";
+  //   if (len <= 4) return "grid-cols-2 grid-rows-2";
+  //   if (len <= 6) return "grid-cols-3 grid-rows-2";
+  //   return "grid-cols-1"; // fallback
+  // };
+  const gridClasses = (count) => {
+    if (count === 1) return "grid-cols-1 grid-rows-1";
+    if (count === 2) return "grid-cols-2 grid-rows-1";
+    if (count <= 4) return "grid-cols-2 grid-rows-2";
+    if (count <= 6) return "grid-cols-3 grid-rows-2";
+    return "grid-cols-3 grid-rows-3"; // fallback for more videos
   };
 
   // useEffect(() => {
@@ -344,14 +351,21 @@ socketRef.current.on("frames", (frames) => {
         {/* Left Section */}
         <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1 overflow-hidden">
   {framesList.length > 0 ? (
-    <div className="">
+    <div className={`grid gap-4 h-full ${gridClasses(framesList.length)}`}>
       {framesList.map((frameUrl, index) => (
-        <div key={`frame-${index}`} className="relative aspect-video">
+        <div 
+          key={`frame-${index}`} 
+          className="relative aspect-video bg-gray-50 rounded-xl overflow-hidden"
+        >
           <img
             src={frameUrl}
-            className="w-full h-full  rounded-xl"
-            alt={`Frame ${index + 1}`}
+            className="w-full h-full object-cover rounded-xl"
+            alt={`Video stream ${index + 1}`}
+            loading="lazy"
           />
+          <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 text-sm rounded">
+            Stream {index + 1}
+          </div>
         </div>
       ))}
     </div>

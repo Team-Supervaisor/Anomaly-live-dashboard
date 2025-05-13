@@ -179,7 +179,19 @@ export default function CameraRender() {
         setHasShapesSaved(true);
   
       } else {
-        // Handle video tab - similar modifications for video shapes
+        // Validate that each video has at least one shape
+        const videosWithoutShapes = uploadedVideos.filter(
+          video => !videoShapes[video.id] || videoShapes[video.id].length === 0
+        );
+  
+        if (videosWithoutShapes.length > 0) {
+          const videoNames = videosWithoutShapes.map(v => v.file.name).join(", ");
+          alert(`Please draw at least one region for each video. Missing regions in: ${videoNames}`);
+          setIsSaving(false);
+          return;
+        }
+  
+        // Proceed with saving if all videos have shapes
         const formData = new FormData();
         uploadedVideos.forEach((video) => {
           formData.append("video", video.file);
@@ -408,7 +420,7 @@ export default function CameraRender() {
 
   // const toggleFullscreen = () => {
   //   if (!document.fullscreenElement) {
-  //     document.documentElement.requestFullscreen();
+ //     document.documentElement.requestFullscreen();
   //     setIsFullscreen(true);
   //   } else {
   //     document.exitFullscreen();
