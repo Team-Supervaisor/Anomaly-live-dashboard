@@ -128,26 +128,26 @@ const LiveVideo = () => {
     return "grid-cols-1"; // fallback
   };
 
-  useEffect(() => {
-    const socketInstance = io(import.meta.env.VITE_API_URL);
-    setSocket(socketInstance);
+  // useEffect(() => {
+  //   const socketInstance = io(import.meta.env.VITE_API_URL);
+  //   setSocket(socketInstance);
 
-    socketInstance.emit("logs");
+  //   socketInstance.emit("logs");
 
 
-    socketInstance.on("log_update", (payload) => {
-      // payload is coming in as an array:
-      // [
-      //   { person_id: 1, camera_id: "Video 1", roi: "inside", event: "entry", timestamp1: "2025-05-06T23:01:23.454" },
-      //   …
-      // ]
-      setLogs(Array.isArray(payload) ? payload : []);
-    });
+  //   socketInstance.on("log_update", (payload) => {
+  //     // payload is coming in as an array:
+  //     // [
+  //     //   { person_id: 1, camera_id: "Video 1", roi: "inside", event: "entry", timestamp1: "2025-05-06T23:01:23.454" },
+  //     //   …
+  //     // ]
+  //     setLogs(Array.isArray(payload) ? payload : []);
+  //   });
 
-    return () => {
-      socketInstance.disconnect();
-    };
-  }, []);
+  //   return () => {
+  //     socketInstance.disconnect();
+  //   };
+  // }, []);
 
   // Simulate socket updates every 3 seconds
  
