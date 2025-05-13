@@ -23,6 +23,7 @@ const LiveVideo = () => {
   const [streamUrl, setStreamUrl] = useState(null);
   const socketRef = useRef(null);
   const imgRef = useRef(null);
+  const [framesList, setFramesList] = useState([]);
 
   // console.log("Data from location:", data);
   // Mock data for testing
@@ -211,25 +212,52 @@ useEffect(() => {
   });
 
   // Listen for frames with logging
-  socketRef.current.on("frames", (data) => {
-    console.log("Received frame data:", {
-      // received: data,
-      byteLength: data?.byteLength,
-      // timestamp: new Date().toISOString()
-    });
+  // socketRef.current.on("frames", (data) => {
+  //   console.log("Received frame data:", {
+  //     // received: data,
+  //     byteLength: data?.byteLength,
+  //     // timestamp: new Date().toISOString()
+  //   });
 
-    if (!data || data.byteLength < 1000) {
-      console.warn("Invalid frame data received");
-      return;
-    }
+  //   if (!data || data.byteLength < 1000) {
+  //     console.warn("Invalid frame data received");
+  //     return;
+  //   }
 
-    const blob = new Blob([data], { type: "image/jpeg" });
-    const url = URL.createObjectURL(blob);
-    setStreamUrl(prev => {
-      if (prev) URL.revokeObjectURL(prev);
-      return url;
-    });
+  //   const blob = new Blob([data], { type: "image/jpeg" });
+  //   const url = URL.createObjectURL(blob);
+  //   setStreamUrl(prev => {
+  //     if (prev) URL.revokeObjectURL(prev);
+  //     return url;
+  //   });
+  // });
+
+  // Update the frames socket listener
+socketRef.current.on("frames", (frames) => {
+  if (!frames || !Array.isArray(frames) || frames.length === 0) {
+    console.warn("Invalid frames data received");
+    return;
+  }
+
+  console.log("Received frames:", {
+    count: frames.length,
+    timestamp: new Date().toISOString()
   });
+
+  // Process all frames into URLs
+  const frameUrls = frames.map(frameData => {
+    if (!frameData || frameData.byteLength < 1000) return null;
+    const blob = new Blob([frameData], { type: "image/jpeg" });
+    return URL.createObjectURL(blob);
+  }).filter(Boolean); // Remove any null values
+
+  // Update state with new frame URLs
+  setFramesList(prevUrls => {
+    // Clean up old URLs
+    prevUrls.forEach(url => URL.revokeObjectURL(url));
+    return frameUrls;
+  });
+});
 
   // Listen for logs with enhanced logging
   socketRef.current.on("logs", (logData) => {
@@ -311,30 +339,35 @@ useEffect(() => {
       <div className="flex flex-1 p-4 gap-4 overflow-hidden mt-2">
         {/* Left Section */}
         <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1 overflow-hidden">
-          {streamUrl ? (
-            <img
-              ref={imgRef}
-              src={streamUrl}
-              className="w-full h-full rounded-xl"
-              alt="Live stream"
-            />
-          ) : (
-           <div className="w-full h-full min-h-[600px] flex items-center justify-center">
-          <div className="flex flex-col items-center">
-            <div className="w-[120px] h-[120px]">
-              <DotLottieReact
-                src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
-                loop
-                autoplay
-              />
-            </div>
-            <span className="text-gray-600 text-lg font-medium mt-1">
-              AI analyzing video
-            </span>
-          </div>
+  {framesList.length > 0 ? (
+    <div className="grid grid-cols-2 gap-4 h-full">
+      {framesList.map((frameUrl, index) => (
+        <div key={`frame-${index}`} className="relative aspect-video">
+          <img
+            src={frameUrl}
+            className="w-full h-full object-cover rounded-xl"
+            alt={`Frame ${index + 1}`}
+          />
         </div>
-          )}
+      ))}
+    </div>
+  ) : (
+    <div className="w-full h-full min-h-[600px] flex items-center justify-center">
+      <div className="flex flex-col items-center">
+        <div className="w-[120px] h-[120px]">
+          <DotLottieReact
+            src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
+            loop
+            autoplay
+          />
         </div>
+        <span className="text-gray-600 text-lg font-medium mt-1">
+          AI analyzing video
+        </span>
+      </div>
+    </div>
+  )}
+</div>
 
         {/* AI Analysis Card */}
         <div className="bg-white rounded-[26px] p-4 flex flex-col w-[360px]">
