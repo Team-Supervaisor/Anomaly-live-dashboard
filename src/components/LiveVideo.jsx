@@ -267,8 +267,12 @@ socketRef.current.on("frames", (frames) => {
       // timestamp: new Date().toISOString()
     });
     
-    // Don't append to previous logs, just set the new log
-    setLogs([logData]);
+    // Append new log to existing logs
+    setLogs(prevLogs => {
+      // Keep only last 80 logs to prevent too much memory usage
+      const updatedLogs = [...prevLogs, logData].slice(-80);
+      return updatedLogs;
+    });
   });
 
   return () => {
@@ -399,7 +403,7 @@ socketRef.current.on("frames", (frames) => {
               <ul className="rounded-md p-2 mt-1 text-black list-disc list-inside">
                 <li>Camera: {log.camera_id}</li>
                 <li>Region: {log.roi}</li>
-                {log.event_value && <li>Event Type: {log.event_value}</li>}
+                {log.event_type && <li>Event Type: {log.event_type}</li>}
                 {log.person_id && (
                   <li>Person ID: {log.person_id}</li>
                 )}
@@ -419,7 +423,7 @@ socketRef.current.on("frames", (frames) => {
 
               <div className="bg-[#EEEFFF] rounded-md p-2 mt-1 flex justify-center items-center gap-2">
                 <span className="text-[#5A62C8]">
-                  {log?.event?.charAt(0).toUpperCase() + log?.event?.slice(1)}
+                  {log?.event_value?.charAt(0).toUpperCase() + log?.event_value?.slice(1)}
                 </span>
               </div>
             </div>
