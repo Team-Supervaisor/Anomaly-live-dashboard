@@ -340,12 +340,12 @@ socketRef.current.on("frames", (frames) => {
         {/* Left Section */}
         <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1 overflow-hidden">
   {framesList.length > 0 ? (
-    <div className="grid grid-cols-2 gap-4 h-full">
+    <div className="">
       {framesList.map((frameUrl, index) => (
         <div key={`frame-${index}`} className="relative aspect-video">
           <img
             src={frameUrl}
-            className="w-full h-full object-cover rounded-xl"
+            className="w-full h-full  rounded-xl"
             alt={`Frame ${index + 1}`}
           />
         </div>
