@@ -154,7 +154,7 @@ const LiveVideo = () => {
 
   // Add this effect to handle auto-scrolling
   useEffect(() => {
-    if (logsContainerRef.current) {
+    if (logsContainerRef.current && logs.length > 0) {
       logsContainerRef.current.scrollTo({
         top: logsContainerRef.current.scrollHeight,
         behavior: "smooth",
@@ -213,9 +213,9 @@ useEffect(() => {
   // Listen for frames with logging
   socketRef.current.on("frames", (data) => {
     console.log("Received frame data:", {
-      received: !!data,
+      // received: data,
       byteLength: data?.byteLength,
-      timestamp: new Date().toISOString()
+      // timestamp: new Date().toISOString()
     });
 
     if (!data || data.byteLength < 1000) {
