@@ -57,6 +57,9 @@ export default function VideoCanvas({
   const [previewPoint, setPreviewPoint] = useState(null);
   const [nearStartPoint, setNearStartPoint] = useState(false);
 
+  // First, add state for canvas dimensions
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
+
   // --- Resize & render loop ---
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -65,13 +68,18 @@ export default function VideoCanvas({
 
     const ctx = canvas.getContext('2d');
 
-    const resizeCanvas = () => {
-      if (video.videoWidth && video.videoHeight) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+    // Set canvas size only once when video metadata is loaded
+    const handleVideoMetadata = () => {
+      if (!canvasDimensions.width && !canvasDimensions.height) {
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+        canvas.width = width;
+        canvas.height = height;
+        setCanvasDimensions({ width, height });
       }
     };
-    resizeCanvas();
+
+    video.addEventListener('loadedmetadata', handleVideoMetadata);
 
     function renderFrame() {
       if (video.readyState >= 2) {
@@ -89,12 +97,11 @@ export default function VideoCanvas({
     }
     renderFrame();
 
-    window.addEventListener('resize', resizeCanvas);
     return () => {
       cancelAnimationFrame(animationFrameRef.current);
-      window.removeEventListener('resize', resizeCanvas);
+      video.removeEventListener('loadedmetadata', handleVideoMetadata);
     };
-  }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, showMaximize, polygonPoints, previewPoint]); // Added dependencies
+  }, [isMaximized, shapes, drawingState, selectedShape, hoveredShape, showMaximize, polygonPoints, previewPoint]);
 
   // --- Keyboard Escape to minimize ---
   useEffect(() => {
@@ -572,6 +579,11 @@ export default function VideoCanvas({
       <canvas
         ref={canvasRef}
         className={`w-full h-full bg-black rounded-lg ${getCursorStyle()}`}
+        style={{
+          aspectRatio: canvasDimensions.width && canvasDimensions.height 
+            ? `${canvasDimensions.width}/${canvasDimensions.height}`
+            : 'auto'
+        }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
