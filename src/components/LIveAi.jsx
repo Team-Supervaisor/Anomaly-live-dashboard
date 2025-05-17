@@ -829,7 +829,8 @@ const LiveAi = () => {
             {/* Scrollable Content */}
             <div
               ref={anomalyScrollContainerRef}
-              className="p-[8px] rounded-[12px] overflow-y-auto scrollbar-hidden flex-1"
+              // className="p-[8px] rounded-[12px] overflow-y-auto scrollbar-hidden flex-1"
+              className="p-3 rounded-xl overflow-y-auto scrollbar-hidden flex-1 bg-gradient-to-r from-indigo-200/20 to-indigo-200/[0.08]"
             >
               <div className="logs-container">
                 {aiAnalyzeitem.map((item, index) => (
