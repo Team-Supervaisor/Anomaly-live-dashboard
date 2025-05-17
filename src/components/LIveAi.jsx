@@ -439,21 +439,7 @@ const LiveAi = () => {
 // }, []);
 
   // Simulate socket updates every 3 seconds
-  useEffect(() => {
-    setLogs(mockLogs);
-
-    const interval = setInterval(() => {
-      // Rotate the logs array to simulate updates
-      setLogs((prevLogs) => {
-        const rotated = [...prevLogs];
-        const last = rotated.pop();
-        if (last) rotated.unshift(last);
-        return rotated;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
+ 
 
   // Add this effect to handle auto-scrolling
   useEffect(() => {
@@ -466,17 +452,21 @@ const LiveAi = () => {
   // Scroll whenever logs update
   useEffect(() => {
     setLogs(mockLogs);
-
+  
     const interval = setInterval(() => {
-      // Rotate the logs array to simulate updates
-      setLogs((prevLogs) => {
+      setLogs(prevLogs => {
         const rotated = [...prevLogs];
         const last = rotated.pop();
-        if (last) rotated.unshift(last);
+        if (last) {
+          // Add animation classes when inserting new log
+          last.isNew = true;
+          rotated.forEach(log => log.isNew = false); // Ensure only the new log has the class
+          rotated.unshift(last);
+        }
         return rotated;
       });
     }, 3000);
-
+  
     return () => clearInterval(interval);
   }, []);
 
@@ -643,6 +633,26 @@ const LiveAi = () => {
       setAiModal(false);
     });
   };
+
+
+
+  useEffect(() => {
+    if (aiAnalyzeitem.length > 0) {
+      // Mark the newest item for animation
+      setAiAnalyzeitem(prevItems => {
+        const newItems = [...prevItems];
+        newItems[newItems.length - 1] = {
+          ...newItems[newItems.length - 1],
+          isNew: true
+        };
+        // Remove isNew from other items
+        return newItems.map((item, index) => ({
+          ...item,
+          isNew: index === newItems.length - 1
+        }));
+      });
+    }
+  }, [aiAnalyzeitem.length]);
 
    
   return (
@@ -819,200 +829,165 @@ const LiveAi = () => {
             {/* Scrollable Content */}
             <div
               ref={anomalyScrollContainerRef}
-              className="space-y-4 bg-[#EFF4FF] p-[12px] rounded-[12px] overflow-y-auto scrollbar-hidden flex-1"
+              className="p-[8px] rounded-[12px] overflow-y-auto scrollbar-hidden flex-1"
             >
-              <div className="flex flex-col gap-2">
-                {aiAnalyzeitem.map((item, index) => {
-                  return (
-                    <React.Fragment key={index}>
-                      {item.type === "Operation" ? (
-                        <>
-                          <div
-                            key={index}
-                            className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
-                          >
-                            <div
-                              onClick={() => setShowAllAnamoly(true)}
-                              className="flex gap-2 mb-1 cursor-pointer"
-                            >
-                              <span className="font-medium">{index + 1}.</span>
-                              <span className="text-black-700 font-semibold">
-                                {item.cp}
-                              </span>
-                            </div>
+              <div className="logs-container">
+                {aiAnalyzeitem.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`log-item ${item.isNew ? 'new-log' : ''}`}
+                    style={{
+                      width: '421px',
+                      marginLeft: '22px',
+                      borderRadius: '14px',
+                      background: '#717AEA12',
+                      backdropFilter: 'blur(8px)',
+                    }}
+                  >
+                    {item.type === "Operation" ? (
+                      <div className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]">
+                        <div onClick={() => setShowAllAnamoly(true)} className="flex gap-2 mb-1 cursor-pointer">
+                          <span className="font-medium">{index + 1}.</span>
+                          <span className="text-black-700 font-semibold">{item.cp}</span>
+                        </div>
+                        <ul onClick={() => setShowAllAnamoly(true)} className="rounded-md p-2 mt-1 text-black list-disc list-inside cursor-pointer">
+                          <li>Checkpoint: {item.cp}</li>
+                          <li>Operation: {item.op}</li>
+                          <li>Expected: {item.exp}</li>
+                          <li>Actual: {item.act.toFixed(4)}</li>
+                          <li>Deviation (sec): {item.dev_sec.toFixed(4)}</li>
+                          <li>Operation ID: {item.OpID}</li>
+                        </ul>
+                        <div className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
+                            onClick={() => openAimodal(item)}>
+                          <span className="text-[#5A62C8]">{item.type}</span>
+                          <button className="text-xs text-[#5A62C8]">×</button>
+                        </div>
+                      </div>
+                    ) : item.type === "Time Event" ? (
+                      // Time Event content
+                      <div className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]">
+                        <div onClick={() => setShowAllAnamoly(true)} className="flex gap-2 mb-1 cursor-pointer">
+                          <span className="font-medium">{index + 1}.</span>
+                          <span className="text-black-700 font-semibold">{item.type}</span>
+                        </div>
+                        <p>{item.reason}</p>
+                        <div className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
+                            onClick={() => openAimodal(item)}>
+                          <span className="text-[#5A62C8]">{item.type}</span>
+                          <button className="text-xs text-[#5A62C8]">×</button>
+                        </div>
+                      </div>
+                    ) : item.type === "Checkpoint" ? (
+                      // Checkpoint content
+                      <div
+                      key={index}
+                      className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
+                    >
+                      <div
+                        onClick={() => setShowAllAnamoly(true)}
+                        className="flex gap-2 mb-1 cursor-pointer"
+                      >
+                        <span className="font-medium">{index + 1}.</span>
+                        <span className="text-black-700 font-semibold">
+                          {item.type}
+                        </span>
+                      </div>
 
-                            <ul
-                              onClick={() => setShowAllAnamoly(true)}
-                              className=" rounded-md p-2 mt-1 text-black list-disc list-inside cursor-pointer"
-                            >
-                              <li>Checkpoint: {item.cp}</li>
-                              <li>Operation: {item.op}</li>
-                              <li>Expected: {item.exp}</li>
-                              <li>Actual: {item.act.toFixed(4)}</li>
-                              <li>
-                                Deviation (sec): {item.dev_sec.toFixed(4)}
-                              </li>
-                              <li>Operation ID: {item.OpID}</li>
-                            </ul>
-                            <div
-                              className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                              onClick={() => openAimodal(item)}
-                            >
-                              <span className="text-[#5A62C8]">
-                                {item.type}
-                              </span>
-                              <button className="text-xs text-[#5A62C8]">
-                                ×
-                              </button>
-                            </div>
+                      <ul
+                        onClick={() => setShowAllAnamoly(true)}
+                        className="rounded-md p-2 mt-1 text-black list-disc list-inside cursor-pointer"
+                      >
+                        {/* Extra section as a list item */}
+                        {/* <li>
+                          <span className="font-medium">Extra:</span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            {item.extra.length > 0 ? (
+                              item.extra.map((cp, i) => (
+                                <li key={`extra-${i}`}>{cp}</li>
+                              ))
+                            ) : (
+                              <li>N/A</li>
+                            )}
+                          </ul>
+                        </li> */}
+
+                        {/* Order section as a list item */}
+                        <li>
+                          <span className="font-medium">Order:</span>
+                          <div className="flex flex-wrap items-center ml-5 mt-1">
+                            {item.order.map((cp, i) => (
+                              <React.Fragment key={`order-${i}`}>
+                                <span>{cp}</span>
+                                {i !== item.order.length - 1 && (
+                                  <span className="mx-1">→</span>
+                                )}
+                              </React.Fragment>
+                            ))}
                           </div>
-                        </>
-                      ) : item.type === "Time Event" ? (
-                        <>
-                          <div
-                            key={index}
-                            className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
-                          >
-                            <div
-                              onClick={() => setShowAllAnamoly(true)}
-                              className="flex gap-2 mb-1 cursor-pointer"
-                            >
-                              <span className="font-medium">{index + 1}.</span>
-                              <span className="text-black-700 font-semibold">
-                                {item.type}
-                              </span>
-                            </div>
+                        </li>
 
-                            <p>{item.reason}</p>
-                            <div
-                              className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                              onClick={() => openAimodal(item)}
-                            >
-                              <span className="text-[#5A62C8]">
-                                {item.type}
-                              </span>
-                              <button className="text-xs text-[#5A62C8]">
-                                ×
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      ) : item.type === "Checkpoint" ? (
-                        <>
-                          <div
-                            key={index}
-                            className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
-                          >
-                            <div
-                              onClick={() => setShowAllAnamoly(true)}
-                              className="flex gap-2 mb-1 cursor-pointer"
-                            >
-                              <span className="font-medium">{index + 1}.</span>
-                              <span className="text-black-700 font-semibold">
-                                {item.type}
-                              </span>
-                            </div>
+                        {/* Current Anomaly section as a list item */}
+                        <li>
+                          <span className="font-medium">
+                            Current Anomaly:
+                          </span>
+                          <ul className="list-disc list-inside ml-4 mt-1">
+                            <li>
+                              Position: {item.current_anomaly.position}
+                            </li>
+                            <li>
+                              Expected: {item.current_anomaly.expected}
+                            </li>
+                            <li>Actual: {item.current_anomaly.actual}</li>
+                          </ul>
+                        </li>
+                      </ul>
 
-                            <ul
-                              onClick={() => setShowAllAnamoly(true)}
-                              className="rounded-md p-2 mt-1 text-black list-disc list-inside cursor-pointer"
-                            >
-                              {/* Extra section as a list item */}
-                              {/* <li>
-                                <span className="font-medium">Extra:</span>
-                                <ul className="list-disc list-inside ml-4 mt-1">
-                                  {item.extra.length > 0 ? (
-                                    item.extra.map((cp, i) => (
-                                      <li key={`extra-${i}`}>{cp}</li>
-                                    ))
-                                  ) : (
-                                    <li>N/A</li>
-                                  )}
-                                </ul>
-                              </li> */}
+                      <div
+                        className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
+                        onClick={() => openAimodal(item)}
+                      >
+                        <span className="text-[#5A62C8]">
+                          {item.type}
+                        </span>
+                        <button className="text-xs text-[#5A62C8]">
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                    ) : item.type === "ActionAnomaly" ? (
+                      // ActionAnomaly content
+                      <div
+                        key={index}
+                        className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
+                      >
+                        <div
+                          onClick={() => setShowAllAnamoly(true)}
+                          className="flex gap-2 mb-1 cursor-pointer"
+                        >
+                          <span className="font-medium">{index + 1}.</span>
+                          <span className="text-black-700 font-semibold">
+                            {item.type}
+                          </span>
+                        </div>
 
-                              {/* Order section as a list item */}
-                              <li>
-                                <span className="font-medium">Order:</span>
-                                <div className="flex flex-wrap items-center ml-5 mt-1">
-                                  {item.order.map((cp, i) => (
-                                    <React.Fragment key={`order-${i}`}>
-                                      <span>{cp}</span>
-                                      {i !== item.order.length - 1 && (
-                                        <span className="mx-1">→</span>
-                                      )}
-                                    </React.Fragment>
-                                  ))}
-                                </div>
-                              </li>
-
-                              {/* Current Anomaly section as a list item */}
-                              <li>
-                                <span className="font-medium">
-                                  Current Anomaly:
-                                </span>
-                                <ul className="list-disc list-inside ml-4 mt-1">
-                                  <li>
-                                    Position: {item.current_anomaly.position}
-                                  </li>
-                                  <li>
-                                    Expected: {item.current_anomaly.expected}
-                                  </li>
-                                  <li>Actual: {item.current_anomaly.actual}</li>
-                                </ul>
-                              </li>
-                            </ul>
-
-                            <div
-                              className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                              onClick={() => openAimodal(item)}
-                            >
-                              <span className="text-[#5A62C8]">
-                                {item.type}
-                              </span>
-                              <button className="text-xs text-[#5A62C8]">
-                                ×
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      ) : item.type === "ActionAnomaly" ? (
-                          <>
-                          <div
-                            key={index}
-                            className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
-                          >
-                            <div
-                              onClick={() => setShowAllAnamoly(true)}
-                              className="flex gap-2 mb-1 cursor-pointer"
-                            >
-                              <span className="font-medium">{index + 1}.</span>
-                              <span className="text-black-700 font-semibold">
-                                {item.type}
-                              </span>
-                            </div>
-
-                            <p>{item.detail}</p>
-                            <div
-                              className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                              onClick={() => openAimodal(item)}
-                            >
-                              <span className="text-[#5A62C8]">
-                                {item.type}
-                              </span>
-                              <button className="text-xs text-[#5A62C8]">
-                                ×
-                              </button>
-                            </div>
-                          </div>
-                                              
-                          </>
-                      ) :null}
-                    </React.Fragment>
-                  );
-                })}
-                
-                
+                        <p>{item.detail}</p>
+                        <div
+                          className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
+                          onClick={() => openAimodal(item)}
+                        >
+                          <span className="text-[#5A62C8]">
+                            {item.type}
+                          </span>
+                          <button className="text-xs text-[#5A62C8]">
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

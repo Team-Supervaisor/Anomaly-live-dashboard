@@ -39,23 +39,34 @@ export default function ToolBar({
     {
       name: "pointer",
       icon: (
-          <img
-              src="/pointerT.svg"
-              style={{
-                  filter: selectedTool === "pointer"
-                      ? "invert(100%) sepia(100%) saturate(0%) hue-rotate(180deg)"
-                      : "none",
-              }}
-              width={18}
-              height={18}
-              alt="pointer"
-          />
+        <img
+          src="/arrow-selector.svg"
+          style={{
+            filter: selectedTool === "pointer"
+              ? "brightness(0) invert(1)" // White when selected
+              : "brightness(0)", // Black when not selected
+          }}
+          width={10}
+          height={10}
+          alt="pointer"
+        />
       )
-  },
-  {
-    name: "caligraphy",
-    icon: <MousePointer2 size={18} color="#333" />
-  },
+    },
+    {
+      name: "caligraphy",
+      icon: (
+        <img
+          src="/cross-hit.svg"
+          style={{
+            filter: selectedTool === "caligraphy"
+              ? "brightness(0) invert(1)" // This will make the icon white when selected
+              : "none",
+          }}
+          size={18}
+          color="#333"
+        />
+      )
+    },
     { name: "rectangle", icon: <Square size={18} color="#333" /> },
     // { name: "circle", icon: <Circle size={18} color="#333" /> },
     // {
