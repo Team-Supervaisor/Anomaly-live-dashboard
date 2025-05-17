@@ -830,7 +830,7 @@ const LiveAi = () => {
             <div
               ref={anomalyScrollContainerRef}
               // className="p-[8px] rounded-[12px] overflow-y-auto scrollbar-hidden flex-1"
-              className="p-3 rounded-xl overflow-y-auto scrollbar-hidden flex-1 bg-gradient-to-r from-indigo-200/20 to-indigo-200/[0.08]"
+              className="p-3 rounded-xl overflow-y-auto scrollbar-hidden flex-1"
             >
               <div className="logs-container">
                 {aiAnalyzeitem.map((item, index) => (
@@ -839,9 +839,9 @@ const LiveAi = () => {
                     className={`log-item ${item.isNew ? 'new-log' : ''}`}
                     style={{
                       width: '421px',
-                      marginLeft: '22px',
+                      marginLeft: '8px',
                       borderRadius: '14px',
-                      background: '#717AEA12',
+                      background: 'linear-gradient(90deg, rgba(113, 122, 234, 0.2) 0%, rgba(113, 122, 234, 0.08) 100%)',
                       backdropFilter: 'blur(8px)',
                     }}
                   >
