@@ -238,7 +238,7 @@ input[type=number] {
 .log-item {
   opacity: 0;
   transform: translateX(100%);
-  transition: all 1s ease-out;
+  transition: all 0.8s ease-out;
   margin-bottom: 16px;
   transform-origin: top;
   position: relative;
@@ -246,15 +246,18 @@ input[type=number] {
 }
 
 .log-item.new-log {
-  animation: slideInFromRight 1s ease-out forwards;
+  animation: slideInFromRight 0.8s ease-out forwards;
+  animation-timing-function: linear;
 }
 
 /* Animation for existing logs sliding down */
 .log-item:not(.new-log) {
   opacity: 1;
   transform: translateX(0);
-  animation: slideDown 1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation: slideDown 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+
   will-change: transform;
+  animation-timing-function: linear;
 }
 
 @keyframes slideInFromRight {
