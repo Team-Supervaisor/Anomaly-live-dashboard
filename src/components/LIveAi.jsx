@@ -644,24 +644,44 @@ const LiveAi = () => {
 
 
 
+  // useEffect(() => {
+  //   if (aiAnalyzeitem.length > 0) {
+  //     // Mark the newest item for animation
+  //     setAiAnalyzeitem(prevItems => {
+  //       const newItems = [...prevItems];
+  //       newItems[newItems.length - 1] = {
+  //         ...newItems[newItems.length - 1],
+  //         isNew: true
+  //       };
+  //       // Remove isNew from other items
+  //       return newItems.map((item, index) => ({
+  //         ...item,
+  //         isNew: index === newItems.length - 1
+  //       }));
+  //     });
+  //   }
+  // }, [aiAnalyzeitem.length]);
+
+
   useEffect(() => {
     if (aiAnalyzeitem.length > 0) {
-      // Mark the newest item for animation
       setAiAnalyzeitem(prevItems => {
         const newItems = [...prevItems];
+        // Update the last item to include log ID and animation
         newItems[newItems.length - 1] = {
           ...newItems[newItems.length - 1],
+          logId: prevItems.length,
           isNew: true
         };
-        // Remove isNew from other items
+        // Remove animation from other items
         return newItems.map((item, index) => ({
           ...item,
+          logId: index + 1,
           isNew: index === newItems.length - 1
         }));
       });
     }
   }, [aiAnalyzeitem.length]);
-
    
   // const handleSendMessage = () => {
   //   if (newMessage.trim()) {
@@ -897,33 +917,33 @@ const LiveAi = () => {
           {/* Instructions Card */}
 
           <div className="bg-white rounded-[26px] max-h-[330px] flex flex-col">
-  {/* Header */}
-  <div className="flex justify-between items-center p-4 pt-[16px] pb-[13px] border-[#EFF4FE]">
-    <div className="flex items-center gap-2">
-      <div className="w-6 h-6 rounded-full flex items-center justify-center">
-        <img src="/add_notes.svg" alt="Notes" className="w-10 h-10" />
-      </div>
-      <h2 className="font-[600] text-[16px]">Instructions</h2>
-    </div>
-  </div>
-  <InstructionsChat 
-    messages={messages}
-    newMessage={newMessage}
-    setNewMessage={setNewMessage}
-    hoveredMessage={hoveredMessage}
-    setHoveredMessage={setHoveredMessage}
-    deletingMessageId={deletingMessageId}
-    handleSendMessage={handleSendMessage}
-    handleEditMessage={handleEditMessage}
-    handleDeleteMessage={handleDeleteMessage}
-    formatInstructionHtml={formatInstructionHtml}
-  />
+            {/* Header */}
+            <div className="flex justify-between items-center p-4 pt-[16px] pb-[13px] border-[#EFF4FE]">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center">
+                  <img src="/add_notes.svg" alt="Notes" className="w-10 h-10" />
+                </div>
+                <h2 className="font-[600] text-[16px]">Instructions</h2>
+              </div>
+            </div>
+            <InstructionsChat 
+              messages={messages}
+              newMessage={newMessage}
+              setNewMessage={setNewMessage}
+              hoveredMessage={hoveredMessage}
+              setHoveredMessage={setHoveredMessage}
+              deletingMessageId={deletingMessageId}
+              handleSendMessage={handleSendMessage}
+              handleEditMessage={handleEditMessage}
+              handleDeleteMessage={handleDeleteMessage}
+              formatInstructionHtml={formatInstructionHtml}
+            />
 
  
 
 
  
-</div>
+          </div>
           {/* <div className="bg-white rounded-[26px] max-h-[380px] flex flex-col">
             <div
          
@@ -1002,7 +1022,7 @@ const LiveAi = () => {
                 {aiAnalyzeitem.map((item, index) => (
                   <div
                     key={index}
-                    className={`log-item ${item.isNew ? 'new-log' : ''}`}
+                    className={`log-item relative ${item.isNew ? 'new-log' : ''}`}
                     style={{
                       width: '421px',
                       marginLeft: '8px',
@@ -1011,6 +1031,10 @@ const LiveAi = () => {
                       backdropFilter: 'blur(8px)',
                     }}
                   >
+                   <span className="absolute top-2 left-2 inline-flex px-2 py-1 rounded-full bg-[#717AEA14] text-[#3B3BC6] text-xs">
+                    Log ID: {item.logId}
+                  </span>
+                  <div className="mt-8">
                     {item.type === "Operation" ? (
                       <div className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]">
                         <div onClick={() => setShowAllAnamoly(true)} className="flex gap-2 mb-1 cursor-pointer">
@@ -1153,6 +1177,7 @@ const LiveAi = () => {
                         </div>
                       </div>
                     ) : null}
+                    </div>
                   </div>
                 ))}
               </div>
