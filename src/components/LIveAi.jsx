@@ -827,13 +827,16 @@ const LiveAi = () => {
         <div className="w-full">
   <div className="bg-white w-full rounded-[26px] overflow-hidden">
     {streamUrl ? (
-      <div className="w-full h-full">
+      <div className="w-full h-full relative">
         <img
           ref={imgRef}
           src={streamUrl}
           className="w-full h-full rounded-xl"
           alt="Live stream"
         />
+        <div className="absolute top-2 left-2 bg-white text-black px-2 py-1 rounded text-sm font-medium">
+          Video Canvas 1
+        </div>
       </div>
     ) : (
       <div className="w-full h-full min-h-[600px] flex items-center justify-center">
