@@ -175,6 +175,8 @@ const LiveAi = () => {
   const [showAllAnamoly, setShowAllAnamoly] = useState(false);
   const [loader,setLoader] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState('');
 
 
   const handleAnomalyAlert = data => {
@@ -656,6 +658,41 @@ const LiveAi = () => {
   }, [aiAnalyzeitem.length]);
 
    
+  // const handleSendMessage = () => {
+  //   if (newMessage.trim()) {
+  //     setMessages(prev => [...prev, {
+  //       id: Date.now(),
+  //       text: newMessage,
+  //       number: prev.length + 1
+  //     }]);
+  //     setNewMessage('');
+  //   }
+  // };
+
+  const handleSendMessage = () => {
+    if (newMessage.trim()) {
+      const newMsg = {
+        id: Date.now(),
+        text: newMessage,
+        number: messages.length + 1,
+        isNew: true // Add this flag
+      };
+      
+      setMessages(prev => [...prev, newMsg]);
+      setNewMessage('');
+  
+      // Remove the isNew flag after animation completes
+      setTimeout(() => {
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === newMsg.id ? { ...msg, isNew: false } : msg
+          )
+        );
+      }, 300); // Match this with animation duration
+    }
+  };
+
+
   return (
     <div className="flex flex-col h-screen bg-[#F5F9FF]">
           <header className="flex items-center justify-between px-[41px] py-[10px] pl-[12px] bg-white">
@@ -711,7 +748,7 @@ const LiveAi = () => {
             />
           </div>
 
-          {/* <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex items-center bg-white h-[80px] w-[400px] rounded-[100px] px-[22px] py-[10px] gap-6 border">
+          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex items-center bg-white h-[80px] w-[400px] rounded-[100px] px-[22px] py-[10px] gap-6 border">
             
               <div className="flex items-center gap-2">
                 <div className="relative group">
@@ -766,7 +803,7 @@ const LiveAi = () => {
                 <RotateCcw className="w-5 h-5" />
               </button>
             </div>
-          </div> */}
+          </div>
 
         </>
         ) : (
@@ -790,10 +827,69 @@ const LiveAi = () => {
         {/* Right Section with Instructions and AI Analysis */}
         <div className="flex flex-col gap-4 w-[650px]">
           {/* Instructions Card */}
-          <div className="bg-white rounded-[26px] max-h-[380px] flex flex-col">
+
+          <div className="bg-white rounded-[26px] max-h-[330px] flex flex-col">
+  {/* Header */}
+  <div className="flex justify-between items-center p-4 pt-[16px] pb-[13px] border-[#EFF4FE]">
+    <div className="flex items-center gap-2">
+      <div className="w-6 h-6 rounded-full flex items-center justify-center">
+        <img src="/add_notes.svg" alt="Notes" className="w-10 h-10" />
+      </div>
+      <h2 className="font-[600] text-[16px]">Instructions</h2>
+    </div>
+  </div>
+
+  {/* Messages Container */}
+  <div className="flex-1 overflow-y-auto px-4 scrollbar-hidden">
+  <div className="space-y-4">
+    {messages.map((message, index) => (
+      <div 
+        key={message.id} 
+        className={`p-4 bg-[#F6F7FF] rounded-[14px] ${
+          message.isNew ? 'message-animate-in' : ''
+        }`}
+      >
+        <div className="flex flex-col gap-2">
+          <span className="inline-flex px-2 py-1 rounded-full bg-[#717AEA14] text-[#3B3BC6] text-xs w-fit">
+            Instruction {message.number}
+          </span>
+          <p className="text-[#626262] px-2">{message.text}</p>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+  {/* Input Section */}
+  <div className="p-4 flex items-center gap-3 mt-1">
+    <div className="relative flex-1">
+      <input
+        type="text"
+        value={newMessage}
+        onChange={(e) => setNewMessage(e.target.value)}
+        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+        placeholder="Add instructions"
+        className="w-[379px] h-[52px] px-4 pr-12 rounded-full border-2 border-[#717AEA] focus:outline-none"
+      />
+      <button 
+        className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#717AEA1A] flex items-center justify-center"
+      >
+        <img src="/mic.svg" alt="Voice Input" className="w-4 h-4" />
+      </button>
+    </div>
+    
+    <button 
+      onClick={handleSendMessage}
+      className="w-[52px] h-[52px] rounded-full  flex items-center justify-center  transition-colors"
+    >
+      <img src="/send.svg" alt="Send" className="w-5 h-5" />
+    </button>
+  </div>
+</div>
+          {/* <div className="bg-white rounded-[26px] max-h-[380px] flex flex-col">
             <div
          
-             className="flex justify-between items-center p-4 pt-[16px] pb-[13px] border-b border-[#EFF4FE]">
+             className="flex justify-between items-center p-4 pt-[16px] pb-[13px]  border-[#EFF4FE]">
                  <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full flex items-center justify-center">
               <img src="/add_notes.svg" alt="Notes" className="w-10 h-10" />
@@ -823,7 +919,7 @@ const LiveAi = () => {
             />
 
             </div>
-          </div>
+          </div> */}
 
            {/* Analysis Card */}
                 <div className="bg-white rounded-[26px] p-4 max-h-[380px] flex flex-col">

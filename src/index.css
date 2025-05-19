@@ -298,3 +298,22 @@ input[type=number] {
   position: relative;
   min-height: 400px; /* Ensure enough space for animations */
 }
+
+
+
+
+/* new text */
+@keyframes slideInFromRight {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.message-animate-in {
+  animation: slideInFromRight 0.3s ease-out forwards;
+}
