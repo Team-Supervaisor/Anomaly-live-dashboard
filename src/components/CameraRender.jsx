@@ -291,7 +291,7 @@ export default function CameraRender() {
         return "";
       case 1:
         return activeTab === "video"
-          ? `w-[60%] h-[470px] ${baseStyles} mt-2 2xl:mb-15`
+          ? `w-[60%] h-[470px] ${baseStyles}  mb-18`
           : `w-[80%] h-[70vh] ${baseStyles} mt-16 mb-10`;
       case 2:
         return `grid-cols-2 gap-4 w-[90%] h-[60vh] ${baseStyles} mt-16`;
