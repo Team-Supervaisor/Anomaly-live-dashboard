@@ -924,6 +924,14 @@ const LiveAi = () => {
                 </div>
                 <h2 className="font-[600] text-[16px]">Instructions</h2>
               </div>
+              <button
+              // onClick={() => setShowInstructionModal(true)}
+              className="p-2 rounded hover:bg-gray-100 transition"
+            >
+              <img src="/expand_content.svg" alt="Expand" className="w-5 h-5" />
+            </button>
+
+
             </div>
             <InstructionsChat 
               messages={messages}
