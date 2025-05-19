@@ -15,6 +15,8 @@ import VideoSection from "./VideoSection";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import FullscreenToggle from "./ui/Fullscreentoggle";
+import logo from "../assets/logo.png";
+import { Link } from "react-router-dom";
 
 import UploadIcon from "../assets/Upload.png";
 
@@ -440,49 +442,80 @@ export default function CameraRender() {
   return (
     <div className="relative w-full h-full flex flex-col items-center">
       <div className="relative flex flex-col items-center w-screen h-screen">
+    
+      <header className="flex items-center justify-between px-[41px] py-[10px] pl-[12px] bg-white w-full">
+        {/* Left section - Logo and Title */}
+        <Link to="/" className="flex-none">
+          <div className="flex items-center space-x-2 cursor-pointer">
+            <div className="rounded">
+              <img className="h-8 w-8" src={logo} alt="Logo" />
+            </div>
+            <h2 className="text-[22px] text-black font-medium">
+              Tracking Dashboard
+            </h2>
+          </div>
+        </Link>
+
+        {/* Right section - Fullscreen and Live AI */}
+        <div className="flex items-center gap-4">
+          <div className="p-4 space-x-0.5">
+            <FullscreenToggle />
+          </div>
+          {activeTab === "video" && hasVideoShapesSaved && (
+            <button
+              onClick={() => navigate("/live-video")}
+              style={{ padding: "14px 24px" }}
+              className="flex items-center border gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
+            >
+              <img
+                src="/live.svg"
+                alt="live icon"
+                className="w-4 h-4 mr-2"
+                style={{
+                  filter:
+                    "invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(114%)",
+                }}
+              />
+              Live AI
+            </button>
+          )}
+
+          {activeTab === "cam" && hasShapesSaved && (
+            <button
+              onClick={() => {
+                const camId = selectedCamera;
+                if (!camId) {
+                  alert(
+                    "Please select (or maximize) a camera first before going Live AI."
+                  );
+                  return;
+                }
+                navigate(`/live-ai/${camId}`, {
+                  state: { cameraId: camId },
+                });
+              }}
+              style={{ padding: "14px 24px" }}
+              className="flex items-center border  gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
+            >
+              <img
+                src="/live.svg"
+                alt="live icon"
+                className="w-4 h-4 mr-2"
+                style={{
+                  filter:
+                    "invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(114%)",
+                }}
+              />
+              Live AI
+            </button>
+          )}
+        </div>
+      </header>
+
+     
         <div className="w-screen h-screen bg-white rounded-lg shadow-md relative ">
           {/* Tab buttons */}
-          <div className="absolute" style={{ top: "34px", left: "34px" }}>
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleTabChange("video")}
-                style={{ padding: "14px 24px" }}
-                className={`flex items-center gap-2 rounded-[8px] border text-[16px] font-[500] ${
-                  activeTab === "video"
-                    ? "bg-[#717AEA] text-white border-none"
-                    : "bg-white text-[#717171] "
-                }`}
-              >
-                <img
-                  src="/play.svg"
-                  className={`w-4 h-4 ${
-                    activeTab === "video" ? "brightness-0 invert" : ""
-                  }`}
-                  alt="video icon"
-                />
-                <span>Video</span>
-              </button>
-
-              <button
-                onClick={() => handleTabChange("cam")}
-                style={{ padding: "14px 24px" }}
-                className={`flex items-center gap-2   text-[16px] font-[500]  rounded-[8px] border ${
-                  activeTab === "cam"
-                    ? "bg-[#717AEA] text-white border-none"
-                    : "bg-white text-[#717171] "
-                }`}
-              >
-                <img
-                  src="/camera.svg"
-                  className={`w-4 h-4 ${
-                    activeTab === "cam" ? "brightness-0 invert" : ""
-                  }`}
-                  alt="cam icon"
-                />
-                <span>Cam</span>
-              </button>
-            </div>
-          </div>
+          
 
           {activeTab === "cam" && (
             <div className="w-full h-full flex items-center justify-center">
@@ -565,262 +598,7 @@ export default function CameraRender() {
             </div>
           )}
 
-          {activeTab === "video" && (
-            <div
-              className="absolute flex items-center gap-3"
-              style={{ top: "34px", right: "34px" }}
-            >
-              {/* Fullscreen */}
-              <div className="p-4space-x-0.5 ">
-                <FullscreenToggle />
-              </div>
-              {/* <button
-      onClick={toggleFullscreen}
-      style={{padding: "14px 24px"}}
-      className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
-    > */}
-              {/* {isFullscreen ? (
-        <Minimize2 className="w-4 h-4 text-black" />
-      ) : (
-        <Maximize2 className="w-4 h-4 text-black" />
-      )}
-      <span className="text-black">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
-    </button> */}
-
-              <Dialog
-                open={uploadDialogOpen}
-                onOpenChange={setUploadDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <button
-                    onClick={() => {
-                      if (uploadedVideos.length >= 4) {
-                        alert("Maximum 4 videos allowed.");
-                        return;
-                      }
-                      setUploadDialogOpen(true);
-                    }}
-                    style={{ padding: "12px 24px" }}
-                    className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
-                  >
-                    <Upload className="w-4 h-4 text-black" />
-                    <span className="text-black">Upload</span>
-                  </button>
-                </DialogTrigger>
-
-                <DialogContent className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[664px] overflow-hidden rounded-3xl">
-                  <div className="flex justify-between items-center p-5 border-b border-[#0000001A]">
-                    <DialogTitle className="text-xl font-medium">
-                      Upload file
-                    </DialogTitle>
-                  </div>
-                  <div className="p-4 space-y-4">
-                    <div
-                      className="border-2 border-dashed border-[#717AEA] bg-[#717AEA1A] rounded-3xl flex items-center justify-center h-[200px] text-center cursor-pointer transition-colors duration-200"
-                      onClick={() =>
-                        document.getElementById("video-upload-input").click()
-                      }
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                    >
-                      <div>
-                        <img
-                          src={UploadIcon}
-                          className="mx-auto w-14 h-[42px] text-[#717AEA]"
-                        />
-                        <p className="text-[16px] font-medium mt-[10px] text-black">
-                          Drop your files here or{" "}
-                          <span className="text-[#717AEA66] underline">
-                            click to browse
-                          </span>
-                        </p>
-                      </div>
-                      <input
-                        id="video-upload-input"
-                        type="file"
-                        accept="video/*"
-                        className="hidden"
-                        onChange={handleVideoUpload}
-                        multiple
-                      />
-                    </div>
-
-                    <button
-                      className="w-full py-2 bg-[#717AEA] text-white rounded-full mt-3 text-xl"
-                      onClick={() => setUploadDialogOpen(false)}
-                    >
-                      Upload
-                    </button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {/* <button
-      onClick={() => navigate("/live-ai")}
-      style={{padding: "14px 24px"}}
-      className="flex items-center border gap-[10px] rounded-[100px] text-[#666] text-[16px] font-[500]"
-    >
-      <img
-        src="/live.svg"
-        alt="live icon"
-        className="w-4 h-4 mr-2"
-      />
-      Live AI
-    </button> */}
-
-              {hasVideoShapesSaved && (
-                <button
-                  onClick={() =>
-                    navigate("/live-video")
-                  }
-                  style={{ padding: "14px 24px" }}
-                  className="flex items-center border gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
-                >
-                  <img
-                    src="/live.svg"
-                    alt="live icon"
-                    className="w-4 h-4 mr-2"
-                    style={{
-                      filter:
-                        "invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(114%)",
-                    }}
-                  />
-                  Live AI
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Add Camera Button */}
-          {activeTab === "cam" && (
-            <div
-              className="absolute flex items-center gap-3"
-              style={{ top: "34px", right: "34px" }}
-            >
-              {/* Fullscreen */}
-             <div className="p-4`space-x-0.5 ">
-                <FullscreenToggle />
-              </div>
-              {/* <button
-          onClick={toggleFullscreen}
-          style={{padding: "14px 24px"}}
-          className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
-        >
-          {isFullscreen ? (
-            <Minimize2 className="w-4 h-4 text-black" />
-          ) : (
-            <Maximize2 className="w-4 h-4 text-black" />
-          )}
-          <span className="text-black">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
-        </button> */}
-
-              {cameras.length <1 && (
-                <Dialog
-                  open={open}
-                  onOpenChange={(isOpen) => {
-                    setOpen(isOpen);
-                    if (!isOpen) {
-                      setIsAdding(false);
-                      setCameraName("");
-                      setRtspUrl("");
-                    }
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <button
-                      style={{ padding: "12px 24px" }}
-                      className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Add Cam</span>
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent
-                    style={{ borderRadius: "20px" }}
-                    className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden"
-                  >
-                    <div className="flex justify-between items-center p-4 border-b border-[#0000001A]">
-                      <DialogTitle className="text-lg font-medium">
-                        Add Cam
-                      </DialogTitle>
-                    </div>
-
-                    <div className="p-4 space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                          Enter the camera name:
-                        </label>
-                        <Input
-                          value={cameraName}
-                          onChange={(e) => setCameraName(e.target.value)}
-                          className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
-                          placeholder="Camera name"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                          Enter the RTSP URL:
-                        </label>
-                        <Input
-                          value={rtspUrl}
-                          onChange={(e) => setRtspUrl(e.target.value)}
-                          className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
-                          placeholder="rtsp://"
-                        />
-                      </div>
-
-                      <button
-                        onClick={handleSubmit}
-                        className="w-full py-2 px-4 bg-[#717AEA] text-white rounded-[4rem] hover:bg-[#717AEA] transition-colors mt-4 flex items-center justify-center gap-2"
-                        disabled={isAdding}
-                      >
-                        {isAdding ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Adding Camera...</span>
-                          </>
-                        ) : (
-                          "Add"
-                        )}
-                      </button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-
-              {hasShapesSaved && (
-                <button
-                  onClick={() => {
-                    const camId = selectedCamera;
-                    if (!camId) {
-                      alert(
-                        "Please select (or maximize) a camera first before going Live AI."
-                      );
-                      return;
-                    }
-                    navigate(`/live-ai/${camId}`, {
-                      state: { cameraId: camId },
-                    });
-                  }}
-                  style={{ padding: "14px 24px" }}
-                  className="flex items-center border  gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
-                >
-                  <img
-                    src="/live.svg"
-                    alt="live icon"
-                    className="w-4 h-4 mr-2"
-                    style={{
-                      filter:
-                        "invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(114%)",
-                    }}
-                  />
-                  Live AI
-                </button>
-              )}
-            </div>
-          )}
+         
         </div>
 
         {/* Toolbar */}
