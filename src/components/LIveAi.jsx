@@ -8,7 +8,7 @@ import { RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import Hls from "hls.js";
 import axios from "axios";
-import { Edit2, Loader2, ChevronUp, ChevronDown,  Play, RotateCcw } from 'lucide-react';
+import { Edit2, Trash2, Loader2, ChevronUp, ChevronDown,  Play, RotateCcw } from 'lucide-react';
 import InstructionModal from './InstructionModal';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import AiModal from "./AiModal";
@@ -176,7 +176,11 @@ const LiveAi = () => {
   const [loader,setLoader] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [messages, setMessages] = useState([]);
-    const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState('');
+  const [hoveredMessage, setHoveredMessage] = useState(null);
+  const [deletingMessageId, setDeletingMessageId] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+
 
 
   const handleAnomalyAlert = data => {
@@ -490,26 +494,26 @@ const LiveAi = () => {
     }
   };
 
-  const handleSaveInstruction = (instruction) => {
-    const instrSocket = socketRef2.current;
-    if (!instrSocket || !instrSocket.connected) {
-      console.error("Socket for instructions not connected");
-      return;
-    }
+  // const handleSaveInstruction = (instruction) => {
+  //   const instrSocket = socketRef2.current;
+  //   if (!instrSocket || !instrSocket.connected) {
+  //     console.error("Socket for instructions not connected");
+  //     return;
+  //   }
 
-    setInstructionset(instruction);
-    setInstrucLoader(true);
+  //   setInstructionset(instruction);
+  //   setInstrucLoader(true);
 
-    instrSocket.emit(
-      "instructions_changed",
-      instruction,
-      (acknowledgement) => {
-        console.log("Server ACK:", acknowledgement);
-        setInstrucLoader(false);
-        setShowInstructionModal(false);
-      }
-    );
-  };
+  //   instrSocket.emit(
+  //     "instructions_changed",
+  //     instruction,
+  //     (acknowledgement) => {
+  //       console.log("Server ACK:", acknowledgement);
+  //       setInstrucLoader(false);
+  //       setShowInstructionModal(false);
+  //     }
+  //   );
+  // };
 
   const formatInstructionHtml = (markdown) => {
     if (!markdown) return "<p>N/A</p>";
@@ -664,34 +668,97 @@ const LiveAi = () => {
   //       id: Date.now(),
   //       text: newMessage,
   //       number: prev.length + 1
-  //     }]);
+  //     }]);handleSaveInstruction
   //     setNewMessage('');
   //   }
   // };
 
   const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      const newMsg = {
-        id: Date.now(),
-        text: newMessage,
-        number: messages.length + 1,
-        isNew: true // Add this flag
-      };
-      
-      setMessages(prev => [...prev, newMsg]);
-      setNewMessage('');
-  
-      // Remove the isNew flag after animation completes
-      setTimeout(() => {
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === newMsg.id ? { ...msg, isNew: false } : msg
-          )
-        );
-      }, 300); // Match this with animation duration
+    if (!newMessage.trim() || !socketRef2.current?.connected) {
+      console.error("Empty message or socket not connected");
+      return;
     }
+  
+    setInstrucLoader(true);
+  
+    // Send instruction through socket
+    socketRef2.current.emit(
+      "instructions_changed",
+      newMessage.trim(),
+      (acknowledgement) => {
+        console.log("Server ACK:", acknowledgement);
+        
+        // After successful socket emission, add to UI with animation
+        const newMsg = {
+          id: Date.now(),
+          text: newMessage.trim(),
+          number: messages.length + 1,
+          isNew: true
+        };
+        
+        setMessages(prev => [...prev, newMsg]);
+        setNewMessage('');
+        setInstrucLoader(false);
+        setInstructionset(newMessage.trim());
+  
+        // Remove animation class after it completes
+        setTimeout(() => {
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === newMsg.id ? { ...msg, isNew: false } : msg
+            )
+          );
+        }, 300);
+      }
+    );
   };
 
+
+  const handleDeleteMessage = (messageId) => {
+    setDeletingMessageId(messageId);
+    setTimeout(() => {
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+      setDeletingMessageId(null);
+    }, 300);
+  };
+  
+  const handleEditMessage = (message) => {
+    setShowInstructionModal(true);
+    setEditingMessage(message);
+  };
+
+  const handleSaveInstruction = (instruction) => {
+    const instrSocket = socketRef2.current;
+    if (!instrSocket || !instrSocket.connected) {
+      console.error("Socket for instructions not connected");
+      return;
+    }
+  
+    setInstrucLoader(true);
+  
+    instrSocket.emit(
+      "instructions_changed",
+      instruction,
+      (acknowledgement) => {
+        console.log("Server ACK:", acknowledgement);
+        
+        if (editingMessage) {
+          // Update existing message after successful socket emission
+          setMessages(prev => prev.map(msg => 
+            msg.id === editingMessage.id 
+              ? { ...msg, text: instruction }
+              : msg
+          ));
+          setEditingMessage(null);
+        }
+  
+        setInstructionset(instruction);
+        setInstrucLoader(false);
+        setShowInstructionModal(false);
+        setNewMessage('');
+      }
+    );
+  };
 
   return (
     <div className="flex flex-col h-screen bg-[#F5F9FF]">
@@ -842,21 +909,62 @@ const LiveAi = () => {
   {/* Messages Container */}
   <div className="flex-1 overflow-y-auto px-4 scrollbar-hidden">
   <div className="space-y-4">
-    {messages.map((message, index) => (
-      <div 
-        key={message.id} 
-        className={`p-4 bg-[#F6F7FF] rounded-[14px] ${
-          message.isNew ? 'message-animate-in' : ''
-        }`}
-      >
-        <div className="flex flex-col gap-2">
-          <span className="inline-flex px-2 py-1 rounded-full bg-[#717AEA14] text-[#3B3BC6] text-xs w-fit">
-            Instruction {message.number}
-          </span>
-          <p className="text-[#626262] px-2">{message.text}</p>
-        </div>
+    {messages.length === 0 ? (
+      <div className="flex items-center justify-center h-full text-gray-500">
+        No Instructions to show
       </div>
-    ))}
+    ) : (
+      messages.map((message) => (
+        <div 
+            key={message.id} 
+            className={`relative p-4 bg-[#F6F7FF] rounded-[14px] group ${
+              message.isNew ? 'message-animate-in' : ''
+            } ${deletingMessageId === message.id ? 'message-animate-out' : ''}`}
+            onMouseEnter={() => setHoveredMessage(message.id)}
+            onMouseLeave={() => setHoveredMessage(null)}
+          >
+            <div className="flex flex-col gap-2">
+              <span className="inline-flex px-2 py-1 rounded-full bg-[#717AEA14] text-[#3B3BC6] text-xs w-fit">
+                Instruction {message.number} 
+              </span>
+              <div 
+                className="text-[#626262] px-2 max-w-none"
+                dangerouslySetInnerHTML={{
+                  __html: formatInstructionHtml(message.text)
+                }}
+              />
+            </div>
+
+          {/* Hover Controls - similar to canvas controls */}
+          {hoveredMessage === message.id && (
+            <div className="absolute left-[90%] top-2 flex flex-col gap-2">
+              <div className="relative group/tooltip">
+                <button
+                  onClick={() => handleEditMessage(message)}
+                  className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md"
+                >
+                  <img src="/pen.svg" alt="Edit" className="w-7 h-7" />
+                </button>
+                <div className="absolute w-[65px] left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover/tooltip:block bg-black text-white text-xs px-2 py-1 rounded">
+                  Edit Info.
+                </div>
+              </div>
+              <div className="relative group/tooltip">
+                <button
+                  onClick={() => handleDeleteMessage(message.id)}
+                  className="w-7 h-7 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
+                >
+                  <Trash2 className="text-indigo-400 w-4 h-4"/>
+                </button>
+                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover/tooltip:block bg-black text-white text-xs px-2 py-1 rounded">
+                  Delete
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ))
+    )}
   </div>
 </div>
 
@@ -1126,9 +1234,12 @@ const LiveAi = () => {
       {/* Instruction Modal */}
       {showInstructionModal && (
         <InstructionModal
-          onClose={() => setShowInstructionModal(false)}
+          onClose={() => {
+            setShowInstructionModal(false);
+            setEditingMessage(null);
+          }}
           onSave={handleSaveInstruction}
-          data={instructionset}
+          data={editingMessage?.text || ''}
         />
       )}
 
