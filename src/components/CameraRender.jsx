@@ -393,7 +393,7 @@ export default function CameraRender() {
   return (
     <div className="relative w-full h-full flex flex-col items-center">
       <div className="relative flex flex-col items-center w-screen h-screen">
-        <header className="flex items-center justify-between px-[41px] py-[10px] pl-[12px] bg-white w-full">
+        <header className="flex items-center justify-between px-[41px] h-[73.0px] pl-[12px] bg-white w-full">
           {/* Left section - Logo and Title */}
           <Link to="/" className="flex-none">
             <div className="flex items-center space-x-2 cursor-pointer">
@@ -462,7 +462,7 @@ export default function CameraRender() {
           </div>
         </header>
 
-        <div className="w-screen h-screen bg-white rounded-lg shadow-md relative ">
+        <div className="w-screen h-screen bg-[#F6F7FA] rounded-lg shadow-md relative ">
           {activeTab === "cam" && (
             <div className="w-full h-full flex items-center justify-center">
               <div
@@ -590,136 +590,136 @@ export default function CameraRender() {
             
             {/* main content */}
            {/* Main Content Area - Conditional Rendering */}
-{activeTab === "video" ? (
-  <div 
-    className="flex flex-col items-center justify-center h-[350px]"
-    onDragOver={handleDragOver}
-    onDragLeave={handleDragLeave}
-    onDrop={handleDrop}
-  >
-    <input
-      id="video-upload-input"
-      type="file"
-      accept="video/*"
-      onChange={handleVideoUpload}
-      className="hidden"
-    />
-    <div 
-      className="cursor-pointer w-full h-full flex flex-col items-center justify-center"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        document.getElementById('video-upload-input').click();
-      }}
-    >
-      <img
-        src="/folder-upload.svg"
-        alt="Upload"
-        style={{ width: "182px", height: "209px" }}
-      />
-      <div
-        style={{
-          fontWeight: "500",
-          fontSize: "24px",
-          lineHeight: "100%",
-          textAlign: "center",
-          marginTop: "20px",
-        }}
-      >
-        Upload a video to access your dashboard
-      </div>
-      <div
-        style={{
-          fontWeight: "500",
-          fontSize: "18px",
-          lineHeight: "100%",
-          textAlign: "center",
-          color: "#787878",
-          marginTop: "15px",
-        }}
-      >
-        Drag and drop your file here, or click to{" "}
-        <span
-          style={{
-            color: "#717AEA",
-            textDecoration: "underline",
-            textDecorationThickness: "10%"
-          }}
-        >
-          upload
-        </span>{" "}
-        from your device.
-      </div>
-    </div>
-  </div>
-) : (
-  <div className="flex flex-col items-center justify-center h-[350px]">
-    <img
-      src="/feed_select.svg"
-      alt="Camera Feed"
-      style={{ width: "182px", height: "209px" }}
-    />
-    
-    {/* Camera Input Form */}
-    <div className="flex flex-col gap-4 mt-6 w-[450px]">
-  <div className="flex items-center justify-between">
-    <label className="text-black text-[16px] font-medium w-[120px]">Enter Camera :</label>
-    <input
-      type="text"
-      placeholder="Enter Camera"
-      value={cameraName}
-      onChange={(e) => setCameraName(e.target.value)}
-      style={{
-        width: "354px",
-        height: "50.03px",
-        borderRadius: "7.7px",
-        padding: "7.7px 20.53px",
-        border: "1.28px solid #D1D1D1"
-      }}
-    />
-  </div>
-  
-  <div className="flex items-center justify-between">
-    <label className="text-black text-[16px] font-medium w-[120px]">Enter URL :</label>
-    <input
-      type="text"
-      placeholder="Add RTSP URL"
-      value={rtspUrl}
-      onChange={(e) => setRtspUrl(e.target.value)}
-      style={{
-        width: "354px",
-        height: "50.03px",
-        borderRadius: "7.7px",
-        padding: "7.7px 20.53px",
-        border: "1.28px solid #D1D1D1"
-      }}
-    />
-  </div>
+        {activeTab === "video" ? (
+          <div 
+            className="flex flex-col items-center justify-center h-[350px]"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input
+              id="video-upload-input"
+              type="file"
+              accept="video/*"
+              onChange={handleVideoUpload}
+              className="hidden"
+            />
+            <div 
+              className="cursor-pointer w-full h-full flex flex-col items-center justify-center"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                document.getElementById('video-upload-input').click();
+              }}
+            >
+              <img
+                src="/folder-upload.svg"
+                alt="Upload"
+                style={{ width: "182px", height: "209px" }}
+              />
+              <div
+                style={{
+                  fontWeight: "500",
+                  fontSize: "24px",
+                  lineHeight: "100%",
+                  textAlign: "center",
+                  marginTop: "20px",
+                }}
+              >
+                Upload a video to access your dashboard
+              </div>
+              <div
+                style={{
+                  fontWeight: "500",
+                  fontSize: "18px",
+                  lineHeight: "100%",
+                  textAlign: "center",
+                  color: "#787878",
+                  marginTop: "15px",
+                }}
+              >
+                Drag and drop your file here, or click to{" "}
+                <span
+                  style={{
+                    color: "#717AEA",
+                    textDecoration: "underline",
+                    textDecorationThickness: "10%"
+                  }}
+                >
+                  upload
+                </span>{" "}
+                from your device.
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-[350px]">
+            <img
+              src="/feed_select.svg"
+              alt="Camera Feed"
+              style={{ width: "182px", height: "209px" }}
+            />
+            
+            {/* Camera Input Form */}
+            <div className="flex flex-col gap-4 mt-6 w-[450px]">
+          <div className="flex items-center justify-between">
+            <label className="text-black text-[16px] font-medium w-[120px]">Enter Camera :</label>
+            <input
+              type="text"
+              placeholder="Enter Camera"
+              value={cameraName}
+              onChange={(e) => setCameraName(e.target.value)}
+              style={{
+                width: "354px",
+                height: "50.03px",
+                borderRadius: "7.7px",
+                padding: "7.7px 20.53px",
+                border: "1.28px solid #D1D1D1"
+              }}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <label className="text-black text-[16px] font-medium w-[120px]">Enter URL :</label>
+            <input
+              type="text"
+              placeholder="Add RTSP URL"
+              value={rtspUrl}
+              onChange={(e) => setRtspUrl(e.target.value)}
+              style={{
+                width: "354px",
+                height: "50.03px",
+                borderRadius: "7.7px",
+                padding: "7.7px 20.53px",
+                border: "1.28px solid #D1D1D1"
+              }}
+            />
+          </div>
 
-  <div className="flex items-center">
-    <div className="w-[120px]"></div> 
-    <div style={{ width: "354px" }}>
-      <button
-        onClick={handleSubmit}
-        style={{
-          width: "160.35px",
-          height: "45.03px",
-          borderRadius: "7.7px",
-          border: "2.23px solid",
-          // borderImageSource: "linear-gradient(94.27deg, #717AEA 0.56%, #5A64D7 99.44%)",
-          background: "linear-gradient(272.47deg, #717AEA 0.57%, #4F4FDC 99.43%)",
-          color: "white",
-          fontWeight: "500",
-          fontSize: "16px"
-        }}
-      >
-        Submit
-      </button>
-    </div>
-  </div>
-</div>
-  </div>
-)}
+          <div className="flex items-center">
+            <div className="w-[120px]"></div> 
+            <div style={{ width: "354px" }}>
+              <button
+                onClick={handleSubmit}
+                style={{
+                  width: "160.35px",
+                  height: "45.03px",
+                  borderRadius: "7.7px",
+                  border: "2.23px solid",
+                  // borderImageSource: "linear-gradient(94.27deg, #717AEA 0.56%, #5A64D7 99.44%)",
+                  background: "linear-gradient(272.47deg, #717AEA 0.57%, #4F4FDC 99.43%)",
+                  color: "white",
+                  fontWeight: "500",
+                  fontSize: "16px"
+                }}
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+          </div>
+        )}
 
 
                       {/* Video/Live Feed Selection */}
