@@ -680,7 +680,7 @@ export default function CameraRender() {
           </div>
           
           <div className="flex items-center justify-between">
-            <label className="text-black text-[16px] font-medium w-[120px]">Enter URL :</label>
+            <label className="text-black text-[16px] font-medium w-[120px]">Add URL :</label>
             <input
               type="text"
               placeholder="Add RTSP URL"
@@ -750,28 +750,35 @@ export default function CameraRender() {
 >
   {/* Video */}
   <div
-    className="flex flex-col items-center justify-center cursor-pointer"
-    onClick={() => handleTabChange("video")}
+  className="flex flex-col items-center justify-center cursor-pointer"
+  onClick={() => handleTabChange("video")}
+>
+  <div
+    className={`flex items-center justify-center ${
+      activeTab === "video" ? "bg-[#717AEA]" : ""
+    }`}
+    style={{
+      width: "84px",
+      height: "44px",
+      gap: "10px",
+      borderRadius: "100px",
+      paddingTop: "2px",
+      paddingRight: "22px",
+      paddingBottom: "2px",
+      paddingLeft: "22px",
+    }}
   >
-    <div
-      className={`flex items-center justify-center ${
-        activeTab === "video" ? "bg-[#717AEA]" : ""
-      }`}
+    <img
+      src={activeTab === "video" ? "/white.svg" : "/black.svg"}
+      alt="Video"
       style={{
-        width: "84px",
-        height: "44px",
-        gap: "10px",
-        borderRadius: "100px",
-        paddingTop: "2px",
-        paddingRight: "22px",
-        paddingBottom: "2px",
-        paddingLeft: "22px",
+        width: "20px",
+        height: "20px",
       }}
-    >
-      <Play color={activeTab === "video" ? "white" : "black"} />
-    </div>
-    <div style={{ color: activeTab === "video" ? "#6069D9" : "black" }}>Video</div>
+    />
   </div>
+  <div style={{ color: activeTab === "video" ? "#6069D9" : "black" }}>Video</div>
+</div>
 
   {/* Live Feed */}
   <div
