@@ -824,93 +824,89 @@ const LiveAi = () => {
 
       <div className="flex flex-1 p-4 pt-0 gap-4 overflow-hidden mt-8">
         {/* Left Section */}
-
-        <div className="bg-white w-full rounded-[26px] overflow-hidden">
-        {true ? (<>
-          <div className="w-full h-full">
-            <img
-              ref={imgRef}
-              src={streamUrl}
-              className="w-full h-full  rounded-xl"
-              alt="Live stream"
+        <div className="w-full">
+  <div className="bg-white w-full rounded-[26px] overflow-hidden">
+    {streamUrl ? (
+      <div className="w-full h-full">
+        <img
+          ref={imgRef}
+          src={streamUrl}
+          className="w-full h-full rounded-xl"
+          alt="Live stream"
+        />
+      </div>
+    ) : (
+      <div className="w-full h-full min-h-[600px] flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-[120px] h-[120px]">
+            <DotLottieReact
+              src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
+              loop
+              autoplay
             />
           </div>
-
-          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex items-center bg-white h-[80px] w-[400px] rounded-[100px] px-[22px] py-[10px] gap-6 border">
-            
-              <div className="flex items-center gap-2">
-                <div className="relative group">
-                  <button className="flex items-center gap-2 text-[16px] font-medium">
-                    Video Canvas 1
-                    <div className="w-8 h-8 flex items-center justify-center bg-[#EDEEFF] rounded-full">
-                      {isDropdownOpen ? (
-                        <ChevronUp className="w-4 h-4 text-[#717AEA]" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-[#717AEA]" />
-                      )}
-                    </div>
-                  </button>
-                  
-                 
-                  {isDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-lg shadow-lg py-2">
-                      <button className="w-full text-left px-4 py-2 hover:bg-[#EDEEFF] text-[16px]">
-                        Video Canvas 1
-                      </button>
-                      <button className="w-full text-left px-4 py-2 hover:bg-[#EDEEFF] text-[16px]">
-                        Video Canvas 2
-                      </button>
-                      <button className="w-full text-left px-4 py-2 hover:bg-[#EDEEFF] text-[16px]">
-                        Video Canvas 3
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-           
-            <div className="w-[1px] h-[51px] bg-[#DEDEDE]" />
-
-        
-            <div className="flex items-center gap-6">
-              <button 
-                onClick={handleStart}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                  isTracking 
-                    ? 'bg-[#717AEA] text-white' 
-                    : 'bg-[#EDEEFF] text-[#717AEA] hover:bg-[#717AEA] hover:text-white'
-                }`}
-              >
-                <Play className="w-5 h-5" />
-              </button>
-
-              <button 
-                onClick={handleReset}
-                className="w-12 h-12 rounded-full flex items-center justify-center bg-[#EDEEFF] text-[#717AEA] hover:bg-[#717AEA] hover:text-white transition-colors"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-        </>
-        ) : (
-          <div className="w-full h-full min-h-[600px] flex items-center justify-center">
-            <div className="flex flex-col items-center">
-              <div className="w-[120px] h-[120px]">
-                <DotLottieReact
-                  src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
-                  loop
-                  autoplay
-                />
-              </div>
-              <span className="text-gray-600 text-lg font-medium mt-1">
-                AI analyzing video
-              </span>
-            </div>
-          </div>
-        )}
+          <span className="text-gray-600 text-lg font-medium mt-1">
+            AI analyzing video
+          </span>
+        </div>
       </div>
+    )}
+  </div>
+
+  {streamUrl && (
+    <div className="mt-4 flex items-center justify-center bg-white h-[80px] rounded-[100px] w-full max-w-[530px] mx-auto gap-6 border">
+      <div className="flex items-center gap-2">
+        <div className="relative group">
+          <button className="flex items-center gap-2 text-[16px] font-medium">
+            Video Canvas 1
+            <div className="w-8 h-8 flex items-center justify-center bg-[#EDEEFF] rounded-full">
+              {isDropdownOpen ? (
+                <ChevronUp className="w-4 h-4 text-[#717AEA]" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-[#717AEA]" />
+              )}
+            </div>
+          </button>
+          {isDropdownOpen && (
+            <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-lg shadow-lg py-2">
+              <button className="w-full text-left px-4 py-2 hover:bg-[#EDEEFF] text-[16px]">
+                Video Canvas 1
+              </button>
+              <button className="w-full text-left px-4 py-2 hover:bg-[#EDEEFF] text-[16px]">
+                Video Canvas 2
+              </button>
+              <button className="w-full text-left px-4 py-2 hover:bg-[#EDEEFF] text-[16px]">
+                Video Canvas 3
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="w-[1px] h-[51px] bg-[#DEDEDE]" />
+
+      <div className="flex items-center gap-6">
+        <button
+          onClick={handleStart}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+            isTracking
+              ? "bg-[#717AEA] text-white"
+              : "bg-[#EDEEFF] text-[#717AEA] hover:bg-[#717AEA] hover:text-white"
+          }`}
+        >
+          <Play className="w-5 h-5" />
+        </button>
+
+        <button
+          onClick={handleReset}
+          className="w-12 h-12 rounded-full flex items-center justify-center bg-[#EDEEFF] text-[#717AEA] hover:bg-[#717AEA] hover:text-white transition-colors"
+        >
+          <RotateCcw className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  )}
+</div>
 
         {/* Right Section with Instructions and AI Analysis */}
         <div className="flex flex-col gap-4 w-[650px]">
