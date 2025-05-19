@@ -8,7 +8,7 @@ import { RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import Hls from "hls.js";
 import axios from "axios";
-import { Edit2, Loader2, Play, RotateCcw } from 'lucide-react';
+import { Edit2, Loader2, ChevronUp, ChevronDown,  Play, RotateCcw } from 'lucide-react';
 import InstructionModal from './InstructionModal';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import AiModal from "./AiModal";
@@ -174,6 +174,7 @@ const LiveAi = () => {
   const anomalyScrollContainerRef = useRef(null);
   const [showAllAnamoly, setShowAllAnamoly] = useState(false);
   const [loader,setLoader] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
 
   const handleAnomalyAlert = data => {
@@ -657,44 +658,44 @@ const LiveAi = () => {
    
   return (
     <div className="flex flex-col h-screen bg-[#F5F9FF]">
-     <header className="flex items-center justify-between px-[41px] py-[10px] pl-[12px] bg-white">
-      {/* Left section - Logo and Title */}
-      <Link to="/" className="flex-none">
-        <div className="flex items-center space-x-2 cursor-pointer">
-          <div className="rounded">
-            <img className="h-8 w-8" src={logo} alt="Logo" />
-          </div>
-          <h2 className="text-[22px] text-black font-medium">
-            Tracking Dashboard
-          </h2>
-        </div>
-      </Link>
+          <header className="flex items-center justify-between px-[41px] py-[10px] pl-[12px] bg-white">
+            {/* Left section - Logo and Title */}
+            <Link to="/" className="flex-none">
+              <div className="flex items-center space-x-2 cursor-pointer">
+                <div className="rounded">
+                  <img className="h-8 w-8" src={logo} alt="Logo" />
+                </div>
+                <h2 className="text-[22px] text-black font-medium">
+                  Tracking Dashboard
+                </h2>
+              </div>
+            </Link>
 
-    {/* Right section - Fullscreen and Live AI */}
-    <div className="flex items-center gap-4">
-      <div className="p-3">
-        <FullscreenToggle />
-      </div>
-      
-      <button
-        style={{padding: "8px 18px"}}
-        className="flex items-center justify-center 
-                  border border-[#F20A0A] rounded-[100px] bg-[#FFDDDB]
-                  text-[#F20A0A] font-medium text-base hover:bg-[#FFE8E7] 
-                  transition-colors gap-[10px]"
-      >
-        <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full 
-                          rounded-full bg-[#F20A0A] opacity-75">
-          </span>
-          <span className="relative inline-flex rounded-full h-3 w-3 
-                          bg-[#F20A0A]">
-          </span>
-        </span>
-        Live AI
-      </button>
-    </div>
-  </header>
+          {/* Right section - Fullscreen and Live AI */}
+          <div className="flex items-center gap-4">
+            <div className="p-3">
+              <FullscreenToggle />
+            </div>
+            
+            <button
+              style={{padding: "8px 18px"}}
+              className="flex items-center justify-center 
+                        border border-[#F20A0A] rounded-[100px] bg-[#FFDDDB]
+                        text-[#F20A0A] font-medium text-base hover:bg-[#FFE8E7] 
+                        transition-colors gap-[10px]"
+            >
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full 
+                                rounded-full bg-[#F20A0A] opacity-75">
+                </span>
+                <span className="relative inline-flex rounded-full h-3 w-3 
+                                bg-[#F20A0A]">
+                </span>
+              </span>
+              Live AI
+            </button>
+          </div>
+        </header>
 
       <div className="flex flex-1 p-4 pt-0 gap-4 overflow-hidden mt-8">
         {/* Left Section */}
@@ -734,17 +735,23 @@ const LiveAi = () => {
             <div
          
              className="flex justify-between items-center p-4 pt-[16px] pb-[13px] border-b border-[#EFF4FE]">
-              <h2 className="font-[600] text-[16px]">Instructions</h2>
-              {instrucLoader ? (
-                <Loader2 className="animate-spin text-indigo-500 w-4 h-4" />
-              ) : (
-                <button
-                  className="bg-[#EBECFF] p-2 rounded"
-                  onClick={() => setShowInstructionModal(true)}
-                >
-                  <Edit2 className="w-4 h-4 text-[#717AEA]" />
-                </button>
-              )}
+                 <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center">
+              <img src="/add_notes.svg" alt="Notes" className="w-10 h-10" />
+            </div>
+            <h2 className="font-[600] text-[16px]">Instructions</h2>
+          </div>
+  
+      <button
+          className=""
+          // onClick={() => setShowInstructionModal(true)}
+        >
+          <img 
+            src="/expand_content.svg"
+            alt="Expand" 
+            className="w-4 h-4"
+          />
+        </button>
             </div>
             <div className="w-full h-[12px]"></div>
             <div className="pt-0 pr-[4px] pl-[4px] pb-[12px]">
@@ -759,31 +766,40 @@ const LiveAi = () => {
             </div>
           </div>
 
-          {/* AI Analysis Card */}
-          <div className="bg-white rounded-[26px] p-4 max-h-[380px] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <div
-                className="flex items-center cursor-pointer"
-                onClick={() => setShowAllAnamoly(true)}
-              >
-                <div className="w-6 h-6 rounded-full flex items-center justify-center mr-2">
-                  <img src={ai} alt="AI" className="w-4 h-4" />
+           {/* Analysis Card */}
+                <div className="bg-white rounded-[26px] p-4 max-h-[380px] flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                  className="flex items-center cursor-pointer"
+                  onClick={() => setShowAllAnamoly(true)}
+                  >
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center mr-2">
+                    <img src="/analysis.svg" alt="AI" className="w-10 h-10" />
+                  </div>
+                  <h2 
+                    className="font-medium text-lg"
+                    style={{ 
+                    background: 'linear-gradient(90deg, #4F4FDC 0%, #717AEA 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                    }}
+                  >
+                    AI Analysis
+                  </h2>
+                  {loader && (
+                    <Loader2 className="animate-spin text-indigo-500 w-4 h-4 ml-2" />
+                  )}
+                  </div>
+                  <button
+                  onClick={handleRefreshAi}
+                  className="p-2 bg-[#EBECFF] rounded hover:bg-[#DDE2FD] transition"
+                  title="Refresh AI analysis"
+                  >
+                  <RefreshCw className="w-5 h-5 text-[#5A62C8]" />
+                  </button>
                 </div>
-                <h2 className="font-medium text-lg">AI Analysis</h2>
-                {loader && (
-                  <Loader2 className="animate-spin text-indigo-500 w-4 h-4 ml-2" />
-                )}
-              </div>
-              <button
-                onClick={handleRefreshAi}
-                className="p-2 bg-[#EBECFF] rounded hover:bg-[#DDE2FD] transition"
-                title="Refresh AI analysis"
-              >
-                <RefreshCw className="w-5 h-5 text-[#5A62C8]" />
-              </button>
-            </div>
 
-            {/* Scrollable Content */}
+                {/* Scrollable Content */}
             <div
               ref={anomalyScrollContainerRef}
               // className="p-[8px] rounded-[12px] overflow-y-auto scrollbar-hidden flex-1"
