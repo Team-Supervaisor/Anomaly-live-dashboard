@@ -697,26 +697,39 @@ export default function CameraRender() {
           </div>
 
           <div className="flex items-center">
-            <div className="w-[120px]"></div> 
-            <div style={{ width: "354px" }}>
-              <button
-                onClick={handleSubmit}
-                style={{
-                  width: "160.35px",
-                  height: "45.03px",
-                  borderRadius: "7.7px",
-                  border: "2.23px solid",
-                  // borderImageSource: "linear-gradient(94.27deg, #717AEA 0.56%, #5A64D7 99.44%)",
-                  background: "linear-gradient(272.47deg, #717AEA 0.57%, #4F4FDC 99.43%)",
-                  color: "white",
-                  fontWeight: "500",
-                  fontSize: "16px"
-                }}
-              >
-                Submit
-              </button>
-            </div>
+          <div className="w-[120px]"></div> 
+          <div style={{ width: "354px" }}>
+            <button
+              onClick={handleSubmit}
+              disabled={isAdding}
+              style={{
+                width: "160.35px",
+                height: "45.03px",
+                borderRadius: "7.7px",
+                border: "2.23px solid",
+                background: "linear-gradient(272.47deg, #717AEA 0.57%, #4F4FDC 99.43%)",
+                color: "white",
+                fontWeight: "500",
+                fontSize: "16px",
+                opacity: isAdding ? 0.7 : 1,
+                cursor: isAdding ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px"
+              }}
+            >
+              {isAdding ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Adding Camera...</span>
+                </>
+              ) : (
+                "Submit"
+              )}
+            </button>
           </div>
+        </div>
         </div>
           </div>
         )}
