@@ -585,53 +585,71 @@ export default function CameraRender() {
                 height: "598px",
                 paddingTop: "50px",
               }}
-              onClick={() => document.getElementById("video-upload-input").click()}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
+              
             >
             
             {/* main content */}
            {/* Main Content Area - Conditional Rendering */}
 {activeTab === "video" ? (
-  <div className="flex flex-col items-center justify-center h-[350px]">
-    <img
-      src="/folder-upload.svg"
-      alt="Upload"
-      style={{ width: "182px", height: "209px" }}
+  <div 
+    className="flex flex-col items-center justify-center h-[350px]"
+    onDragOver={handleDragOver}
+    onDragLeave={handleDragLeave}
+    onDrop={handleDrop}
+  >
+    <input
+      id="video-upload-input"
+      type="file"
+      accept="video/*"
+      onChange={handleVideoUpload}
+      className="hidden"
     />
-    <div
-      style={{
-        fontWeight: "500",
-        fontSize: "24px",
-        lineHeight: "100%",
-        textAlign: "center",
-        marginTop: "20px",
+    <div 
+      className="cursor-pointer w-full h-full flex flex-col items-center justify-center"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        document.getElementById('video-upload-input').click();
       }}
     >
-      Upload a video to access your dashboard
-    </div>
-    <div
-      style={{
-        fontWeight: "500",
-        fontSize: "18px",
-        lineHeight: "100%",
-        textAlign: "center",
-        color: "#787878",
-        marginTop: "15px",
-      }}
-    >
-      Drag and drop your file here, or click to{" "}
-      <span
+      <img
+        src="/folder-upload.svg"
+        alt="Upload"
+        style={{ width: "182px", height: "209px" }}
+      />
+      <div
         style={{
-          color: "#717AEA",
-          textDecoration: "underline",
-          textDecorationThickness: "10%"
+          fontWeight: "500",
+          fontSize: "24px",
+          lineHeight: "100%",
+          textAlign: "center",
+          marginTop: "20px",
         }}
       >
-        upload
-      </span>{" "}
-      from your device.
+        Upload a video to access your dashboard
+      </div>
+      <div
+        style={{
+          fontWeight: "500",
+          fontSize: "18px",
+          lineHeight: "100%",
+          textAlign: "center",
+          color: "#787878",
+          marginTop: "15px",
+        }}
+      >
+        Drag and drop your file here, or click to{" "}
+        <span
+          style={{
+            color: "#717AEA",
+            textDecoration: "underline",
+            textDecorationThickness: "10%"
+          }}
+        >
+          upload
+        </span>{" "}
+        from your device.
+      </div>
     </div>
   </div>
 ) : (
