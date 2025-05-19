@@ -78,7 +78,6 @@ export default function CameraRender() {
       setIsAdding(false);
     }
   };
-
   const handleMaximize = (cameraId) => {
     setMaximizedCamera(cameraId);
     setGridKey((prevKey) => prevKey + 1);
@@ -292,7 +291,7 @@ export default function CameraRender() {
       case 1:
         return activeTab === "video"
           ? `w-[60%] h-[470px] ${baseStyles}  mb-18`
-          : `w-[80%] h-[70vh] ${baseStyles} mt-16 mb-10`;
+          : `w-[80%] h-[70vh] ${baseStyles} mb-16`;
       case 2:
         return `grid-cols-2 gap-4 w-[90%] h-[60vh] ${baseStyles} mt-16`;
       case 3:
