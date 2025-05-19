@@ -68,15 +68,15 @@ export default function ToolBar({
       )
     },
     { name: "rectangle", icon: <Square size={18} color="#333" /> },
-    // { name: "circle", icon: <Circle size={18} color="#333" /> },
+
     // {
-    //   name: "walls",
+    //   name: "fill",
     //   icon: (
     //     <img
-    //       src="/walls.svg"
+    //       src="/paint-bucket.svg"
     //       style={{
     //         filter:
-    //           selectedTool === "walls"
+    //           selectedTool === "fill"
     //             ? "invert(100%) sepia(100%) saturate(0%) hue-rotate(180deg)"
     //             : "none",
     //       }}
@@ -85,55 +85,7 @@ export default function ToolBar({
     //     />
     //   ),
     // },
-    // {
-    //   name: "delete",
-    //   icon: (
-    //     <img
-    //       src="/bin.svg"
-    //       style={{
-    //         filter:
-    //           selectedTool === "delete"
-    //             ? "invert(100%) sepia(100%) saturate(0%) hue-rotate(180deg)"
-    //             : "none",
-    //       }}
-    //       size={18}
-    //       color="#333"
-    //     />
-    //   ),
-    // },
-    {
-      name: "fill",
-      icon: (
-        <img
-          src="/paint-bucket.svg"
-          style={{
-            filter:
-              selectedTool === "fill"
-                ? "invert(100%) sepia(100%) saturate(0%) hue-rotate(180deg)"
-                : "none",
-          }}
-          size={18}
-          color="#333"
-        />
-      ),
-    },
-    // {
-    //   name: "open-space",
-    //   icon: (
-    //     <img
-    //       src="/open-space.svg"
-    //       style={{
-    //         filter:
-    //           selectedTool === "open-space"
-    //             ? "invert(100%) sepia(100%) saturate(0%) hue-rotate(180deg)"
-    //             : "none",
-    //       }}
-    //       size={18}
-    //       color="#333"
-    //     />
-    //   ),
-    // },
-    // { name: "rectangle-h", icon: <RectangleHorizontal size={18} color="#333" />, bgColor: "bg-[#F3F4F6]" },
+ 
   ];
 
   const inputRef = useRef(null);
