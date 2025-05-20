@@ -11,7 +11,7 @@ import UploadModal from "./UploadModal";
 
 
 export default function CameraRender() {
-  const [open, setOpen] = useState(false); // Set to true initially to show the popup
+  const [open, setOpen] = useState(true); // Set to true initially to show the popup
   const [cameraName, setCameraName] = useState("");
   const [rtspUrl, setRtspUrl] = useState("");
   const [cameras, setCameras] = useState([]);

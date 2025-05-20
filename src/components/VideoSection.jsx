@@ -573,7 +573,7 @@ export default function VideoCanvas({
 
   return (
     <div
-      className={`w-full h-full relative ${isSelected ? 'ring-2 ring-[#7900F3]' : ''}`}
+      className={`w-full h-full relative`}
       onClick={() => onSelect(videoData.id)}
     >
       <canvas
