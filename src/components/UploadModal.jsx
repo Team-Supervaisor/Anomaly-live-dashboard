@@ -107,7 +107,7 @@ export default function UploadModal({
             {/* Camera Input Form */}
             <div className="flex flex-col gap-4 mt-6 w-[450px]">
               <div className="flex items-center justify-between">
-                <label className="text-black text-[16px] font-medium w-[120px]">Enter Camera :</label>
+                <label className="text-black text-[16px] font-medium w-[120px]">Camera Name :</label>
                 <input
                   type="text"
                   placeholder="Enter Camera Name"
