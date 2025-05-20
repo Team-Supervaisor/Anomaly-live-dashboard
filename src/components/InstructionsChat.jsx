@@ -268,7 +268,7 @@ const InstructionsChat = ({
           />
           <button 
             onClick={toggleRecording}
-            className={`absolute right-2 top-[25px] -translate-y-1/2 w-8 h-8 rounded-full mb-2
+            className={`absolute right-2 2xl:right-6 top-[25px] -translate-y-1/2 w-8 h-8 rounded-full mb-2
               ${isRecording ? 'bg-red-100 text-red-500' : 'bg-[#717AEA1A]'}
               flex items-center justify-center transition-colors`}
           >
