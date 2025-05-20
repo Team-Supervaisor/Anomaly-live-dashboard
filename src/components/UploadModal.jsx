@@ -110,7 +110,7 @@ export default function UploadModal({
                 <label className="text-black text-[16px] font-medium w-[120px]">Enter Camera :</label>
                 <input
                   type="text"
-                  placeholder="Enter Camera"
+                  placeholder="Enter Camera Name"
                   value={cameraName}
                   onChange={(e) => setCameraName(e.target.value)}
                   style={{
@@ -140,41 +140,38 @@ export default function UploadModal({
                 />
               </div>
 
-              <div className="flex items-center">
-                <div className="w-[120px]"></div> 
-                <div style={{ width: "354px" }}>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={isAdding}
-                    style={{
-                      width: "160.35px",
-                      height: "45.03px",
-                      borderRadius: "7.7px",
-                      border: "2.23px solid",
-                      background: "linear-gradient(272.47deg, #717AEA 0.57%, #4F4FDC 99.43%)",
-                      color: "white",
-                      fontWeight: "500",
-                      fontSize: "16px",
-                      opacity: isAdding ? 0.7 : 1,
-                      cursor: isAdding ? "not-allowed" : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px"
-                    }}
-                  >
-                    {isAdding ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Adding Camera...</span>
-                      </>
-                    ) : (
-                      "Submit"
-                    )}
-                  </button>
-                </div>
-              </div>
             </div>
+              <div className="flex flex-col items-center justify-center w-full mt-6">
+  <button
+    onClick={handleSubmit}
+    disabled={isAdding}
+    style={{
+      width: "160.35px",
+      height: "45.03px",
+      borderRadius: "7.7px",
+      border: "2.23px solid",
+      background: "linear-gradient(272.47deg, #717AEA 0.57%, #4F4FDC 99.43%)",
+      color: "white",
+      fontWeight: "500",
+      fontSize: "16px",
+      opacity: isAdding ? 0.7 : 1,
+      cursor: isAdding ? "not-allowed" : "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "8px"
+    }}
+  >
+    {isAdding ? (
+      <>
+        <Loader2 className="w-4 h-4 animate-spin" />
+        <span>Adding Camera...</span>
+      </>
+    ) : (
+      "Submit"
+    )}
+  </button>
+              </div>
           </div>
         )}
 

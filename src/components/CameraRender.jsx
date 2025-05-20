@@ -1,15 +1,5 @@
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { useState, useRef, useEffect } from "react";
 import ToolBar from "./tool-bar";
-import { Plus, X, Upload, Maximize2, Minimize2, Loader2, Play } from "lucide-react";
 import VideoCanvas from "./VideoCanvas";
 import VideoSection from "./VideoSection";
 import { useNavigate } from "react-router-dom";
