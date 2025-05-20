@@ -250,7 +250,7 @@ const InstructionsChat = ({
       </div>
 
       {/* Input Section with Voice Support */}
-      <div className="p-4 flex items-center gap-3 mt-1">
+      <div className="p-4 flex items-center  mt-1">
         <div className="relative flex-1">
           <textarea
             ref={inputRef}
@@ -278,7 +278,7 @@ const InstructionsChat = ({
         
         <button 
           onClick={handleSendMessage}
-          className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-colors"
+          className="w-[52px] h-[52px] rounded-full flex items-center mb-2 justify-center transition-colors"
         >
           <img src="/send.svg" alt="Send" className="w-5 h-5" />
         </button>
