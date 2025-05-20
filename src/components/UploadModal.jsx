@@ -105,22 +105,24 @@ export default function UploadModal({
             />
             
             {/* Camera Input Form */}
-            <div className="flex flex-col gap-4 mt-6 w-[450px]">
+            <div className="flex flex-col gap-4 mt-6 w-[460px]">
               <div className="flex items-center justify-between">
-                <label className="text-black text-[16px] font-medium w-[120px]">Camera Name :</label>
+                <label className="text-black text-[16px] font-medium w-[120px] ">Camera Name :</label>
                 <input
-                  type="text"
-                  placeholder="Enter Camera Name"
-                  value={cameraName}
-                  onChange={(e) => setCameraName(e.target.value)}
-                  style={{
-                    width: "354px",
-                    height: "50.03px",
-                    borderRadius: "7.7px",
-                    padding: "7.7px 20.53px",
-                    border: "1.28px solid #D1D1D1"
-                  }}
-                />
+              type="text"
+              placeholder="Enter Camera Name"
+              value={cameraName}
+              onChange={(e) => setCameraName(e.target.value)}
+              style={{
+                width: "354px",
+                height: "50.03px",
+                borderRadius: "7.7px",
+                padding: "7.7px 20.53px",
+                border: "1.28px solid #D1D1D1",
+                outline: "none",
+                
+              }}
+            />
               </div>
               
               <div className="flex items-center justify-between">
@@ -135,7 +137,8 @@ export default function UploadModal({
                     height: "50.03px",
                     borderRadius: "7.7px",
                     padding: "7.7px 20.53px",
-                    border: "1.28px solid #D1D1D1"
+                    border: "1.28px solid #D1D1D1",
+                    outline: "none", 
                   }}
                 />
               </div>
