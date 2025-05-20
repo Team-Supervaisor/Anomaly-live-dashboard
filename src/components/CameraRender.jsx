@@ -383,7 +383,7 @@ export default function CameraRender() {
   return (
     <div className="relative w-full h-full flex flex-col items-center">
       <div className="relative flex flex-col items-center w-screen h-screen">
-        <header className="flex items-center justify-between px-[41px] h-[60px] pl-[12px] bg-white w-full">
+        <header className="flex items-center justify-between h-[58px] pl-[12px] bg-white w-full">
           {/* Left section - Logo and Title */}
           <Link to="/" className="flex-none">
             <div className="flex items-center space-x-2 cursor-pointer">
@@ -398,7 +398,7 @@ export default function CameraRender() {
 
           {/* Right section - Fullscreen and Live AI */}
           <div className="flex items-center gap-4">
-            <div className=" space-x-0.5">
+            <div  className="m-3">
               <FullscreenToggle  />
             </div>
             {activeTab === "video" && hasVideoShapesSaved && (
