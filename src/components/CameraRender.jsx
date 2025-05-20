@@ -11,7 +11,7 @@ import UploadModal from "./UploadModal";
 
 
 export default function CameraRender() {
-  const [open, setOpen] = useState(true); // Set to true initially to show the popup
+  const [open, setOpen] = useState(false); // Set to true initially to show the popup
   const [cameraName, setCameraName] = useState("");
   const [rtspUrl, setRtspUrl] = useState("");
   const [cameras, setCameras] = useState([]);
@@ -383,7 +383,7 @@ export default function CameraRender() {
   return (
     <div className="relative w-full h-full flex flex-col items-center">
       <div className="relative flex flex-col items-center w-screen h-screen">
-        <header className="flex items-center justify-between px-[41px] h-[73.0px] pl-[12px] bg-white w-full">
+        <header className="flex items-center justify-between px-[41px] h-[60px] pl-[12px] bg-white w-full">
           {/* Left section - Logo and Title */}
           <Link to="/" className="flex-none">
             <div className="flex items-center space-x-2 cursor-pointer">
@@ -398,8 +398,8 @@ export default function CameraRender() {
 
           {/* Right section - Fullscreen and Live AI */}
           <div className="flex items-center gap-4">
-            <div className="p-4 space-x-0.5">
-              <FullscreenToggle />
+            <div className=" space-x-0.5">
+              <FullscreenToggle  />
             </div>
             {activeTab === "video" && hasVideoShapesSaved && (
               <button
