@@ -264,7 +264,7 @@ const InstructionsChat = ({
               }
             }}
             placeholder="Add instructions"
-            className="w-[280px] min-h-[52px] max-h-[100px] px-4 py-3 pr-12 rounded-full border-2 border-[#717AEA] focus:outline-none resize-none overflow-y-auto scrollbar-hidden"
+            className="w-[280px] min-h-[52px] max-h-[55px] px-4 py-3 pr-12 rounded-full border-2 border-[#717AEA] focus:outline-none resize-none overflow-y-auto scrollbar-hidden"
           />
           <button 
             onClick={toggleRecording}
