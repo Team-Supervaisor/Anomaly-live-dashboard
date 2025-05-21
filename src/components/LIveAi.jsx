@@ -839,7 +839,7 @@ const LiveAi = () => {
             </div>
           </div>
         ) : (
-          <div className="w-full h-full min-h-[600px] flex items-center justify-center">
+          <div className="w-full h-full min-h-[620px] flex items-center justify-center">
             <div className="flex flex-col items-center">
               <div className="w-[120px] h-[120px]">
                 <DotLottieReact
@@ -856,7 +856,7 @@ const LiveAi = () => {
         )}
       </div>
 
-  {streamUrl && (
+  { (
   <div className="mt-4 flex items-center justify-center backdrop-blur-md bg-white/70 h-[80px] rounded-[100px] w-full max-w-[500px] mx-auto gap-6 border border-white/40 shadow-lg">
     <div className="flex items-center gap-2">
       <div className="relative group">
@@ -908,14 +908,14 @@ const LiveAi = () => {
       </button>
     </div>
   </div>
-)}
+  )}
 </div>
 
         {/* Right Section with Instructions and AI Analysis */}
-        <div className="flex flex-col gap-4 w-[380px]">
+        <div className="flex flex-col gap-4 w-[360px]">
           {/* Instructions Card */}
 
-          <div className="bg-white rounded-[26px] max-h-[330px] flex flex-col">
+          <div className="bg-white rounded-[26px] max-h-[340px] flex flex-col">
             {/* Header */}
             <div className="flex justify-between items-center p-4 pt-[16px] pb-[13px] border-[#EFF4FE]">
               <div className="flex items-center gap-2">
