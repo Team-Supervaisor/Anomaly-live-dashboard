@@ -166,11 +166,13 @@ const InstructionsChat = ({
     }
   };
 
-  // Auto-resize input
+  // Auto-resize input and auto-scroll as text is added
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
       inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 100) + 'px';
+      // Scroll to bottom
+      inputRef.current.scrollTop = inputRef.current.scrollHeight;
     }
   }, [newMessage]);
 
@@ -250,7 +252,7 @@ const InstructionsChat = ({
       </div>
 
       {/* Input Section with Voice Support */}
-      <div className="p-4 flex items-center  mt-1">
+      <div className="p-4 flex items-center mt-1">
         <div className="relative flex-1">
           <textarea
             ref={inputRef}
@@ -264,7 +266,7 @@ const InstructionsChat = ({
               }
             }}
             placeholder="Add instructions"
-            className="w-[280px] min-h-[52px] max-h-[50px] px-4 py-3 pr-12 rounded-full border-2 border-[#717AEA] focus:outline-none resize-none overflow-y-auto scrollbar-hidden"
+            className="w-[280px]  min-h-[52px] max-h-[52px] px-4 py-3 pr-12 rounded-full border-2 border-[#717AEA] focus:outline-none resize-none overflow-y-auto scrollbar-hidden"
           />
           <button 
             onClick={toggleRecording}
