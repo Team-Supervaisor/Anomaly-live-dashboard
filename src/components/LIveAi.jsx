@@ -695,6 +695,7 @@ const LiveAi = () => {
   // };
 
   const handleSendMessage = () => {
+    console.log( newMessage.trim() ,socketRef2.current?.connected )
     if (!newMessage.trim() || !socketRef2.current?.connected) {
       console.error("Empty message or socket not connected");
       return;
@@ -827,7 +828,7 @@ const LiveAi = () => {
         <div className="w-full">
         <div className="bg-white w-full rounded-[26px] overflow-hidden">
     {streamUrl ? (
-      <div className="w-full h-[calc(100vh-210px)] relative">
+      <div className="w-full h-[calc(100vh-170px)] relative">
         <img
           ref={imgRef}
           src={streamUrl}
@@ -839,7 +840,7 @@ const LiveAi = () => {
         </div>
       </div>
     ) : (
-      <div className="w-full h-[calc(100vh-210px)] flex items-center justify-center">
+      <div className="w-full h-[calc(100vh-170px)] flex items-center justify-center">
         <div className="flex flex-col items-center">
           <div className="w-[120px] h-[120px]">
             <DotLottieReact
@@ -857,7 +858,7 @@ const LiveAi = () => {
   </div>
 
   { (
-  <div className="mt-4 flex items-center justify-center backdrop-blur-md bg-white/70 h-[80px] rounded-[100px] w-full max-w-[500px] mx-auto gap-6 border border-white/40 shadow-lg">
+  <div className="mt-5 flex items-center justify-center backdrop-blur-md bg-white/70 h-[60px] rounded-[100px] w-full max-w-[340px] mx-auto gap-6 border border-white/40 shadow-lg">
     <div className="flex items-center gap-2">
       <div className="relative group">
         <button className="flex items-center gap-2 text-[16px] font-medium">
@@ -891,7 +892,7 @@ const LiveAi = () => {
     <div className="flex items-center gap-6">
       <button
         onClick={handleStart}
-        className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+        className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors ${
           isTracking
             ? "bg-[#717AEA]/90 backdrop-blur-sm text-white shadow-md"
             : "bg-[#EDEEFF]/80 backdrop-blur-sm text-[#717AEA] hover:bg-[#717AEA]/80 hover:text-white shadow-md"
@@ -902,7 +903,7 @@ const LiveAi = () => {
 
       <button
         onClick={handleReset}
-        className="w-12 h-12 rounded-full flex items-center justify-center bg-[#EDEEFF]/80 backdrop-blur-sm text-[#717AEA] hover:bg-[#717AEA]/80 hover:text-white transition-colors shadow-md"
+        className="w-11 h-11  rounded-full flex items-center justify-center bg-[#EDEEFF]/80 backdrop-blur-sm text-[#717AEA] hover:bg-[#717AEA]/80 hover:text-white transition-colors shadow-md"
       >
         <RotateCcw className="w-5 h-5" />
       </button>
