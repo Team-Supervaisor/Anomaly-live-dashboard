@@ -825,36 +825,36 @@ const LiveAi = () => {
       <div className="flex flex-1 p-4 pt-0 gap-4 overflow-hidden mt-5">
         {/* Left Section */}
         <div className="w-full">
-      <div className="bg-white w-full rounded-[26px] overflow-hidden">
-        {streamUrl ? (
-          <div className="w-full h-full relative">
-            <img
-              ref={imgRef}
-              src={streamUrl}
-              className="w-full h-full rounded-xl"
-              alt="Live stream"
-            />
-            <div className="absolute top-2 left-2 bg-white text-black px-2 py-1 rounded text-sm font-medium">
-              Video Canvas 1
-            </div>
-          </div>
-        ) : (
-          <div className="w-full h-full min-h-[620px] flex items-center justify-center">
-            <div className="flex flex-col items-center">
-              <div className="w-[120px] h-[120px]">
-                <DotLottieReact
-                  src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
-                  loop
-                  autoplay
-                />
-              </div>
-              <span className="text-gray-600 text-lg font-medium mt-1">
-                AI analyzing video
-              </span>
-            </div>
-          </div>
-        )}
+        <div className="bg-white w-full rounded-[26px] overflow-hidden">
+    {streamUrl ? (
+      <div className="w-full h-[calc(100vh-210px)] relative">
+        <img
+          ref={imgRef}
+          src={streamUrl}
+          className="w-full h-full object-cover rounded-xl"
+          alt="Live stream"
+        />
+        <div className="absolute top-2 left-2 bg-white text-black px-2 py-1 rounded text-sm font-medium">
+          Video Canvas 1
+        </div>
       </div>
+    ) : (
+      <div className="w-full h-[calc(100vh-210px)] flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-[120px] h-[120px]">
+            <DotLottieReact
+              src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
+              loop
+              autoplay
+            />
+          </div>
+          <span className="text-gray-600 text-lg font-medium">
+            AI analyzing video
+          </span>
+        </div>
+      </div>
+    )}
+  </div>
 
   { (
   <div className="mt-4 flex items-center justify-center backdrop-blur-md bg-white/70 h-[80px] rounded-[100px] w-full max-w-[500px] mx-auto gap-6 border border-white/40 shadow-lg">
