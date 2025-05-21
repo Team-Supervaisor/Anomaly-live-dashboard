@@ -297,7 +297,7 @@ export default function VideoCanvas({
                 : hoveredShape?.id === s.id
                     ? "#9CA3AF"
                     : "#FFD700";
-            ctx.lineWidth = 2; // Reduced from 5 to 2 for sharper lines
+            ctx.lineWidth = 3; // Reduced from 5 to 2 for sharper lines
             ctx.setLineDash([6, 3]); // Reduced dash pattern for cleaner look
             
             // Enable anti-aliasing
@@ -340,7 +340,7 @@ export default function VideoCanvas({
                 : hoveredShape?.id === s.id
                     ? "#9CA3AF"
                     : "#FFD700";
-            ctx.lineWidth = 2; // Reduced from 3 to 2
+            ctx.lineWidth = 3; // Reduced from 3 to 2
             ctx.setLineDash([6, 3]);
 
             ctx.imageSmoothingEnabled = true;
@@ -412,7 +412,7 @@ if (isDrawingPolygon && polygonPoints.length > 0) {
     
     ctx.beginPath();
     ctx.strokeStyle = "#FFD700";
-    ctx.lineWidth = 1.5; // Reduced for sharper lines
+    ctx.lineWidth = 2; // Reduced for sharper lines
     ctx.setLineDash([4, 2]); // Smaller dash pattern for cleaner look
     
     // Draw lines between points with rounded coordinates
