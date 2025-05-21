@@ -289,7 +289,7 @@ export default function VideoCanvas({
     const active = isMaximized || !showMaximize;
     if (!active) return;
 
-    // Draw existing shapes (dashed lines)
+    // Draw existing shapes with refined styles
     shapes.forEach(s => {
         if (s.type === "rectangle") {
             ctx.strokeStyle = selectedShape?.id === s.id
@@ -297,128 +297,177 @@ export default function VideoCanvas({
                 : hoveredShape?.id === s.id
                     ? "#9CA3AF"
                     : "#FFD700";
-            ctx.lineWidth = 5; // Increased line width for all shapes
-            ctx.setLineDash([8, 4]); // Apply dashed style to completed shapes
-            ctx.strokeRect(s.x, s.y, s.width, s.height);
+            ctx.lineWidth = 2; // Reduced from 5 to 2 for sharper lines
+            ctx.setLineDash([6, 3]); // Reduced dash pattern for cleaner look
+            
+            // Enable anti-aliasing
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            
+            // Draw the rectangle
+            ctx.strokeRect(
+                Math.round(s.x), // Round coordinates to avoid blurry lines
+                Math.round(s.y),
+                Math.round(s.width),
+                Math.round(s.height)
+            );
             
             if (s.isColored) {
                 ctx.fillStyle = s.color;
-                ctx.fillRect(s.x, s.y, s.width, s.height);
+                ctx.fillRect(
+                    Math.round(s.x),
+                    Math.round(s.y),
+                    Math.round(s.width),
+                    Math.round(s.height)
+                );
             }
             if (s.name) {
                 ctx.setLineDash([]); // Reset dash for text
                 ctx.fillStyle = "#00FFFF";
-                ctx.font = "12px Ubranist";
+                ctx.font = "bold 12px Urbanist"; // Made font bold for better visibility
                 const tw = ctx.measureText(s.name).width;
-                ctx.fillText(s.name, s.x + (s.width - tw)/2, s.y + s.height/2 + 7);
-                ctx.setLineDash([8, 4]); // Restore dash pattern after text
+                ctx.fillText(
+                    s.name,
+                    Math.round(s.x + (s.width - tw)/2),
+                    Math.round(s.y + s.height/2 + 7)
+                );
+                ctx.setLineDash([6, 3]); // Restore dash pattern
             }
         } else if (s.type === "caligraphy") {
-          ctx.beginPath();
-          ctx.strokeStyle = selectedShape?.id === s.id
-              ? "#6366F1"
-              : hoveredShape?.id === s.id
-                  ? "#9CA3AF"
-                  : "#FFD700";
-          ctx.lineWidth = 3;
-          ctx.setLineDash([8, 4]);
+            ctx.beginPath();
+            ctx.strokeStyle = selectedShape?.id === s.id
+                ? "#6366F1"
+                : hoveredShape?.id === s.id
+                    ? "#9CA3AF"
+                    : "#FFD700";
+            ctx.lineWidth = 2; // Reduced from 3 to 2
+            ctx.setLineDash([6, 3]);
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            
+            // Draw the polygon lines with rounded coordinates
+            s.points.forEach((point, index) => {
+                if (index === 0) {
+                    ctx.moveTo(Math.round(point.x), Math.round(point.y));
+                } else {
+                    ctx.lineTo(Math.round(point.x), Math.round(point.y));
+                }
+            });
+            
+            ctx.closePath();
+            
+            if (s.isColored) {
+                ctx.fillStyle = s.color;
+                ctx.fill();
+            }
+            
+            ctx.stroke();
           
-          // Draw the polygon lines
-          s.points.forEach((point, index) => {
-              if (index === 0) {
-                  ctx.moveTo(point.x, point.y);
-              } else {
-                  ctx.lineTo(point.x, point.y);
-              }
-          });
-          
-          // Close the path before filling or stroking
-          ctx.closePath();
-          
-          // Fill first if colored
-          if (s.isColored) {
-              ctx.fillStyle = s.color;
-              ctx.fill();
-          }
-          
-          // Then stroke the border
-          ctx.stroke();
-          
-          // Draw the points
-          s.points.forEach((point, index) => {
-              ctx.beginPath();
-              ctx.setLineDash([]);
-              ctx.fillStyle = index === 0 ? "#FF4444" : "#FFD700";
-              ctx.strokeStyle = "#FFFFFF";
-              ctx.lineWidth = 1;
-              ctx.arc(point.x, point.y, index === 0 ? 6 : 4, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.stroke();
-          });
-          
-          if (s.name) {
-              const center = getPolygonCenter(s.points);
-              ctx.setLineDash([]);
-              ctx.fillStyle = "#00FFFF";
-              ctx.font = "12px Urbanist";
-              const tw = ctx.measureText(s.name).width;
-              ctx.fillText(s.name, center.x - tw/2, center.y);
-          }
-      }
+            // Draw the points
+            s.points.forEach((point, index) => {
+                ctx.beginPath();
+                ctx.setLineDash([]);
+                ctx.fillStyle = index === 0 ? "#FF4444" : "#FFD700";
+                ctx.strokeStyle = "#FFFFFF";
+                ctx.lineWidth = 1;
+                ctx.arc(point.x, point.y, index === 0 ? 6 : 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            });
+            
+            if (s.name) {
+                const center = getPolygonCenter(s.points);
+                ctx.setLineDash([]);
+                ctx.fillStyle = "#00FFFF";
+                ctx.font = "12px Urbanist";
+                const tw = ctx.measureText(s.name).width;
+                ctx.fillText(s.name, center.x - tw/2, center.y);
+            }
+        }
     });
 
-    // Draw shape being created (same dashed style)
+       // Draw shape being created (same dashed style)
+
+
     if (drawingState.isDrawing && selectedTool === "rectangle") {
-        const w = drawingState.currentX - drawingState.startX;
-        const h = drawingState.currentY - drawingState.startY;
-        
-        ctx.strokeStyle = "#FFD700";
-        ctx.lineWidth = 3;
-        ctx.setLineDash([8, 4]);
-        ctx.strokeRect(drawingState.startX, drawingState.startY, w, h);
-
-        // Add semi-transparent fill
-        ctx.fillStyle = "rgba(255, 215, 0, 0.1)";
-        ctx.fillRect(drawingState.startX, drawingState.startY, w, h);
-    }
-
-
-    if (isDrawingPolygon && polygonPoints.length > 0) {
-      ctx.beginPath();
+      const w = drawingState.currentX - drawingState.startX;
+      const h = drawingState.currentY - drawingState.startY;
+      
       ctx.strokeStyle = "#FFD700";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      
-      // Draw lines between points
-      polygonPoints.forEach((point, index) => {
-          if (index === 0) {
-              ctx.moveTo(point.x, point.y);
-          } else {
-              ctx.lineTo(point.x, point.y);
-          }
-      });
-      
-      // Draw preview line
-      if (previewPoint) {
-          ctx.lineTo(previewPoint.x, previewPoint.y);
-          
-          // Highlight start point if nearby
-          if (nearStartPoint) {
-              ctx.lineTo(polygonPoints[0].x, polygonPoints[0].y);
-          }
-      }
-      ctx.stroke();
-      
-      // Draw points with different style for start point
-      polygonPoints.forEach((point, index) => {
-          ctx.beginPath();
-          ctx.fillStyle = index === 0 ? "#FF4444" : "#FFD700";
-          ctx.arc(point.x, point.y, index === 0 ? 6 : 4, 0, Math.PI * 2);
-          ctx.fill();
-      });
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 4]);
+      ctx.strokeRect(drawingState.startX, drawingState.startY, w, h);
+
+      // Add semi-transparent fill
+      ctx.fillStyle = "rgba(255, 215, 0, 0.1)";
+      ctx.fillRect(drawingState.startX, drawingState.startY, w, h);
   }
 
-    // Reset dash pattern at the end
+
+if (isDrawingPolygon && polygonPoints.length > 0) {
+    // Enable anti-aliasing
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    
+    ctx.beginPath();
+    ctx.strokeStyle = "#FFD700";
+    ctx.lineWidth = 1.5; // Reduced for sharper lines
+    ctx.setLineDash([4, 2]); // Smaller dash pattern for cleaner look
+    
+    // Draw lines between points with rounded coordinates
+    polygonPoints.forEach((point, index) => {
+        const x = Math.round(point.x);
+        const y = Math.round(point.y);
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    
+    // Draw preview line with rounded coordinates
+    if (previewPoint) {
+        const px = Math.round(previewPoint.x);
+        const py = Math.round(previewPoint.y);
+        ctx.lineTo(px, py);
+        
+        // Highlight start point if nearby
+        if (nearStartPoint && polygonPoints[0]) {
+            ctx.lineTo(
+                Math.round(polygonPoints[0].x),
+                Math.round(polygonPoints[0].y)
+            );
+        }
+    }
+    
+    ctx.stroke();
+    
+    // Draw points with crisp edges
+    polygonPoints.forEach((point, index) => {
+        ctx.beginPath();
+        ctx.setLineDash([]); // Clear dash pattern for points
+        ctx.fillStyle = index === 0 ? "#FF4444" : "#FFD700";
+        ctx.strokeStyle = "#FFFFFF"; // Add white border for better visibility
+        ctx.lineWidth = 1;
+        
+        const x = Math.round(point.x);
+        const y = Math.round(point.y);
+        const radius = index === 0 ? 4 : 3; // Slightly smaller points
+        
+        // Draw point with pixel-perfect alignment
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+    });
+    
+    // Reset dash pattern
+    ctx.setLineDash([]);
+}
+
+    
+
+    // Reset dash pattern
     ctx.setLineDash([]);
 };
 
