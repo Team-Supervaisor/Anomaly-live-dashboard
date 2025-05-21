@@ -22,21 +22,22 @@ export default function UploadModal({
       className="fixed top-0 left-0 w-full h-full flex items-center justify-center"
       style={{ 
         zIndex: 50,
-        backgroundColor: "#00000066"
+        backgroundColor: "#00000066",
+      
       }}
     >
       <div
         className="bg-white rounded-[31px] flex flex-col items-center justify-start relative"
         style={{
-          width: "958px",
-          height: "598px",
+          width: "760px",
+          height: "420px",
           paddingTop: "50px",
         }}
       >
         {/* Main Content Area - Conditional Rendering */}
         {activeTab === "video" ? (
           <div 
-            className="flex flex-col items-center justify-center h-[350px]"
+            className="flex flex-col items-center justify-center h-[200px]"
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -59,12 +60,12 @@ export default function UploadModal({
               <img
                 src="/folder-upload.svg"
                 alt="Upload"
-                style={{ width: "182px", height: "209px" }}
+                style={{ width: "140px", height: "120px" }}
               />
               <div
                 style={{
                   fontWeight: "500",
-                  fontSize: "24px",
+                  fontSize: "22px",
                   lineHeight: "100%",
                   textAlign: "center",
                   marginTop: "20px",
@@ -97,25 +98,25 @@ export default function UploadModal({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-[350px]">
+          <div className="flex flex-col items-center justify-center h-[200px] mt-3">
             <img
               src="/feed_select.svg"
               alt="Camera Feed"
-              style={{ width: "182px", height: "209px" }}
+              style={{ width: "90px", height: "90px", marginTop: "20px" }}
             />
             
             {/* Camera Input Form */}
             <div className="flex flex-col gap-4 mt-6 w-[460px]">
               <div className="flex items-center justify-between">
-                <label className="text-black text-[16px] font-medium w-[120px] ">Camera Name :</label>
+                <label className="text-black text-[14px] font-medium w-[120px] ">Camera Name :</label>
                 <input
               type="text"
               placeholder="Enter Camera Name"
               value={cameraName}
               onChange={(e) => setCameraName(e.target.value)}
               style={{
-                width: "354px",
-                height: "50.03px",
+                width: "330px",
+                height: "40.03px",
                 borderRadius: "7.7px",
                 padding: "7.7px 20.53px",
                 border: "1.28px solid #D1D1D1",
@@ -133,8 +134,8 @@ export default function UploadModal({
                   value={rtspUrl}
                   onChange={(e) => setRtspUrl(e.target.value)}
                   style={{
-                    width: "354px",
-                    height: "50.03px",
+                    width: "330px",
+                    height: "40.03px",
                     borderRadius: "7.7px",
                     padding: "7.7px 20.53px",
                     border: "1.28px solid #D1D1D1",
@@ -145,35 +146,35 @@ export default function UploadModal({
 
             </div>
               <div className="flex flex-col items-center justify-center w-full mt-6">
-  <button
-    onClick={handleSubmit}
-    disabled={isAdding}
-    style={{
-      width: "160.35px",
-      height: "45.03px",
-      borderRadius: "7.7px",
-      border: "2.23px solid",
-      background: "linear-gradient(272.47deg, #717AEA 0.57%, #4F4FDC 99.43%)",
-      color: "white",
-      fontWeight: "500",
-      fontSize: "16px",
-      opacity: isAdding ? 0.7 : 1,
-      cursor: isAdding ? "not-allowed" : "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "8px"
-    }}
-  >
-    {isAdding ? (
-      <>
-        <Loader2 className="w-4 h-4 animate-spin" />
-        <span>Adding Camera...</span>
-      </>
-    ) : (
-      "Submit"
-    )}
-  </button>
+            <button
+              onClick={handleSubmit}
+              disabled={isAdding}
+              style={{
+                width: "160.35px",
+                height: "40.03px",
+                borderRadius: "7.7px",
+                border: "2.23px solid",
+                background: "linear-gradient(272.47deg, #717AEA 0.57%, #4F4FDC 99.43%)",
+                color: "white",
+                fontWeight: "500",
+                fontSize: "16px",
+                opacity: isAdding ? 0.7 : 1,
+                cursor: isAdding ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px"
+              }}
+            >
+              {isAdding ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Adding Camera...</span>
+                </>
+              ) : (
+                "Submit"
+              )}
+            </button>
               </div>
           </div>
         )}
@@ -182,8 +183,8 @@ export default function UploadModal({
         <div
           className="flex items-center justify-center"
           style={{
-            width: "958px",
-            height: "115px",
+            width: "760px",
+            height: "80px",
             backgroundColor: "#F5F6FF",
             borderRadius: "0 0 31px 31px",
             position: "absolute",
