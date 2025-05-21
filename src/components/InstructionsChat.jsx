@@ -264,7 +264,7 @@ const InstructionsChat = ({
               }
             }}
             placeholder="Add instructions"
-            className="w-[379px] min-h-[52px] max-h-[100px] px-4 py-3 pr-12 rounded-full border-2 border-[#717AEA] focus:outline-none resize-none overflow-y-auto scrollbar-hidden"
+            className="w-[300px] min-h-[52px] max-h-[100px] px-4 py-3 pr-12 rounded-full border-2 border-[#717AEA] focus:outline-none resize-none overflow-y-auto scrollbar-hidden"
           />
           <button 
             onClick={toggleRecording}
@@ -278,11 +278,12 @@ const InstructionsChat = ({
         
         <button 
           onClick={handleSendMessage}
-          className="w-[52px] h-[52px] rounded-full flex items-center mb-2 justify-center transition-colors"
+          className="w-[48px] h-[52px] rounded-full flex items-center mb-2 justify-center transition-colors"
         >
           <img src="/send.svg" alt="Send" className="w-5 h-5" />
         </button>
       </div>
+      
     </>
   );
 };
