@@ -29,7 +29,7 @@ export default function UploadModal({
       <div
         className="bg-white rounded-[31px] flex flex-col items-center justify-start relative"
         style={{
-          width: "760px",
+          width: "720px",
           height: "420px",
           paddingTop: "50px",
         }}
@@ -183,7 +183,7 @@ export default function UploadModal({
         <div
           className="flex items-center justify-center"
           style={{
-            width: "760px",
+            width: "720px",
             height: "80px",
             backgroundColor: "#F5F6FF",
             borderRadius: "0 0 31px 31px",

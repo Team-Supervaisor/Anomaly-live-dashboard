@@ -37,6 +37,7 @@ export default function CameraRender() {
   const [isSaving, setIsSaving] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
+
   const handleSubmit = async () => {
     setIsAdding(true);
     const apiUrl = import.meta.env.VITE_API_URL;
@@ -281,7 +282,7 @@ export default function CameraRender() {
         return "";
       case 1:
         return activeTab === "video"
-          ? `w-[60%] h-[470px] ${baseStyles}  mb-18`
+          ? `w-[60%] h-[470px] ${baseStyles} mb-20`
           : `w-[80%] h-[70vh] ${baseStyles} mb-16`;
       case 2:
         return `grid-cols-2 gap-4 w-[90%] h-[60vh] ${baseStyles} mt-16`;
