@@ -828,7 +828,7 @@ const LiveAi = () => {
         <div className="w-full">
         <div className="bg-white w-full rounded-[26px] overflow-hidden">
     {streamUrl ? (
-      <div className="w-full h-[calc(100vh-170px)] relative">
+      <div className="w-full h-[calc(100vh-165px)] relative">
         <img
           ref={imgRef}
           src={streamUrl}
@@ -840,7 +840,7 @@ const LiveAi = () => {
         </div>
       </div>
     ) : (
-      <div className="w-full h-[calc(100vh-170px)] flex items-center justify-center">
+      <div className="w-full h-[calc(100vh-165px)] flex items-center justify-center">
         <div className="flex flex-col items-center">
           <div className="w-[120px] h-[120px]">
             <DotLottieReact
@@ -858,7 +858,7 @@ const LiveAi = () => {
   </div>
 
   { (
-  <div className="mt-5 flex items-center justify-center backdrop-blur-md bg-white/70 h-[60px] rounded-[100px] w-full max-w-[340px] mx-auto gap-6 border border-white/40 shadow-lg">
+  <div className="mt-4 flex items-center justify-center backdrop-blur-md bg-white/70 h-[60px] rounded-[100px] w-full max-w-[340px] mx-auto gap-6 border border-white/40 shadow-lg">
     <div className="flex items-center gap-2">
       <div className="relative group">
         <button className="flex items-center gap-2 text-[16px] font-medium">
