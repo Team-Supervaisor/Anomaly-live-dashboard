@@ -93,19 +93,6 @@ const LiveVideo = () => {
     },
   ];
 
-  // useEffect(() => {
-  //   const startStream = async () => {
-  //     const apiUrl = import.meta.env.VITE_API_URL;
-  //     try {
-  //       await axios.post(`${apiUrl}/start_tracking`);
-  //       console.log("Stream started successfully");
-  //     } catch (error) {
-  //       console.error("Failed to start stream:", error);
-  //     }
-  //   };
-
-  //   startStream();
-  // }, []);
 
   // Helper function to convert data object to array format
   const formatVideoData = (data) => {
@@ -118,16 +105,6 @@ const LiveVideo = () => {
     }));
   };
 
-  // const gridClasses = () => {
-  //   if (!data || !data.hls_urls) return "grid-cols-1";
-
-  //   const len = Object.keys(data.hls_urls).length;
-  //   if (len === 1) return "grid-cols-1 grid-rows-1";
-  //   if (len === 2) return "grid-cols-2 grid-rows-1";
-  //   if (len <= 4) return "grid-cols-2 grid-rows-2";
-  //   if (len <= 6) return "grid-cols-3 grid-rows-2";
-  //   return "grid-cols-1"; // fallback
-  // };
   const gridClasses = (count) => {
     if (count === 1) return "grid-cols-1 grid-rows-1";
     if (count === 2) return "grid-cols-2 grid-rows-1";
@@ -136,29 +113,6 @@ const LiveVideo = () => {
     return "grid-cols-3 grid-rows-3"; // fallback for more videos
   };
 
-  // useEffect(() => {
-  //   const socketInstance = io(import.meta.env.VITE_API_URL);
-  //   setSocket(socketInstance);
-
-  //   socketInstance.emit("logs");
-
-
-  //   socketInstance.on("log_update", (payload) => {
-  //     // payload is coming in as an array:
-  //     // [
-  //     //   { person_id: 1, camera_id: "Video 1", roi: "inside", event: "entry", timestamp1: "2025-05-06T23:01:23.454" },
-  //     //   …
-  //     // ]
-  //     setLogs(Array.isArray(payload) ? payload : []);
-  //   });
-
-  //   return () => {
-  //     socketInstance.disconnect();
-  //   };
-  // }, []);
-
-  // Simulate socket updates every 3 seconds
- 
 
   // Add this effect to handle auto-scrolling
   useEffect(() => {
@@ -170,44 +124,7 @@ const LiveVideo = () => {
     }
   }, [logs]);
 
-  
 
-  // Scroll whenever logs update
-  // useEffect(() => {
-  //   setLogs(mockLogs);
-
-  //   const interval = setInterval(() => {
-  //     // Rotate the logs array to simulate updates
-  //     setLogs((prevLogs) => {
-  //       const rotated = [...prevLogs];
-  //       const last = rotated.pop();
-  //       if (last) rotated.unshift(last);
-  //       return rotated;
-  //     });
-  //   }, 3000);
-
-  //   return () => clearInterval(interval);
-  // }, []);
-
-  // Function to format the timestamp
-  const formatTimestamp = (timestamp) => {
-    return format(new Date(timestamp), "HH:mm:ss");
-  };
-
-  // Function to get event color
-  const getEventColor = (event) => {
-    switch (event) {
-      case "entry":
-        return "text-green-600";
-      case "exit":
-        return "text-red-600";
-      default:
-        return "text-blue-600";
-    }
-  };
-
-  // Socket connection setup
- // Update the socket effect with enhanced logging
 useEffect(() => {
   socketRef.current = io(import.meta.env.VITE_API_URL, {
     transports: ["websocket"],
@@ -218,26 +135,6 @@ useEffect(() => {
     console.log("Socket connected");
   });
 
-  // Listen for frames with logging
-  // socketRef.current.on("frames", (data) => {
-  //   console.log("Received frame data:", {
-  //     // received: data,
-  //     byteLength: data?.byteLength,
-  //     // timestamp: new Date().toISOString()
-  //   });
-
-  //   if (!data || data.byteLength < 1000) {
-  //     console.warn("Invalid frame data received");
-  //     return;
-  //   }
-
-  //   const blob = new Blob([data], { type: "image/jpeg" });
-  //   const url = URL.createObjectURL(blob);
-  //   setStreamUrl(prev => {
-  //     if (prev) URL.revokeObjectURL(prev);
-  //     return url;
-  //   });
-  // });
 
   // Update the frames socket listener
 socketRef.current.on("frames", (frames) => {

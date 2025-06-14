@@ -36,7 +36,6 @@ export default function CameraRender() {
   const [hasShapesSaved, setHasShapesSaved] = useState(false);
   const [hasVideoShapesSaved, setHasVideoShapesSaved] = useState(false);
   const [videoConfigData, setVideoConfigData] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Add this state to track the next video number
   const [nextVideoNumber, setNextVideoNumber] = useState(1);
@@ -76,7 +75,6 @@ export default function CameraRender() {
         name: cameraName,
         url: rtspUrl,
         firstFrame: first_frame, // Store the base64 image
-        // Remove hlsUrl since we won't be using it
       };
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setCameras((prev) => [...prev, newCamera]);
@@ -91,7 +89,6 @@ export default function CameraRender() {
       setIsAdding(false);
     }
   };
-
 
   const handleMaximize = (cameraId) => {
     setMaximizedCamera(cameraId);
@@ -113,90 +110,88 @@ export default function CameraRender() {
     setGridVideoKey((prevKey) => prevKey + 1);
   };
 
-
   const handleSaveShapes = async () => {
     setIsSaving(true);
     const apiUrl = import.meta.env.VITE_API_URL;
     const endpoint = `${apiUrl}/start-stream/`;
-  
+
     try {
       if (activeTab === "cam") {
-        const camId = maximizedCamera || selectedCamera;
-        const camera = cameras.find((c) => c.id === camId) || {};
-  
-        const wrapper = document.getElementById(`camera-${camId}`);
-        const canvasEl = wrapper?.querySelector("canvas");
-        const { width: canvas_width, height: canvas_height } =
-          canvasEl?.getBoundingClientRect() || { width: 0, height: 0 };
-  
-        // Modified to handle both shape types
-        const roiDefs = Object.entries(cameraShapes).map(([_, shapes]) => {
-          return {
-            type: "camera",
-            source: {
-              id: camera.id,
-              name: camera.name,
-              url: camera.url,
-            },
-            regions: shapes.map(shape => {
-              if (shape.type === "rectangle") {
-                return {
-                  Region_name: shape.name || `Region ${shape.id}`,
-                  Region_Cords: {
-                    vertices: [
-                      [shape.x, shape.y],
-                      [shape.x, shape.y + shape.height],
-                      [shape.x + shape.width, shape.y + shape.height],
-                      [shape.x + shape.width, shape.y],
-                    ],
-                  },
-                };
-              } else if (shape.type === "caligraphy") {
-                return {
-                  Region_name: shape.name || `Region ${shape.id}`,
-                  Region_Cords: {
-                    vertices: shape.points.map(point => [point.x, point.y])
-                  },
-                };
-              }
-              return null;
-            }).filter(Boolean)
+        // Send one request per camera
+        const requests = cameras.map(async (camera) => {
+          const wrapper = document.getElementById(`camera-${camera.id}`);
+          const canvasEl = wrapper?.querySelector("canvas");
+          const { width: canvas_width, height: canvas_height } =
+            canvasEl?.getBoundingClientRect() || { width: 0, height: 0 };
+
+          const shapes = cameraShapes[camera.id] || [];
+          const regions = shapes.map((shape) => {
+            if (shape.type === "rectangle") {
+              return {
+                Region_name: shape.name || `Region ${shape.id}`,
+                Region_Cords: {
+                  vertices: [
+                    [shape.x, shape.y],
+                    [shape.x, shape.y + shape.height],
+                    [shape.x + shape.width, shape.y + shape.height],
+                    [shape.x + shape.width, shape.y],
+                  ],
+                },
+              };
+            } else if (shape.type === "caligraphy") {
+              return {
+                Region_name: shape.name || `Region ${shape.id}`,
+                Region_Cords: {
+                  vertices: shape.points.map((point) => [point.x, point.y]),
+                },
+              };
+            }
+            return null;
+          }).filter(Boolean);
+
+          const payload = {
+            camera_name: camera.name,
+            rtsp_url: camera.url,
+            first_frame: camera.firstFrame,
+            camera_id: camera.id,
+            roi_defs: [
+              {
+                type: "camera",
+                source: {
+                  id: camera.id,
+                  name: camera.name,
+                  url: camera.url,
+                },
+                regions,
+              },
+            ],
+            canvas_width: Math.round(canvas_width),
+            canvas_height: Math.round(canvas_height),
           };
+
+          return axios.post(endpoint, payload);
         });
-  
-        const payload = {
-          camera_name: camera.name || "",
-          rtsp_url: camera.url || "",
-          first_frame: camera.firstFrame || "",
-          camera_id: camId,
-          roi_defs: roiDefs,
-          canvas_width: Math.round(canvas_width),
-          canvas_height: Math.round(canvas_height),
-        };
-  
-        await axios.post(endpoint, payload);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        await Promise.all(requests);
         setHasShapesSaved(true);
-  
       } else {
-        // Validate that each video has at least one shape
+        // Video handling unchanged...
         const videosWithoutShapes = uploadedVideos.filter(
-          video => !videoShapes[video.id] || videoShapes[video.id].length === 0
+          (video) => !videoShapes[video.id] || videoShapes[video.id].length === 0
         );
-  
+
         if (videosWithoutShapes.length > 0) {
-          const videoNames = videosWithoutShapes.map(v => v.file.name).join(", ");
+          const videoNames = videosWithoutShapes.map((v) => v.file.name).join(", ");
           alert(`Please draw at least one region for each video. Missing regions in: ${videoNames}`);
           setIsSaving(false);
           return;
         }
-  
-        // Proceed with saving if all videos have shapes
+
         const formData = new FormData();
         uploadedVideos.forEach((video) => {
           formData.append("video", video.file);
         });
-  
+
         const videoShapesData = Object.entries(videoShapes).map(
           ([videoId, shapes]) => {
             const video = uploadedVideos.find((v) => v.id === videoId);
@@ -207,7 +202,7 @@ export default function CameraRender() {
                 name: video.file.name,
                 url: video.url,
               },
-              regions: shapes.map(shape => {
+              regions: shapes.map((shape) => {
                 if (shape.type === "rectangle") {
                   return {
                     Region_name: shape.name || `Region ${shape.id}`,
@@ -224,37 +219,31 @@ export default function CameraRender() {
                   return {
                     Region_name: shape.name || `Region ${shape.id}`,
                     Region_Cords: {
-                      vertices: shape.points.map(point => [point.x, point.y])
+                      vertices: shape.points.map((point) => [point.x, point.y]),
                     },
                   };
                 }
                 return null;
-              }).filter(Boolean)
+              }).filter(Boolean),
             };
           }
         );
-  
+
         const wrapper = document.getElementById(`video-${selectedVideo}`);
         const canvasEl = wrapper.querySelector("canvas");
         const { width: canvas_width, height: canvas_height } =
           canvasEl.getBoundingClientRect();
-  
+
         formData.append("canvas_width", Math.round(canvas_width));
         formData.append("canvas_height", Math.round(canvas_height));
         formData.append("roi_defs", JSON.stringify(videoShapesData));
-        
-        // console.log("FormData contents:");
-        // for (const [key, value] of formData.entries()) {
-        //   console.log(key, value);
-        // }
+
         const res = await fetch(`${apiUrl}/tracking_details`, {
           method: "POST",
           body: formData,
         });
         if (!res.ok) throw new Error(`Status ${res.status}`);
-        // const data = await res.json();
         setHasVideoShapesSaved(true);
-        // setVideoConfigData(data);
       }
     } catch (err) {
       console.error("Error saving shapes:", err);
@@ -262,12 +251,11 @@ export default function CameraRender() {
       setIsSaving(false);
     }
   };
+
   const handleClearCanvas = () => {
     if (activeTab === "cam") {
-      // Clear shapes for all cameras
       setCameraShapes({});
     } else {
-      // Clear shapes for all videos
       setVideoShapes({});
     }
   };
@@ -286,7 +274,6 @@ export default function CameraRender() {
     }));
   };
 
-  // Modify handleVideoUpload
   const handleVideoUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -307,17 +294,16 @@ export default function CameraRender() {
     setUploadDialogOpen(false);
   };
 
-  // Update the getGridLayout function
   const getGridLayout = (count) => {
-    const baseStyles = "mx-auto"; // Removed mt-16 mb-5 from base styles
+    const baseStyles = "mx-auto";
 
     switch (count) {
       case 0:
         return "";
       case 1:
         return activeTab === "video"
-          ? `w-[60%] h-[470px] ${baseStyles} mt-2 2xl:mb-15` // Video styles
-          : `w-[80%] h-[70vh] ${baseStyles} mt-16 mb-10`; // Camera styles
+          ? `w-[60%] h-[470px] ${baseStyles} mt-2 2xl:mb-15`
+          : `w-[80%] h-[70vh] ${baseStyles} mt-16 mb-10`;
       case 2:
         return `grid-cols-2 gap-4 w-[90%] h-[60vh] ${baseStyles} mt-16`;
       case 3:
@@ -328,9 +314,9 @@ export default function CameraRender() {
         return `grid-cols-2 gap-4 w-[90%] h-[70vh] ${baseStyles} mt-16`;
     }
   };
+
   useEffect(() => {
     return () => {
-      // Cleanup object URLs when component unmounts
       uploadedVideos.forEach((video) => {
         if (video.url.startsWith("blob:")) {
           URL.revokeObjectURL(video.url);
@@ -351,7 +337,6 @@ export default function CameraRender() {
     e.currentTarget.classList.remove("border-[#717AEA]", "bg-[#717AEA33]");
   };
 
-  // Modify handleDrop
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -383,7 +368,6 @@ export default function CameraRender() {
     setUploadDialogOpen(false);
   };
 
-  // Filter cameras to display based on maximized state
   const visibleCameras = maximizedCamera
     ? cameras.filter((cam) => cam.id === maximizedCamera)
     : cameras;
@@ -392,7 +376,6 @@ export default function CameraRender() {
     ? uploadedVideos.filter((video) => video.id === maximizedVideo)
     : uploadedVideos;
 
-  // Trigger re-render when cameras change
   useEffect(() => {
     setGridKey((prevKey) => prevKey + 1);
   }, [cameras]);
@@ -401,7 +384,6 @@ export default function CameraRender() {
     setGridVideoKey((prevKey) => prevKey + 1);
   }, [uploadedVideos]);
 
-  // Add a reset for nextVideoNumber when switching tabs
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSelectedCamera(null);
@@ -417,25 +399,6 @@ export default function CameraRender() {
     setHasVideoShapesSaved(false);
     setVideoConfigData(null);
   };
-
-  // const toggleFullscreen = () => {
-  //   if (!document.fullscreenElement) {
- //     document.documentElement.requestFullscreen();
-  //     setIsFullscreen(true);
-  //   } else {
-  //     document.exitFullscreen();
-  //     setIsFullscreen(false);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   const handleFullscreenChange = () => {
-  //     setIsFullscreen(!!document.fullscreenElement);
-  //   };
-
-  //   document.addEventListener('fullscreenchange', handleFullscreenChange);
-  //   return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  // }, []);
 
   return (
     <div className="relative w-full h-full flex flex-col items-center">
@@ -485,25 +448,123 @@ export default function CameraRender() {
           </div>
 
           {activeTab === "cam" && (
-            <div className="w-full h-full flex items-center justify-center">
-              <div
-                key={gridKey}
-                className={`grid ${getGridLayout(visibleCameras.length)}`}
+            <div className="absolute flex items-center gap-3" style={{ top: "34px", right: "34px" }}>
+              <div className="p-4`space-x-0.5 ">
+                <FullscreenToggle />
+              </div>
+              {/* Always show Add Cam button */}
+              <Dialog
+                open={open}
+                onOpenChange={(isOpen) => {
+                  setOpen(isOpen);
+                  if (!isOpen) {
+                    setIsAdding(false);
+                    setCameraName("");
+                    setRtspUrl("");
+                  }
+                }}
               >
-                {/* Always render all cameras to keep HLS instances alive,
-          but only show the ones that should be visible */}
-                {cameras.map((camera) => {
-                  const isVisible =
-                    !maximizedCamera || camera.id === maximizedCamera;
+                <DialogTrigger asChild>
+                  <button
+                    style={{ padding: "12px 24px" }}
+                    className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
+                    onClick={() => open || setOpen(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Cam</span>
+                  </button>
+                </DialogTrigger>
+                <DialogContent
+                  style={{ borderRadius: "20px" }}
+                  className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden"
+                >
+                  <div className="flex justify-between items-center p-4 border-b border-[#0000001A]">
+                    <DialogTitle className="text-lg font-medium">Add Cam</DialogTitle>
+                  </div>
 
+                  <div className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Enter the camera name:</label>
+                      <Input
+                        value={cameraName}
+                        onChange={(e) => setCameraName(e.target.value)}
+                        className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
+                        placeholder="Camera name"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Enter the RTSP URL:</label>
+                      <Input
+                        value={rtspUrl}
+                        onChange={(e) => setRtspUrl(e.target.value)}
+                        className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
+                        placeholder="rtsp://"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleSubmit}
+                      className="w-full py-2 px-4 bg-[#717AEA] text-white rounded-[4rem] hover:bg-[#717AEA] transition-colors mt-4 flex items-center justify-center gap-2"
+                      disabled={isAdding}
+                    >
+                      {isAdding ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Adding Camera...</span>
+                        </>
+                      ) : (
+                        "Add"
+                      )}
+                    </button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {hasShapesSaved && (
+                <button
+                  onClick={() => {
+                    const camId = selectedCamera;
+                    if (!camId) {
+                      alert(
+                        "Please select (or maximize) a camera first before going Live AI."
+                      );
+                      return;
+                    }
+                    navigate(`/live-ai/${camId}`, {
+                      state: { cameraId: camId },
+                    });
+                  }}
+                  style={{ padding: "14px 24px" }}
+                  className="flex items-center border  gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
+                >
+                  <img
+                    src="/live.svg"
+                    alt="live icon"
+                    className="w-4 h-4 mr-2"
+                    style={{
+                      filter:
+                        "invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(114%)",
+                    }}
+                  />
+                  Live AI
+                </button>
+              )}
+            </div>
+          )}
+
+          {activeTab === "cam" && (
+            <div className="w-full h-full flex items-center justify-center">
+              <div key={gridKey} className={`grid ${getGridLayout(visibleCameras.length)}`}>
+                {cameras.map((camera) => {
+                  const isVisible = !maximizedCamera || camera.id === maximizedCamera;
                   return (
                     <div
                       key={camera.id}
                       id={`camera-${camera.id}`}
                       className={`relative rounded-lg overflow-hidden ${
                         isVisible ? "" : "hidden"
-                      }`}
-                    >
+                      }`}>
                       <VideoCanvas
                         cameraData={camera}
                         isSelected={selectedCamera === camera.id}
@@ -525,67 +586,13 @@ export default function CameraRender() {
             </div>
           )}
 
+          {/* Video tab and remaining JSX unchanged... */}
           {activeTab === "video" && (
-            <div className="w-full h-full flex items-center justify-center">
-              <div
-                key={gridKey}
-                className={`grid ${getGridLayout(visibleVideos.length)}`}
-              >
-                {uploadedVideos.map((video) => {
-                  const isVisible =
-                    !maximizedVideo || video.id === maximizedVideo;
-
-                  return (
-                    <div
-                      key={video.id}
-                      id={`video-${video.id}`}
-                      className={`relative rounded-lg overflow-visible ${
-                        isVisible ? "" : "hidden"
-                      }`}
-                    >
-                      {" "}
-                      <VideoSection
-                        videoData={video}
-                        isSelected={selectedVideo === video.id}
-                        onSelect={setSelectedVideo}
-                        isMaximized={maximizedVideo === video.id}
-                        onMaximize={() => handleVideoMaximize(video.id)}
-                        onMinimize={handleVideoMinimize}
-                        showMaximize={uploadedVideos.length > 1}
-                        selectedTool={selectedTool}
-                        shapes={videoShapes[video.id] || []}
-                        onShapesChange={(shapes) =>
-                          updateShapesForVideo(video.id, shapes)
-                        }
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {activeTab === "video" && (
-            <div
-              className="absolute flex items-center gap-3"
-              style={{ top: "34px", right: "34px" }}
-            >
+            <div className="absolute flex items-center gap-3" style={{ top: "34px", right: "34px" }}>
               {/* Fullscreen */}
               <div className="p-4space-x-0.5 ">
                 <FullscreenToggle />
               </div>
-              {/* <button
-      onClick={toggleFullscreen}
-      style={{padding: "14px 24px"}}
-      className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
-    > */}
-              {/* {isFullscreen ? (
-        <Minimize2 className="w-4 h-4 text-black" />
-      ) : (
-        <Maximize2 className="w-4 h-4 text-black" />
-      )}
-      <span className="text-black">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
-    </button> */}
 
               <Dialog
                 open={uploadDialogOpen}
@@ -656,19 +663,6 @@ export default function CameraRender() {
                 </DialogContent>
               </Dialog>
 
-              {/* <button
-      onClick={() => navigate("/live-ai")}
-      style={{padding: "14px 24px"}}
-      className="flex items-center border gap-[10px] rounded-[100px] text-[#666] text-[16px] font-[500]"
-    >
-      <img
-        src="/live.svg"
-        alt="live icon"
-        className="w-4 h-4 mr-2"
-      />
-      Live AI
-    </button> */}
-
               {hasVideoShapesSaved && (
                 <button
                   onClick={() =>
@@ -692,162 +686,67 @@ export default function CameraRender() {
             </div>
           )}
 
-          {/* Add Camera Button */}
-          {activeTab === "cam" && (
-            <div
-              className="absolute flex items-center gap-3"
-              style={{ top: "34px", right: "34px" }}
-            >
-              {/* Fullscreen */}
-             <div className="p-4`space-x-0.5 ">
-                <FullscreenToggle />
+          {activeTab === "video" && (
+            <div className="w-full h-full flex items-center justify-center">
+              <div key={gridKey} className={`grid ${getGridLayout(visibleVideos.length)}`}>
+                {uploadedVideos.map((video) => {
+                  const isVisible =
+                    !maximizedVideo || video.id === maximizedVideo;
+
+                  return (
+                    <div
+                      key={video.id}
+                      id={`video-${video.id}`}
+                      className={`relative rounded-lg overflow-visible ${
+                        isVisible ? "" : "hidden"
+                      }`}>
+                      <VideoSection
+                        videoData={video}
+                        isSelected={selectedVideo === video.id}
+                        onSelect={setSelectedVideo}
+                        isMaximized={maximizedVideo === video.id}
+                        onMaximize={() => handleVideoMaximize(video.id)}
+                        onMinimize={handleVideoMinimize}
+                        showMaximize={uploadedVideos.length > 1}
+                        selectedTool={selectedTool}
+                        shapes={videoShapes[video.id] || []}
+                        onShapesChange={(shapes) =>
+                          updateShapesForVideo(video.id, shapes)
+                        }
+                      />
+                    </div>
+                  );
+                })}
               </div>
-              {/* <button
-          onClick={toggleFullscreen}
-          style={{padding: "14px 24px"}}
-          className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
-        >
-          {isFullscreen ? (
-            <Minimize2 className="w-4 h-4 text-black" />
-          ) : (
-            <Maximize2 className="w-4 h-4 text-black" />
-          )}
-          <span className="text-black">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
-        </button> */}
-
-              {cameras.length <1 && (
-                <Dialog
-                  open={open}
-                  onOpenChange={(isOpen) => {
-                    setOpen(isOpen);
-                    if (!isOpen) {
-                      setIsAdding(false);
-                      setCameraName("");
-                      setRtspUrl("");
-                    }
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <button
-                      style={{ padding: "12px 24px" }}
-                      className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Add Cam</span>
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent
-                    style={{ borderRadius: "20px" }}
-                    className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden"
-                  >
-                    <div className="flex justify-between items-center p-4 border-b border-[#0000001A]">
-                      <DialogTitle className="text-lg font-medium">
-                        Add Cam
-                      </DialogTitle>
-                    </div>
-
-                    <div className="p-4 space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                          Enter the camera name:
-                        </label>
-                        <Input
-                          value={cameraName}
-                          onChange={(e) => setCameraName(e.target.value)}
-                          className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
-                          placeholder="Camera name"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                          Enter the RTSP URL:
-                        </label>
-                        <Input
-                          value={rtspUrl}
-                          onChange={(e) => setRtspUrl(e.target.value)}
-                          className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
-                          placeholder="rtsp://"
-                        />
-                      </div>
-
-                      <button
-                        onClick={handleSubmit}
-                        className="w-full py-2 px-4 bg-[#717AEA] text-white rounded-[4rem] hover:bg-[#717AEA] transition-colors mt-4 flex items-center justify-center gap-2"
-                        disabled={isAdding}
-                      >
-                        {isAdding ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Adding Camera...</span>
-                          </>
-                        ) : (
-                          "Add"
-                        )}
-                      </button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-
-              {hasShapesSaved && (
-                <button
-                  onClick={() => {
-                    const camId = selectedCamera;
-                    if (!camId) {
-                      alert(
-                        "Please select (or maximize) a camera first before going Live AI."
-                      );
-                      return;
-                    }
-                    navigate(`/live-ai/${camId}`, {
-                      state: { cameraId: camId },
-                    });
-                  }}
-                  style={{ padding: "14px 24px" }}
-                  className="flex items-center border  gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
-                >
-                  <img
-                    src="/live.svg"
-                    alt="live icon"
-                    className="w-4 h-4 mr-2"
-                    style={{
-                      filter:
-                        "invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(114%)",
-                    }}
-                  />
-                  Live AI
-                </button>
-              )}
             </div>
           )}
-        </div>
 
-        {/* Toolbar */}
-        <div
-          className="fixed"
-          style={{ bottom: "25px", left: "50%", transform: "translateX(-50%)" }}
-        >
-          <ToolBar
-            selectedTool={selectedTool}
-            setSelectedTool={setSelectedTool}
-            clearCanvas={handleClearCanvas}
-            saveShapes={handleSaveShapes}
-            isOpenSpaceMode={false}
-            setIsOpenSpaceMode={() => {}}
-            hasMaximizedOrSelected={true}
-            hasShapes={Boolean(
-              activeTab === "cam"
-                ? (selectedCamera &&
-                    cameraShapes[selectedCamera]?.length > 0) ||
-                    (maximizedCamera &&
-                      cameraShapes[maximizedCamera]?.length > 0)
-                : (selectedVideo && videoShapes[selectedVideo]?.length > 0) ||
-                    (maximizedVideo && videoShapes[maximizedVideo]?.length > 0)
-            )}
-            isSaving={isSaving}
-            activeTab={activeTab}
-          />
+          {/* Toolbar */}
+          <div
+            className="fixed"
+            style={{ bottom: "25px", left: "50%", transform: "translateX(-50%)" }}
+          >
+            <ToolBar
+              selectedTool={selectedTool}
+              setSelectedTool={setSelectedTool}
+              clearCanvas={handleClearCanvas}
+              saveShapes={handleSaveShapes}
+              isOpenSpaceMode={false}
+              setIsOpenSpaceMode={() => {}}
+              hasMaximizedOrSelected={true}
+              hasShapes={Boolean(
+                activeTab === "cam"
+                  ? (selectedCamera &&
+                      cameraShapes[selectedCamera]?.length > 0) ||
+                      (maximizedCamera &&
+                        cameraShapes[maximizedCamera]?.length > 0)
+                  : (selectedVideo && videoShapes[selectedVideo]?.length > 0) ||
+                      (maximizedVideo && videoShapes[maximizedVideo]?.length > 0)
+              )}
+              isSaving={isSaving}
+              activeTab={activeTab}
+            />
+          </div>
         </div>
       </div>
     </div>
