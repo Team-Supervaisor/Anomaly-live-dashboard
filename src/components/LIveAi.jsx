@@ -1,514 +1,33 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useLocation,useParams } from "react-router-dom";
-import { format } from "date-fns"; // For timestamp formatting
+import { useLocation, useParams, Link } from "react-router-dom";
 import { io } from "socket.io-client";
 import logo from "../assets/logo.png";
 import ai from "../assets/ai.png";
-import { RefreshCw } from "lucide-react";
-import { Link } from "react-router-dom";
-import Hls from "hls.js";
-import axios from "axios";
-import { Edit2, Loader2, Play, RotateCcw } from 'lucide-react';
-import InstructionModal from './InstructionModal';
+import { RefreshCw, Edit2, Loader2, Play, RotateCcw } from "lucide-react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import InstructionModal from './InstructionModal';
 import AiModal from "./AiModal";
 import FullscreenToggle from "./ui/Fullscreentoggle";
 
-
-const playbackPositions = {};
-
-const VideoCanvasPlayer = ({ hlsUrl, id }) => {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const hlsRef = useRef(null);
-  
-  const playbackStateRef = useRef({
-    currentTime: playbackPositions[id] || 0,
-    isInitialized: false,
-  });
-  // State to hold the latest frame URL
-
-  // HLS setup
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !hlsUrl) return;
-
-    if (Hls.isSupported()) {
-      // Store current time before setting up new HLS instance
-      if (hlsRef.current && videoRef.current) {
-        playbackStateRef.current.currentTime = videoRef.current.currentTime;
-        playbackPositions[id] = videoRef.current.currentTime;
-      }
-
-      const hls = new Hls({
-        maxBufferSize: 30 * 1000 * 1000, // 30MB buffer
-        maxBufferLength: 60, // 60 seconds buffer
-        enableWorker: true, // Enable web worker
-        lowLatencyMode: true, // Enable low latency mode
-        backBufferLength: 90, // 90 seconds backward buffer
-        startPosition: playbackStateRef.current.currentTime, // Start from saved position
-      });
-
-      hlsRef.current = hls;
-
-      hls.loadSource(hlsUrl);
-      hls.attachMedia(video);
-
-      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-        // Only set the time if we've played before
-        if (
-          playbackStateRef.current.isInitialized &&
-          playbackStateRef.current.currentTime > 0
-        ) {
-          video.currentTime = playbackStateRef.current.currentTime;
-        }
-
-        video
-          .play()
-          .then(() => {
-            playbackStateRef.current.isInitialized = true;
-          })
-          .catch((err) => console.error("Play failed:", err));
-      });
-
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              hls.recoverMediaError();
-              break;
-            default:
-              hls.destroy();
-              break;
-          }
-        }
-      });
-
-      // Store current time periodically to maintain position
-      const timeUpdateHandler = () => {
-        if (video.currentTime > 0) {
-          playbackStateRef.current.currentTime = video.currentTime;
-          playbackPositions[id] = video.currentTime;
-        }
-      };
-
-      video.addEventListener("timeupdate", timeUpdateHandler);
-
-      return () => {
-        video.removeEventListener("timeupdate", timeUpdateHandler);
-        // Don't destroy HLS here to maintain state between renders
-      };
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = hlsUrl;
-      video.addEventListener("loadedmetadata", () => {
-        if (playbackStateRef.current.currentTime > 0) {
-          video.currentTime = playbackStateRef.current.currentTime;
-        }
-        video.play().catch((err) => console.error("Play failed:", err));
-      });
-    }
-  }, [hlsUrl, id]); // Re-run if URL changes
-
-  // Save playback position before unmount
-  useEffect(() => {
-    return () => {
-      if (videoRef.current) {
-        const currentTime = videoRef.current.currentTime;
-        if (currentTime > 0) {
-          playbackStateRef.current.currentTime = currentTime;
-          playbackPositions[id] = currentTime;
-        }
-      }
-
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-    };
-  }, [id]);
-
-  return (
-    <div className="relative w-full h-full max-h-full rounded-xl overflow-hidden bg-black">
-
-      <canvas
-        ref={canvasRef}
-        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
-      />
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-        className="w-full h-full object-contain"
-      />
-    </div>
-  );
-};
-
 const LiveAi = () => {
-  const [streamUrl, setStreamUrl] = useState(null);
-  const imgRef = useRef(null);
-  
-  // const wsRef = useRef(null);
-  const location = useLocation();
-  const { data } = location.state || {};
-  const [logs, setLogs] = useState([]);
-  const ctrlSocketRef = useRef(null);
-  const [socket, setSocket] = useState(null);
-  const logsContainerRef = useRef(null);
+  const [framesList, setFramesList] = useState([]);
   const [showInstructionModal, setShowInstructionModal] = useState(false);
   const [instructionset, setInstructionset] = useState('');
   const [instrucLoader, setInstrucLoader] = useState(false);
   const [aiModal, setAiModal] = useState(false);
   const [aiData, setAiData] = useState({});
-  const socketRef = useRef(null);
   const [aiAnalyzeitem, setAiAnalyzeitem] = useState([]);
-  const socketRef2 = useRef(null);
   const [isTracking, setIsTracking] = useState(false);
-  const { cameraId } = useParams();
-  const { state } = useLocation();
-  const { cameraData } = state || {};
-  const anomalyScrollContainerRef = useRef(null);
+  const [loader, setLoader] = useState(false);
+
+  const socketRef = useRef(null);
+  const socketRef2 = useRef(null);
+  const ctrlSocketRef = useRef(null);
+
   const [showAllAnamoly, setShowAllAnamoly] = useState(false);
-  const [loader,setLoader] = useState(false);
-
-
-  const handleAnomalyAlert = data => {
-    console.log("Anomaly alert received:", data);
-    setAiAnalyzeitem(prev => [...prev, data]);
-    setLoader(false);
-  };
-  
-
-  useEffect(() => {
-    // — Primary socket (frame feeds only)
-    socketRef.current = io(import.meta.env.VITE_API_URL, {
-      transports: ["websocket"],
-      reconnectionAttempts: 5,
-    });
-  
-    socketRef.current.on("connect", () => {
-      console.log("✅ Primary socket connected (ready to emit tracking_start)");
-    });
-    
-    socketRef.current.on("frame", (data) => {
-          // log the raw payload size so you can spot zero-length or tiny frames
-    console.log("🔍 Incoming frame byte length:", data.byteLength);
-
-    // skip any payload that looks too small to be a valid JPEG
-    if (!data || data.byteLength < 1000) {
-      console.warn("⚠️ Suspiciously small frame, skipping render");
-      return;
-    }
-      const blob = new Blob([data], { type: "image/jpeg" });
-      const url = URL.createObjectURL(blob);
-      setStreamUrl(prev => {
-        if (prev) URL.revokeObjectURL(prev);
-        return url;
-      });
-    });
-  
-    // — Secondary socket (instructions_changed + anomaly alerts)
-    socketRef2.current = io(import.meta.env.VITE_API_URL1, {
-      transports: ["websocket"],
-      reconnectionAttempts: 3,
-    });
-  
-    socketRef2.current.on("connect", () => {
-      console.log("📡 Instruction socket connected on port 8000");
-      console.log("👂 Listening for anomaly_alert events");
-    });
-    socketRef2.current.on("connect_error", (err) => {
-      console.error("Instruction socket error:", err);
-    });
-  
-    // KEEP this listener alive for anomaly_alert:
-    socketRef2.current.on("anomaly_alert", (arg1, arg2) => {
-      console.log("🔔 Received anomaly_alert event");
-      console.log("New alert", arg1);
-      console.log("New alert", arg2);
-    
-      // 1) pick the real payload (socket.io sometimes puts it in arg2)
-      const payload = (typeof arg2 === "undefined" && typeof arg1 === "object")
-        ? arg1
-        : arg2;
-      console.log("▶️ anomaly_alert payload:", payload);
-    
-      // 2) build an array of one or two normalized anomaly items
-      const newItems = [];
-    
-      // nested case: both anomaly_time + anomaly_action present
-      if (payload.anomaly_time && payload.anomaly_action) {
-        newItems.push({
-          ...payload.anomaly_time,
-          type: payload.anomaly_time.type || "Operation",
-        });
-        newItems.push({
-          ...payload.anomaly_action,
-          type: payload.anomaly_action.type || "ActionAnomaly",
-        });
-      }
-      // flat case: a single anomaly object
-      else {
-        const item = { ...payload };
-        // strip any "Action<<sep>>" prefix on op
-        if (typeof item.op === "string" && item.op.includes("<<sep>>")) {
-          item.op = item.op.split("<<sep>>")[1];
-        }
-        newItems.push(item);
-      }
-    
-      // 3) append all new items at once
-      setAiAnalyzeitem(prev => [...prev, ...newItems]);
-      setLoader(false);
-    
-      console.log("Anomaly data queued:", newItems);
-    });    // If you also want to listen for a differently-named event like "anomaly_appear":
-    socketRef2.current.on("anomaly_appear", (data) => {
-      console.log("🔔 Received anomaly_appear event:", data);
-      // handle it just like anomaly_alert, or however you need:
-      setAiAnalyzeitem(prev => [...prev, data]);
-      setLoader(false);
-    });
-  
-    socketRef2.current.on("instructions_changed", (data) => {
-      setInstrucLoader(false);
-      console.log("📝 Instructions:", data);
-    });
-  
-    return () => {
-      socketRef2.current.off("anomaly_alert");
-      socketRef2.current.off("anomaly_appear");
-      socketRef2.current.off("instructions_changed");
-      socketRef2.current.disconnect();
-    };
-  }, []);
-  
-  
-
-  useEffect(() => {
-    if (anomalyScrollContainerRef.current && aiAnalyzeitem.length > 0) {
-      // Using smooth scroll behavior
-      anomalyScrollContainerRef.current.scrollTo({
-        top: anomalyScrollContainerRef.current.scrollHeight,
-        behavior: "smooth",
-      });
-    }
-  }, [aiAnalyzeitem]);
-  
-
-  useEffect(() => {
-    console.log("Streaming for camera:", cameraId, "with data:", cameraData);
-  }, [cameraId, cameraData]);
-
-  // console.log("Data from location:", data);
-  const mockLogs = [
-    {
-      person_id: 1,
-      camera_id: 0,
-      roi: "entrance",
-      event: "entry",
-      timestamp: "2025-05-01T16:43:58.851wewewe",
-    },
-    {
-      person_id: 2,
-      camera_id: 0,
-      roi: "entrance",
-      event: "entry",
-      timestamp: "2025-05-01T16:43:59.642",
-    },
-    {
-      person_id: 1,
-      camera_id: 0,
-      roi: "exit",
-      event: "exit",
-      timestamp: "2025-05-01T16:44:30.123",
-    },
-    {
-      person_id: 3,
-      camera_id: 1,
-      roi: "restricted_area",
-      event: "entry",
-      timestamp: "2025-05-01T16:45:12.445",
-    },
-    {
-      person_id: 4,
-      camera_id: 1,
-      roi: "restricted_area",
-      event: "exit",
-      timestamp: "2025-05-01T16:45:30.123",
-    },
-    {
-      person_id: 5,
-      camera_id: 2,
-      roi: "entrance",
-      event: "entry",
-      timestamp: "2025-05-01T16:46:12.445",
-    },
-    {
-      person_id: 6,
-      camera_id: 2,
-      roi: "entrance",
-      event: "entry",
-      timestamp: "2025-05-01T16:46:30.123",
-    },
-    {
-      person_id: 7,
-      camera_id: 3,
-      roi: "restricted_area",
-      event: "entry",
-      timestamp: "2025-05-01T16:47:12.445",
-    },
-    {
-      person_id: 8,
-      camera_id: 3,
-      roi: "restricted_area",
-      event: "exit",
-      timestamp: "2025-05-01T16:47:30.123",
-    },
-  ];
-
-  const handleRefreshAi = () => {
-    setAiAnalyzeitem([]);
-    setLoader(false);
-  };
-  // useEffect(() => {
-  //   const startStream = async () => {
-  //     const apiUrl = import.meta.env.VITE_API_URL;
-  //     try {
-  //       await axios.post(`${apiUrl}/start_tracking`);
-  //       console.log("Stream started successfully");
-  //     } catch (error) {
-  //       console.error("Failed to start stream:", error);
-  //     }
-  //   };
-
-  //   startStream();
-  // }, []);
-
-  // Helper function to convert data object to array format
-  const formatVideoData = (data) => {
-    if (!data || !data.hls_urls) return [];
-
-    return Object.entries(data.hls_urls).map(([videoName, hlsUrl]) => ({
-      videoName,
-      hlsUrl,
-      path: data.video_paths[videoName],
-    }));
-  };
-
-  const gridClasses = () => {
-    if (!data || !data.hls_urls) return "grid-cols-1";
-
-    const len = Object.keys(data.hls_urls).length;
-    if (len === 1) return "grid-cols-1 grid-rows-1";
-    if (len === 2) return "grid-cols-2 grid-rows-1";
-    if (len <= 4) return "grid-cols-2 grid-rows-2";
-    if (len <= 6) return "grid-cols-3 grid-rows-2";
-    return "grid-cols-1"; // fallback
-  };
-
-//   useEffect(() => {
-//     const socketInstance = io(import.meta.env.VITE_API_URL);
-//     setSocket(socketInstance);
-//     socketRef.current = socketInstance; // Store socket in ref
-
-//     // Initialize socket events
-//     socketInstance.emit("logs");
-
-//     socketInstance.on("log_update", (payload) => {
-//       // payload is coming in as an array:
-//       // [
-//       //   { person_id: 1, camera_id: "Video 1", roi: "inside", event: "entry", timestamp1: "2025-05-06T23:01:23.454" },
-//       //   …
-//       // ]
-//       setLogs(Array.isArray(payload) ? payload : []);
-//     });
-
-//     // Add instruction events
-//     socketInstance.on("instruction_saved", () => {
-//         setInstrucLoader(false); // Turn off loader when save is confirmed
-//     });
-
-//     return () => {
-//         socketInstance.disconnect();
-//     };
-// }, []);
-
-  // Simulate socket updates every 3 seconds
- 
-
-  // Add this effect to handle auto-scrolling
-  useEffect(() => {
-    if (logsContainerRef.current) {
-      logsContainerRef.current.scrollTop =
-        logsContainerRef.current.scrollHeight;
-    }
-  }, [logs]);
-
-  // Scroll whenever logs update
-  useEffect(() => {
-    setLogs(mockLogs);
-  
-    const interval = setInterval(() => {
-      setLogs(prevLogs => {
-        const rotated = [...prevLogs];
-        const last = rotated.pop();
-        if (last) {
-          // Add animation classes when inserting new log
-          last.isNew = true;
-          rotated.forEach(log => log.isNew = false); // Ensure only the new log has the class
-          rotated.unshift(last);
-        }
-        return rotated;
-      });
-    }, 3000);
-  
-    return () => clearInterval(interval);
-  }, []);
-
-  // Function to format the timestamp
-  const formatTimestamp = (timestamp) => {
-    return format(new Date(timestamp), "HH:mm:ss");
-  };
-
-  // Function to get event color
-  const getEventColor = (event) => {
-    switch (event) {
-      case "entry":
-        return "text-green-600";
-      case "exit":
-        return "text-red-600";
-      default:
-        return "text-blue-600";
-    }
-  };
-
-  const handleSaveInstruction = (instruction) => {
-    const instrSocket = socketRef2.current;
-    if (!instrSocket || !instrSocket.connected) {
-      console.error("Socket for instructions not connected");
-      return;
-    }
-
-    setInstructionset(instruction);
-    setInstrucLoader(true);
-
-    instrSocket.emit(
-      "instructions_changed",
-      instruction,
-      (acknowledgement) => {
-        console.log("Server ACK:", acknowledgement);
-        setInstrucLoader(false);
-        setShowInstructionModal(false);
-      }
-    );
-  };
-
-  const formatInstructionHtml = (markdown) => {
+  const anomalyScrollContainerRef = useRef(null);
+  // Placeholder formatter (replace with your real implementation)
+const formatInstructionHtml = (markdown) => {
     if (!markdown) return "<p>N/A</p>";
     let html = markdown
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
@@ -547,236 +66,201 @@ const LiveAi = () => {
     return out;
   };
 
-  const handleStart = () => {
-    const ctrlSocket = io("http://localhost:8000", {
+  // Stub for the refresh button handler
+  const handleRefreshAi = () => {};
+
+  const gridClasses = (count) => {
+    if (count === 1) return "grid-cols-1 grid-rows-1";
+    if (count === 2) return "grid-cols-2 grid-rows-1";
+    if (count <= 4) return "grid-cols-2 grid-rows-2";
+    if (count <= 6) return "grid-cols-3 grid-rows-2";
+    return "grid-cols-3 grid-rows-3";
+  };
+
+  useEffect(() => {
+    socketRef.current = io(import.meta.env.VITE_API_URL, {
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+    });
+
+    socketRef.current.on("frames", (frames) => {
+      if (!frames || !Array.isArray(frames)) return;
+      const urls = frames
+        .map((data) => {
+          if (!data || data.byteLength < 1000) return null;
+          const blob = new Blob([data], { type: "image/jpeg" });
+          return URL.createObjectURL(blob);
+        })
+        .filter(Boolean);
+      setFramesList((prev) => {
+        prev.forEach((url) => URL.revokeObjectURL(url));
+        return urls;
+      });
+    });
+
+    return () => {
+      if (socketRef.current) socketRef.current.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    socketRef2.current = io(import.meta.env.VITE_API_URL1, {
       transports: ["websocket"],
       reconnectionAttempts: 3,
     });
-  
+
+    socketRef2.current.on("anomaly_alert", (arg1, arg2) => {
+      const payload =
+        typeof arg2 === "undefined" && typeof arg1 === "object" ? arg1 : arg2;
+      const newItems = [];
+      if (payload.anomaly_time && payload.anomaly_action) {
+        newItems.push({ ...payload.anomaly_time, type: "Operation" });
+        newItems.push({ ...payload.anomaly_action, type: "ActionAnomaly" });
+      } else {
+        newItems.push({ ...payload });
+      }
+      setAiAnalyzeitem((prev) => [...prev, ...newItems]);
+      setLoader(false);
+    });
+
+    socketRef2.current.on("anomaly_appear", (data) => {
+      setAiAnalyzeitem((prev) => [...prev, data]);
+      setLoader(false);
+    });
+
+    socketRef2.current.on("instructions_changed", () => {
+      setInstrucLoader(false);
+    });
+
+    return () => {
+      socketRef2.current.disconnect();
+    };
+  }, []);
+
+  const handleSaveInstruction = (instruction) => {
+    const socket = socketRef2.current;
+    if (!socket || !socket.connected) return;
+    setInstructionset(instruction);
+    setInstrucLoader(true);
+    socket.emit("instructions_changed", instruction, () => {
+      setInstrucLoader(false);
+      setShowInstructionModal(false);
+    });
+  };
+
+  const handleStart = () => {
+    const ctrlSocket = io(import.meta.env.VITE_API_URL1, {
+      transports: ["websocket"],
+      reconnectionAttempts: 3,
+    });
     ctrlSocket.on("connect", () => {
-      ctrlSocket.emit("frontend_connect", { cameraId });
-      console.log("Sent frontend_connect");
-  
-      // ctrlSocket.emit("tracking_start", { cameraId }, (ack) => {
-      //   console.log("tracking_start ack:", ack);
-      // });
-      console.log("Sent tracking_start");
-  
-       if (socketRef.current) {
-        socketRef.current.emit("tracking_start");
-        setIsTracking(true);
-        console.log("start_tracking emitted on primary socket");
-       }
+      socketRef.current?.emit("tracking_start");
+      setIsTracking(true);
     });
-  
-    ctrlSocket.on("connect_error", (err) => {
-      console.error("Control socket connection error:", err);
-    });
-  
     ctrlSocketRef.current = ctrlSocket;
   };
-  
 
   const handleReset = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/reset`,
-        { method: 'GET' }
-      );
-      if (!res.ok) {
-        console.error('Backend reset failed:', await res.text());
-      } else {
-        console.log('Backend reset successful');
-      }
+      await fetch(`${import.meta.env.VITE_API_URL}/reset`, { method: 'GET' });
     } catch (err) {
       console.error('Error calling /reset:', err);
     }
-  
     if (ctrlSocketRef.current) {
       ctrlSocketRef.current.emit('frontend-disconnect');
       ctrlSocketRef.current.disconnect();
       ctrlSocketRef.current = null;
-      console.log('Sent frontend-disconnect and disconnected control socket');
     }
-  
     setIsTracking(false);
-    if (streamUrl) {
-      URL.revokeObjectURL(streamUrl);
-      setStreamUrl(null);
-    }
+    setFramesList((prev) => {
+      prev.forEach((url) => URL.revokeObjectURL(url));
+      return [];
+    });
   };
 
-
   const openAimodal = (item) => {
-    console.log("AI Modal item:", item);
     setAiData(item);
     setAiModal(true);
   };
-  // const handleSaveAiModal = (instruction) => {
-  //   console.log("Saved instruction:", instruction);
-  //   //emit soccket
-  //   socketRef.current.emit("feedback", instruction);
-  //   setAiModal(false);
-  // };
 
   const handleSaveAiModal = (instruction) => {
-    if (!socketRef2.current || !socketRef2.current.connected) {
-      console.error("Feedback socket not connected");
-      return;
-    }
-  
-    console.log("Sending feedback:", instruction);
-    
-
-    socketRef2.current.emit("feedback", instruction, (acknowledgement) => {
-      console.log("Feedback acknowledgement:", acknowledgement);
+    if (!socketRef2.current || !socketRef2.current.connected) return;
+    socketRef2.current.emit("feedback", instruction, () => {
       setAiModal(false);
     });
   };
 
-
-
-  useEffect(() => {
-    if (aiAnalyzeitem.length > 0) {
-      // Mark the newest item for animation
-      setAiAnalyzeitem(prevItems => {
-        const newItems = [...prevItems];
-        newItems[newItems.length - 1] = {
-          ...newItems[newItems.length - 1],
-          isNew: true
-        };
-        // Remove isNew from other items
-        return newItems.map((item, index) => ({
-          ...item,
-          isNew: index === newItems.length - 1
-        }));
-      });
-    }
-  }, [aiAnalyzeitem.length]);
-
-   
   return (
     <div className="flex flex-col h-screen bg-[#F5F9FF]">
-      <header className="flex items-center p-4 ">
+      <header className="flex items-center p-4">
         <Link to="/" className="flex-none">
-          <div className="flex items-center space-x-2 cursor-pointer">
-            <div className="rounded">
-              <img className="h-8 w-8" src={logo} alt="Logo" />
-            </div>
-            <h2 className="text-[22px] text-black font-medium">
-              Tracking Dashboard
-            </h2>
+          <div className="flex items-center space-x-2">
+            <img className="h-8 w-8" src={logo} alt="Logo" />
+            <h2 className="text-[22px] text-black font-medium">Tracking Dashboard</h2>
           </div>
         </Link>
-
-   
-          <div className="flex-1 flex justify-center items-center gap-3 mt-5">
-            <button
-              onClick={handleStart}
-              disabled={isTracking}
-              className={`flex items-center gap-2 px-4 py-2 rounded-[4rem] font-medium transition-colors
-                ${isTracking 
-                  ? 'bg-[#717AEA] text-white hover:bg-[#717AEA]' 
-                  : 'bg-[#717AEA] text-white hover:bg-[#717AEA]'}`}
-            >
-              {isTracking ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
-              {isTracking ? 'Started' : 'Start'}
-            </button>
-            
-            <button
-          onClick={handleReset}
-          className="flex items-center gap-2 px-4 py-2 border rounded-[4rem] 
-                    text-[#717171] text-[16px] font-[500] hover:bg-[#7171711A] 
-                    transition-colors"
-        >
-          <RotateCcw className="w-4 h-4 text-[#717171]" />
-          Reset
-        </button>
-          </div>
-
-        {/* Add empty div to balance the layout */}
-           <div className="p-3 space-y-4">
-            <FullscreenToggle />
-          </div>
+        <div className="flex-1 flex justify-center items-center gap-3 mt-5">
           <button
-            style={{padding: "8px 18px"}}
-                className="flex items-center justify-center 
-                          border border-[#F20A0A] rounded-[100px] bg-[#FFDDDB]
-                          text-[#F20A0A] font-medium text-base hover:bg-[#FFE8E7] 
-                          transition-colors gap-[10px]"
-              >
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full 
-                                  rounded-full bg-[#F20A0A] opacity-75">
-                  </span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 
-                                  bg-[#F20A0A]">
-                  </span>
+            onClick={handleStart}
+            disabled={isTracking}
+            className="flex items-center gap-2 px-4 py-2 rounded-[4rem] bg-[#717AEA] text-white"
+          >
+            {isTracking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+            {isTracking ? 'Started' : 'Start'}
+          </button>
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-2 px-4 py-2 border rounded-[4rem] text-[#717171] hover:bg-[#7171711A]"
+          >
+            <RotateCcw className="w-4 h-4 text-[#717171]" /> Reset
+          </button>
+        </div>
+        <div className="p-3">
+          <FullscreenToggle />
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 border border-[#F20A0A] bg-[#FFDDDB] text-[#F20A0A] rounded-[100px]">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F20A0A] opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#F20A0A]" />
+          </span>
+          Live AI
+        </button>
+      </header>
+
+      <div className="flex flex-1 p-4 gap-4 overflow-hidden">
+        <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1 overflow-hidden">
+          {framesList.length > 0 ? (
+            <div className={`grid gap-4 h-full ${gridClasses(framesList.length)}`}>
+              {framesList.map((url, index) => (
+                <div key={index} className="relative aspect-video bg-gray-50 rounded-xl overflow-hidden">
+                  <img src={url} className="w-full h-full object-cover rounded-xl" alt={`Stream ${index + 1}`} />
+                  <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 text-sm rounded">Stream {index + 1}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="w-full h-full min-h-[600px] flex items-center justify-center">
+              <div className="flex flex-col items-center">
+                <div className="w-[120px] h-[120px]">
+                  <DotLottieReact
+                    src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
+                    loop
+                    autoplay
+                  />
+                </div>
+                <span className="text-gray-600 text-lg font-medium mt-1">
+                  AI analyzing video
                 </span>
-                Live AI
-              </button>
-   
-          </header>
-
-      <div className="flex flex-1 p-4 pt-0 gap-4 overflow-hidden ">
-        {/* Left Section */}
-        {/* <div className="bg-white w-full rounded-[26px] p-4 flex flex-col flex-1 overflow-hidden">
-
-          <div className="flex justify-between">
-         
-
-            <div className="w-full flex justify-center p-4">
-          <img
-            ref={imgRef}
-            src={streamUrl}
-            width={640}
-            height={480}
-            alt="Live stream"
-            className="rounded-xl border"
-          />
+              </div>
+            </div>
+          )}
         </div>
-
-          </div>
-        </div> */}
-        <div className="bg-white w-full rounded-[26px] overflow-hidden">
-  {streamUrl ? (
-    <div className="w-full h-full">
-      <img
-        ref={imgRef}
-        src={streamUrl}
-        className="w-full h-full  rounded-xl"
-        alt="Live stream"
-      />
-    </div>
-  ) : (
-    <div className="w-full h-full min-h-[600px] flex items-center justify-center">
-      <div className="flex flex-col items-center">
-        <div className="w-[120px] h-[120px]">
-          <DotLottieReact
-            src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie"
-            loop
-            autoplay
-          />
-        </div>
-        <span className="text-gray-600 text-lg font-medium mt-1">
-          AI analyzing video
-        </span>
-      </div>
-    </div>
-  )}
-</div>
 
         {/* Right Section with Instructions and AI Analysis */}
         <div className="flex flex-col gap-4 w-[650px]">
           {/* Instructions Card */}
           <div className="bg-white rounded-[26px] max-h-[380px] flex flex-col">
-            <div
-         
-             className="flex justify-between items-center p-4 pt-[16px] pb-[13px] border-b border-[#EFF4FE]">
+            <div className="flex justify-between items-center p-4 pt-[16px] pb-[13px] border-b border-[#EFF4FE]">
               <h2 className="font-[600] text-[16px]">Instructions</h2>
               {instrucLoader ? (
                 <Loader2 className="animate-spin text-indigo-500 w-4 h-4" />
@@ -791,14 +275,13 @@ const LiveAi = () => {
             </div>
             <div className="w-full h-[12px]"></div>
             <div className="pt-0 pr-[4px] pl-[4px] pb-[12px]">
-            <div
-              onClick={() => setShowInstructionModal(true)}
-              className="max-h-96 overflow-y-auto p-[14.34px] rounded-lg scrollbar-hidden cursor-pointer"
-              dangerouslySetInnerHTML={{
-                __html: formatInstructionHtml(instructionset),
-              }}
-            />
-
+              <div
+                onClick={() => setShowInstructionModal(true)}
+                className="max-h-96 overflow-y-auto p-[14.34px] rounded-lg scrollbar-hidden cursor-pointer"
+                dangerouslySetInnerHTML={{
+                  __html: formatInstructionHtml(instructionset),
+                }}
+              />
             </div>
           </div>
 
@@ -829,7 +312,6 @@ const LiveAi = () => {
             {/* Scrollable Content */}
             <div
               ref={anomalyScrollContainerRef}
-              // className="p-[8px] rounded-[12px] overflow-y-auto scrollbar-hidden flex-1"
               className="p-3 rounded-xl overflow-y-auto scrollbar-hidden flex-1"
             >
               <div className="logs-container">
@@ -860,13 +342,12 @@ const LiveAi = () => {
                           <li>Operation ID: {item.OpID}</li>
                         </ul>
                         <div className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                            onClick={() => openAimodal(item)}>
+                             onClick={() => openAimodal(item)}>
                           <span className="text-[#5A62C8]">{item.type}</span>
                           <button className="text-xs text-[#5A62C8]">×</button>
                         </div>
                       </div>
                     ) : item.type === "Time Event" ? (
-                      // Time Event content
                       <div className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]">
                         <div onClick={() => setShowAllAnamoly(true)} className="flex gap-2 mb-1 cursor-pointer">
                           <span className="font-medium">{index + 1}.</span>
@@ -874,116 +355,55 @@ const LiveAi = () => {
                         </div>
                         <p>{item.reason}</p>
                         <div className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                            onClick={() => openAimodal(item)}>
+                             onClick={() => openAimodal(item)}>
                           <span className="text-[#5A62C8]">{item.type}</span>
                           <button className="text-xs text-[#5A62C8]">×</button>
                         </div>
                       </div>
                     ) : item.type === "Checkpoint" ? (
-                      // Checkpoint content
-                      <div
-                      key={index}
-                      className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
-                    >
-                      <div
-                        onClick={() => setShowAllAnamoly(true)}
-                        className="flex gap-2 mb-1 cursor-pointer"
-                      >
-                        <span className="font-medium">{index + 1}.</span>
-                        <span className="text-black-700 font-semibold">
-                          {item.type}
-                        </span>
-                      </div>
-
-                      <ul
-                        onClick={() => setShowAllAnamoly(true)}
-                        className="rounded-md p-2 mt-1 text-black list-disc list-inside cursor-pointer"
-                      >
-                        {/* Extra section as a list item */}
-                        {/* <li>
-                          <span className="font-medium">Extra:</span>
-                          <ul className="list-disc list-inside ml-4 mt-1">
-                            {item.extra.length > 0 ? (
-                              item.extra.map((cp, i) => (
-                                <li key={`extra-${i}`}>{cp}</li>
-                              ))
-                            ) : (
-                              <li>N/A</li>
-                            )}
-                          </ul>
-                        </li> */}
-
-                        {/* Order section as a list item */}
-                        <li>
-                          <span className="font-medium">Order:</span>
-                          <div className="flex flex-wrap items-center ml-5 mt-1">
-                            {item.order.map((cp, i) => (
-                              <React.Fragment key={`order-${i}`}>
-                                <span>{cp}</span>
-                                {i !== item.order.length - 1 && (
-                                  <span className="mx-1">→</span>
-                                )}
-                              </React.Fragment>
-                            ))}
-                          </div>
-                        </li>
-
-                        {/* Current Anomaly section as a list item */}
-                        <li>
-                          <span className="font-medium">
-                            Current Anomaly:
-                          </span>
-                          <ul className="list-disc list-inside ml-4 mt-1">
-                            <li>
-                              Position: {item.current_anomaly.position}
-                            </li>
-                            <li>
-                              Expected: {item.current_anomaly.expected}
-                            </li>
-                            <li>Actual: {item.current_anomaly.actual}</li>
-                          </ul>
-                        </li>
-                      </ul>
-
-                      <div
-                        className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                        onClick={() => openAimodal(item)}
-                      >
-                        <span className="text-[#5A62C8]">
-                          {item.type}
-                        </span>
-                        <button className="text-xs text-[#5A62C8]">
-                          ×
-                        </button>
-                      </div>
-                    </div>
-                    ) : item.type === "ActionAnomaly" ? (
-                      // ActionAnomaly content
-                      <div
-                        key={index}
-                        className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]"
-                      >
-                        <div
-                          onClick={() => setShowAllAnamoly(true)}
-                          className="flex gap-2 mb-1 cursor-pointer"
-                        >
+                      <div className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]">
+                        <div onClick={() => setShowAllAnamoly(true)} className="flex gap-2 mb-1 cursor-pointer">
                           <span className="font-medium">{index + 1}.</span>
-                          <span className="text-black-700 font-semibold">
-                            {item.type}
-                          </span>
+                          <span className="text-black-700 font-semibold">{item.type}</span>
                         </div>
-
+                        <ul onClick={() => setShowAllAnamoly(true)} className="rounded-md p-2 mt-1 text-black list-disc list-inside cursor-pointer">
+                          <li>
+                            <span className="font-medium">Order:</span>
+                            <div className="flex flex-wrap items-center ml-5 mt-1">
+                              {item.order.map((cp, i) => (
+                                <React.Fragment key={`order-${i}`}>
+                                  <span>{cp}</span>
+                                  {i !== item.order.length - 1 && <span className="mx-1">→</span>}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </li>
+                          <li>
+                            <span className="font-medium">Current Anomaly:</span>
+                            <ul className="list-disc list-inside ml-4 mt-1">
+                              <li>Position: {item.current_anomaly.position}</li>
+                              <li>Expected: {item.current_anomaly.expected}</li>
+                              <li>Actual: {item.current_anomaly.actual}</li>
+                            </ul>
+                          </li>
+                        </ul>
+                        <div className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
+                             onClick={() => openAimodal(item)}>
+                          <span className="text-[#5A62C8]">{item.type}</span>
+                          <button className="text-xs text-[#5A62C8]">×</button>
+                        </div>
+                      </div>
+                    ) : item.type === "ActionAnomaly" ? (
+                      <div className="text-sm bg-white pt-[9px] rounded-[10px] pb-[9px] pl-[7px] pr-[7px]">
+                        <div onClick={() => setShowAllAnamoly(true)} className="flex gap-2 mb-1 cursor-pointer">
+                          <span className="font-medium">{index + 1}.</span>
+                          <span className="text-black-700 font-semibold">{item.type}</span>
+                        </div>
                         <p>{item.detail}</p>
-                        <div
-                          className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
-                          onClick={() => openAimodal(item)}
-                        >
-                          <span className="text-[#5A62C8]">
-                            {item.type}
-                          </span>
-                          <button className="text-xs text-[#5A62C8]">
-                            ×
-                          </button>
+                        <div className="bg-[#EEEFFF] rounded-md p-2 mt-1 cursor-pointer flex justify-center items-center gap-2"
+                             onClick={() => openAimodal(item)}>
+                          <span className="text-[#5A62C8]">{item.type}</span>
+                          <button className="text-xs text-[#5A62C8]">×</button>
                         </div>
                       </div>
                     ) : null}
@@ -995,7 +415,6 @@ const LiveAi = () => {
         </div>
       </div>
 
-      {/* Instruction Modal */}
       {showInstructionModal && (
         <InstructionModal
           onClose={() => setShowInstructionModal(false)}
@@ -1003,18 +422,12 @@ const LiveAi = () => {
           data={instructionset}
         />
       )}
-
-
-        {/* AI Modal */}
-        {aiModal && (
-        <AiModal
-          data={aiData}
-          onClose={() => setAiModal(false)}
-          onSave={handleSaveAiModal}
-        />
+      {aiModal && (
+        <AiModal data={aiData} onClose={() => setAiModal(false)} onSave={handleSaveAiModal} />
       )}
     </div>
   );
 };
 
 export default LiveAi;
+

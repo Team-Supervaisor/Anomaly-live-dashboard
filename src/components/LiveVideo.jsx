@@ -4,10 +4,7 @@ import { format } from "date-fns"; // For timestamp formatting
 import { io } from "socket.io-client";
 import logo from "../assets/logo.png";
 import ai from "../assets/ai.png";
-import { RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
-import Hls from "hls.js";
-import axios from "axios";
 import { Loader2, Play } from "lucide-react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
@@ -15,95 +12,12 @@ import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 const LiveVideo = () => {
   const location = useLocation();
-  const { data } = location.state || {};
   const [logs, setLogs] = useState([]);
-  const [socket, setSocket] = useState(null);
   const logsContainerRef = useRef(null);
   const [isTracking, setIsTracking] = useState(false);
-  const [streamUrl, setStreamUrl] = useState(null);
   const socketRef = useRef(null);
-  const imgRef = useRef(null);
   const [framesList, setFramesList] = useState([]);
 
-  // console.log("Data from location:", data);
-  // Mock data for testing
-  const mockLogs = [
-    {
-      person_id: 1,
-      camera_id: 0,
-      roi: "entrance",
-      event: "entry",
-      timestamp: "2025-05-01T16:43:58.851",
-    },
-    {
-      person_id: 2,
-      camera_id: 0,
-      roi: "entrance",
-      event: "entry",
-      timestamp: "2025-05-01T16:43:59.642",
-    },
-    {
-      person_id: 1,
-      camera_id: 0,
-      roi: "exit",
-      event: "exit",
-      timestamp: "2025-05-01T16:44:30.123",
-    },
-    {
-      person_id: 3,
-      camera_id: 1,
-      roi: "restricted_area",
-      event: "entry",
-      timestamp: "2025-05-01T16:45:12.445",
-    },
-    {
-      person_id: 4,
-      camera_id: 1,
-      roi: "restricted_area",
-      event: "exit",
-      timestamp: "2025-05-01T16:45:30.123",
-    },
-    {
-      person_id: 5,
-      camera_id: 2,
-      roi: "entrance",
-      event: "entry",
-      timestamp: "2025-05-01T16:46:12.445",
-    },
-    {
-      person_id: 6,
-      camera_id: 2,
-      roi: "entrance",
-      event: "entry",
-      timestamp: "2025-05-01T16:46:30.123",
-    },
-    {
-      person_id: 7,
-      camera_id: 3,
-      roi: "restricted_area",
-      event: "entry",
-      timestamp: "2025-05-01T16:47:12.445",
-    },
-    {
-      person_id: 8,
-      camera_id: 3,
-      roi: "restricted_area",
-      event: "exit",
-      timestamp: "2025-05-01T16:47:30.123",
-    },
-  ];
-
-
-  // Helper function to convert data object to array format
-  const formatVideoData = (data) => {
-    if (!data || !data.hls_urls) return [];
-
-    return Object.entries(data.hls_urls).map(([videoName, hlsUrl]) => ({
-      videoName,
-      hlsUrl,
-      path: data.video_paths[videoName],
-    }));
-  };
 
   const gridClasses = (count) => {
     if (count === 1) return "grid-cols-1 grid-rows-1";
@@ -132,7 +46,7 @@ useEffect(() => {
   });
 
   socketRef.current.on("connect", () => {
-    console.log("Socket connected");
+
   });
 
 
@@ -143,37 +57,21 @@ socketRef.current.on("frames", (frames) => {
     return;
   }
 
-  console.log("Received frames:", {
-    count: frames.length,
-    timestamp: new Date().toISOString()
-  });
-
   // Process all frames into URLs
   const frameUrls = frames.map(frameData => {
     if (!frameData || frameData.byteLength < 1000) return null;
     const blob = new Blob([frameData], { type: "image/jpeg" });
     return URL.createObjectURL(blob);
-  }).filter(Boolean); // Remove any null values
-
-  // Update state with new frame URLs
+  }).filter(Boolean);
+ 
   setFramesList(prevUrls => {
-    // Clean up old URLs
     prevUrls.forEach(url => URL.revokeObjectURL(url));
     return frameUrls;
   });
 });
 
-  // Listen for logs with enhanced logging
   socketRef.current.on("logs", (logData) => {
-    console.log("Received log data:", {
-      data: logData,
-      // type: logData?.event_type,
-      // timestamp: new Date().toISOString()
-    });
-    
-    // Append new log to existing logs
     setLogs(prevLogs => {
-      // Keep only last 80 logs to prevent too much memory usage
       const updatedLogs = [...prevLogs, logData].slice(-80);
       return updatedLogs;
     });
