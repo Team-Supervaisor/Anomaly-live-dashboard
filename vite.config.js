@@ -14,7 +14,11 @@ export default defineConfig({
     },
   },
   server: {
-    host: true, 
-    allowedHosts: ['.ngrok-free.app', 'localhost', '127.0.0.1'], 
+    // 1) Enable CORS and allow everything:
+    cors: {
+      origin: '*',                              // Allow all origins
+      methods: ['GET','HEAD','POST','PUT','PATCH','DELETE','OPTIONS'],
+      allowedHeaders: ['*'],                    // Allow all request headers
+    },
   }
 })
