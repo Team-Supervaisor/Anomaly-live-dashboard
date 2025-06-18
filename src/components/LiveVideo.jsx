@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useLocation } from "react-router-dom";
-import { format } from "date-fns"; // For timestamp formatting
+import { format } from "date-fns";
 import { io } from "socket.io-client";
 import logo from "../assets/logo.png";
 import ai from "../assets/ai.png";
@@ -11,7 +10,6 @@ import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 
 const LiveVideo = () => {
-  const location = useLocation();
   const [logs, setLogs] = useState([]);
   const logsContainerRef = useRef(null);
   const [isTracking, setIsTracking] = useState(false);
@@ -24,7 +22,7 @@ const LiveVideo = () => {
     if (count === 2) return "grid-cols-2 grid-rows-1";
     if (count <= 4) return "grid-cols-2 grid-rows-2";
     if (count <= 6) return "grid-cols-3 grid-rows-2";
-    return "grid-cols-3 grid-rows-3"; // fallback for more videos
+    return "grid-cols-3 grid-rows-3"; 
   };
 
 
@@ -71,6 +69,7 @@ socketRef.current.on("frames", (frames) => {
 });
 
   socketRef.current.on("logs", (logData) => {
+    console.log(logData, "logs from socket")
     setLogs(prevLogs => {
       const updatedLogs = [...prevLogs, logData].slice(-80);
       return updatedLogs;
