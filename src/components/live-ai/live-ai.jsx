@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { io } from "socket.io-client";
 import logo from "../../assets/logo.png";
-import { Loader2, Play, RotateCcw } from "lucide-react";
+import { Loader2, Play, RotateCcw, Users, Activity } from "lucide-react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import FullscreenToggle from "../ui/Fullscreentoggle";
 import "./LiveAi.css";
@@ -47,8 +47,7 @@ const LiveAi = () => {
       setLogsList([]);
     };
   }, []);
-
-  // Current people in each region
+  
   const regionMap = useMemo(() => {
     const map = {};
     logsList.forEach(({ roi, person_id, event_value }) => {
@@ -64,8 +63,7 @@ const LiveAi = () => {
       Object.entries(map).map(([region, idSet]) => [region, Array.from(idSet)])
     );
   }, [logsList]);
-
-  // Total entries per region (ignore exits)
+  
   const totalEntriesByRegion = useMemo(() => {
     const totals = {};
     logsList.forEach(({ roi, event_value }) => {
@@ -74,6 +72,8 @@ const LiveAi = () => {
     });
     return totals;
   }, [logsList]);
+
+  const totalPeople = Object.values(regionMap).reduce((sum, people) => sum + people.length, 0);
 
   const handleStart = () => {
     if (ctrlSocketRef.current && !isTracking) {
@@ -91,6 +91,68 @@ const LiveAi = () => {
     setIsTracking(false);
     setFramesList((prev) => { prev.forEach(URL.revokeObjectURL); return []; });
     setLogsList([]);
+  };
+  
+  const HeatMap = () => {
+    const width = 280;
+    const height = 200;
+    
+    const regions = [
+      { id: "R1", value: totalEntriesByRegion["Region 1"]?.length || 0, x: 70, y: 150, radius: Math.max((totalEntriesByRegion["Region 1"]?.length || 0) * 8, 20) },   
+      { id: "R2", value: totalEntriesByRegion["Region 2"]?.length || 0, x: 200, y: 80, radius: Math.max((totalEntriesByRegion["Region 2"]?.length || 0) * 8, 20) },  
+    ];
+
+    return (
+      <div className="bg-white rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Activity className="w-4 h-4 text-blue-600" />
+          <h3 className="text-sm font-medium text-gray-700">Heat Map</h3>
+        </div>
+        <svg width={width} height={height} className="border rounded">
+          <rect width="100%" height="100%" fill="#f0f9ff" />
+          <defs>
+            {regions.map((r) => (
+              <radialGradient
+                key={r.id}
+                id={`grad-${r.id}`}
+                cx="50%"
+                cy="50%"
+                r="50%"
+                fx="50%"
+                fy="50%"
+              >
+                <stop offset="0%" stopColor="#ef4444" />
+                <stop offset="60%" stopColor="#f97316" />
+                <stop offset="100%" stopColor="#eab308" />
+              </radialGradient>
+            ))}
+          </defs>
+
+          {regions.map((r) => (
+            <g key={r.id}>
+              <circle
+                cx={r.x}
+                cy={r.y}
+                r={r.radius}
+                fill={`url(#grad-${r.id})`}
+                opacity={0.7}
+              />
+              <text
+                x={r.x}
+                y={r.y}
+                fill="#fff"
+                fontSize="14"
+                fontWeight="bold"
+                textAnchor="middle"
+                dy="0.35em"
+              >
+                {r.id}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+    );
   };
 
   return (
@@ -119,60 +181,106 @@ const LiveAi = () => {
         </div>
       </header>
 
-      {/* Counts: current / total per region */}
-      <div className="flex space-x-4 p-4 bg-white shadow overflow-x-auto">
-        {Object.entries(regionMap).map(([region, people]) => (
-          <div key={region} className="flex flex-col items-center px-4 py-2 bg-indigo-50 rounded-lg">
-            <span className="text-sm font-medium text-gray-600">{region}</span>
-            <span className="text-base text-gray-500 mb-1">Current: {people.length}</span>
-            <span className="text-xl font-bold text-indigo-700">Total: {totalEntriesByRegion[region] || 0}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-col md:flex-row flex-1 p-4 gap-4 overflow-hidden">
-        {/* Video Grid */}
-        <div className="bg-white rounded-2xl p-4 flex-1 overflow-auto w-full md:w-3/4">
-          {framesList.length ? (
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-              {framesList.map((url, idx) => (
-                <div key={idx} className="relative aspect-video bg-gray-50 rounded-xl overflow-hidden">
-                  <img src={url} alt={`Stream ${idx+1}`} className="w-full h-full object-cover" />
-                  <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 text-sm rounded">Stream {idx+1}</div>
-                </div>
-              ))}
+      <div className="flex flex-1 p-4 gap-4 overflow-hidden">
+        <div className="flex flex-col flex-1 gap-4">
+          <div className="bg-white rounded-2xl p-4 flex-1">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <h3 className="text-lg font-medium">Live Video Feeds</h3>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full">
-              <DotLottieReact src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie" loop autoplay className="w-32 h-32" />
-              <p className="mt-4 text-gray-600 text-lg">AI analyzing video</p>
-            </div>
-          )}
-        </div>
-
-        {/* Live Logs */}
-        <div className="bg-white rounded-2xl p-4 overflow-auto w-full md:w-1/4 h-64 md:h-auto">
-          <h3 className="text-lg font-medium mb-4">Live View</h3>
-          {logsList.length === 0 ? (
-            <p className="text-gray-500">No events yet.</p>
-          ) : (
-            <div className="space-y-4">
-              {logsList.map((log, idx) => {
-                const typeLabel = log.event_value.charAt(0).toUpperCase() + log.event_value.slice(1);
-                return (
-                  <div key={idx} className="fade-in-down bg-gray-50 shadow rounded-lg p-4 flex items-start space-x-3">
-                    <span className="flex-none w-3 h-3 bg-red-500 rounded-full animate-pulse mt-1" />
-                    <div className="flex-1 space-y-1">
-                      <p><span className="font-semibold">Person ID:</span> {log.person_id}</p>
-                      <p><span className="font-semibold">Type:</span> {typeLabel}</p>
-                      <p><span className="font-semibold">Region:</span> {log.roi || "N/A"}</p>
-                      <p className="text-sm text-gray-500">{new Date(log.timestamp).toLocaleString()}</p>
+            
+            {framesList.length >= 2 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+                {framesList.slice(0, 2).map((url, idx) => (
+                  <div key={idx} className="relative bg-gray-50 rounded-xl overflow-hidden aspect-video">
+                    <img src={url} alt={`Region ${idx + 1}`} className="w-full h-full object-cover" />
+                    <div className="absolute top-3 left-3 bg-black/70 text-white px-3 py-1 text-sm rounded-full">
+                      Region {idx + 1}
+                    </div>
+                    {/* Green dots overlay for detected regions */}
+                    <div className="absolute top-3 right-3 flex gap-1">
+                      {(regionMap[`Region ${idx + 1}`] || []).map((personId, i) => (
+                        <div key={personId} className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      ))}
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full">
+                <DotLottieReact src="https://lottie.host/444798af-70b8-4920-a17d-c009411cfb64/a81fXDiwEN.lottie" loop autoplay className="w-32 h-32" />
+                <p className="mt-4 text-gray-600 text-lg">AI analyzing video feeds</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Panel - People Count and Analytics */}
+        <div className="w-80 flex flex-col gap-4">
+          {/* People Count Dashboard */}
+          <div className="bg-white rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-red-500" />
+              <h3 className="text-lg font-medium">People Count</h3>
+              <span className="ml-auto bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium">Live</span>
             </div>
-          )}
+            
+            {/* Region Stats */}
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                <span className="font-medium text-gray-700">Region 1</span>
+                <span className="text-2xl font-bold text-blue-600">{regionMap["Region 1"]?.length || 0}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                <span className="font-medium text-gray-700">Region 2</span>
+                <span className="text-2xl font-bold text-green-600">{regionMap["Region 2"]?.length || 0}</span>
+              </div>
+            </div>
+
+            {/* Total People */}
+            <div className="border-t pt-3">
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="font-medium text-gray-700">Total People</span>
+                <span className="text-3xl font-bold text-gray-800">{totalPeople}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Heat Map */}
+          <HeatMap />
+
+          {/* Live Activity Log */}
+          <div className="bg-white rounded-2xl p-4 flex-1 overflow-hidden">
+            <h3 className="text-lg font-medium mb-4">Live Activity</h3>
+            <div className="overflow-y-auto h-full">
+              {logsList.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No activity detected yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {logsList.slice(0, 10).map((log, idx) => {
+                    const typeLabel = log.event_value.charAt(0).toUpperCase() + log.event_value.slice(1);
+                    const isEntry = log.event_value === "entry";
+                    return (
+                      <div key={idx} className="fade-in-down bg-gray-50 rounded-lg p-3 border-l-4 border-blue-400">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            isEntry ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {typeLabel}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(log.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <p className="text-sm"><span className="font-medium">Person:</span> {log.person_id}</p>
+                        <p className="text-sm"><span className="font-medium">Location:</span> {log.roi || "Unknown"}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

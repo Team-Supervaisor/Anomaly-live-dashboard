@@ -4,11 +4,10 @@ import { Card, CardContent, CardTitle } from "../ui/card";
 export default function HeatMap() {
   const width = 300;
   const height = 300;
-
-  // Hard‑coded region definitions (id, value for radius scaling, x/y coords, radius)
+  
   const regions = [
-    { id: "R1", value: 3, x: 70, y: 230, radius: 3 * 10 },   // small hot spot bottom‑left
-    { id: "R2", value: 8, x: 200, y: 100, radius: 8 * 10 },  // large hot spot top‑right
+    { id: "R1", value: 3, x: 70, y: 230, radius: 3 * 10 },   
+    { id: "R2", value: 8, x: 200, y: 100, radius: 8 * 10 },  
   ];
 
   return (
@@ -17,10 +16,7 @@ export default function HeatMap() {
         <CardTitle>Heat Map</CardTitle>
         <CardContent>
           <svg width={width} height={height}>
-            {/* green base */}
             <rect width="100%" height="100%" fill="#7fc97f" />
-
-            {/* gradient defs */}
             <defs>
               {regions.map((r) => (
                 <radialGradient
