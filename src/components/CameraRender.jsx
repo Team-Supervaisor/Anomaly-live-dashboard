@@ -115,11 +115,10 @@ export default function CameraRender() {
     setIsSaving(true);
     const apiUrl = import.meta.env.VITE_API_URL;
     const endpoint = `${apiUrl}/start-stream/`;
-    let cameraIndex = 1;
   
     try {
       if (activeTab === "cam") {
-        const requests = cameras.map(async (camera) => {
+        const requests = cameras.map(async (camera, camIdx) => {
           // const wrapper = document.getElementById(`camera-${camera.id}`);
           // const canvasEl = wrapper?.querySelector("canvas");
           // const { width: canvas_width, height: canvas_height } = canvasEl?.getBoundingClientRect() || { width: 0, height: 0 };
@@ -128,7 +127,7 @@ export default function CameraRender() {
           const regions = shapes.map((shape) => {
             if (shape.type === "rectangle") {
               return {
-                Region_name: "Region " + cameraIndex++, 
+                Region_name: "Region " + camIdx+1, 
                 Region_Cords: {
                   vertices: [
                     [shape.x, shape.y],
@@ -140,7 +139,7 @@ export default function CameraRender() {
               };
             } else if (shape.type === "caligraphy") {
               return {
-                Region_name: shape.name || `Region ${cameraIndex++}`,
+                Region_name: shape.name || `Region ${camIdx+1}`,
                 Region_Cords: {
                   vertices: shape.points.map((point) => [point.x, point.y]),
                 },
@@ -175,7 +174,6 @@ export default function CameraRender() {
         await Promise.all(requests);
         setHasShapesSaved(true);
       } else {
-        // Video handling remains the same as it processes sequentially
         const videosWithoutShapes = uploadedVideos.filter(
           (video) => !videoShapes[video.id] || videoShapes[video.id].length === 0
         );
@@ -192,45 +190,45 @@ export default function CameraRender() {
           formData.append("video", video.file);
         });
 
-const videoShapesData = Object.entries(videoShapes).map(
-  ([videoId, shapes]) => {
-    const video = uploadedVideos.find((v) => v.id === videoId);
-    return {
-      type: "video",
-      source: {
-        id: video.id,
-        name: video.file.name,
-        url: video.url,
-      },
-      regions: shapes
-        .map((shape, index) => {
-          const regionName = `Region ${index + 1}`;
-          if (shape.type === "rectangle") {
+        const videoShapesData = Object.entries(videoShapes).map(
+          ([videoId, shapes]) => {
+            const video = uploadedVideos.find((v) => v.id === videoId);
             return {
-              Region_name: regionName,
-              Region_Cords: {
-                vertices: [
-                  [shape.x, shape.y],
-                  [shape.x, shape.y + shape.height],
-                  [shape.x + shape.width, shape.y + shape.height],
-                  [shape.x + shape.width, shape.y],
-                ],
+              type: "video",
+              source: {
+                id: video.id,
+                name: video.file.name,
+                url: video.url,
               },
-            };
-          } else if (shape.type === "caligraphy") {
-            return {
-              Region_name: regionName,
-              Region_Cords: {
-                vertices: shape.points.map((point) => [point.x, point.y]),
-              },
+              regions: shapes
+                .map((shape, index) => {
+                  const regionName = `Region ${index + 1}`;
+                  if (shape.type === "rectangle") {
+                    return {
+                      Region_name: regionName,
+                      Region_Cords: {
+                        vertices: [
+                          [shape.x, shape.y],
+                          [shape.x, shape.y + shape.height],
+                          [shape.x + shape.width, shape.y + shape.height],
+                          [shape.x + shape.width, shape.y],
+                        ],
+                      },
+                    };
+                  } else if (shape.type === "caligraphy") {
+                    return {
+                      Region_name: regionName,
+                      Region_Cords: {
+                        vertices: shape.points.map((point) => [point.x, point.y]),
+                      },
+                    };
+                  }
+                  return null;
+                })
+                .filter(Boolean),
             };
           }
-          return null;
-        })
-        .filter(Boolean),
-    };
-  }
-);
+        );
 
         const wrapper = document.getElementById(`video-${selectedVideo}`);
         const canvasEl = wrapper.querySelector("canvas");
