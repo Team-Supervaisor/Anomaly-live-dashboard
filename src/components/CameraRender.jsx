@@ -115,20 +115,22 @@ export default function CameraRender() {
     setIsSaving(true);
     const apiUrl = import.meta.env.VITE_API_URL;
     const endpoint = `${apiUrl}/start-stream/`;
-
+  
     try {
       if (activeTab === "cam") {
         // Send one request per camera
         const requests = cameras.map(async (camera) => {
           const wrapper = document.getElementById(`camera-${camera.id}`);
-    
-
+          const canvasEl = wrapper?.querySelector("canvas");
+          const { width: canvas_width, height: canvas_height } =
+            canvasEl?.getBoundingClientRect() || { width: 0, height: 0 };
+  
           const shapes = cameraShapes[camera.id] || [];
-          const regions = shapes.map((shape, index) => {
-            const regionName = `Region ${index}`
+          let cameraIndex = 1;
+          const regions = shapes.map((shape) => {
             if (shape.type === "rectangle") {
               return {
-                Region_name: regionName,
+                Region_name: "Region " + cameraIndex++, 
                 Region_Cords: {
                   vertices: [
                     [shape.x, shape.y],
@@ -140,7 +142,7 @@ export default function CameraRender() {
               };
             } else if (shape.type === "caligraphy") {
               return {
-                Region_name: shape.name || `Region ${shape.id}`,
+                Region_name: shape.name || `Region ${cameraIndex++}`,
                 Region_Cords: {
                   vertices: shape.points.map((point) => [point.x, point.y]),
                 },
@@ -148,7 +150,7 @@ export default function CameraRender() {
             }
             return null;
           }).filter(Boolean);
-
+  
           const payload = {
             camera_name: camera.name,
             rtsp_url: camera.url,
@@ -168,25 +170,25 @@ export default function CameraRender() {
             canvas_width: 1197,
             canvas_height: 517,
           };
-
+  
           return axios.post(endpoint, payload);
         });
-
+  
         await Promise.all(requests);
         setHasShapesSaved(true);
       } else {
-        // Video handling unchanged...
+        // Video handling remains the same as it processes sequentially
         const videosWithoutShapes = uploadedVideos.filter(
           (video) => !videoShapes[video.id] || videoShapes[video.id].length === 0
         );
-
+  
         if (videosWithoutShapes.length > 0) {
           const videoNames = videosWithoutShapes.map((v) => v.file.name).join(", ");
           alert(`Please draw at least one region for each video. Missing regions in: ${videoNames}`);
           setIsSaving(false);
           return;
         }
-
+  
         const formData = new FormData();
         uploadedVideos.forEach((video) => {
           formData.append("video", video.file);
@@ -236,11 +238,11 @@ const videoShapesData = Object.entries(videoShapes).map(
         const canvasEl = wrapper.querySelector("canvas");
         const { width: canvas_width, height: canvas_height } =
           canvasEl.getBoundingClientRect();
-
+  
         formData.append("canvas_width", Math.round(canvas_width));
         formData.append("canvas_height", Math.round(canvas_height));
         formData.append("roi_defs", JSON.stringify(videoShapesData));
-
+  
         const res = await fetch(`${apiUrl}/tracking_details`, {
           method: "POST",
           body: formData,
