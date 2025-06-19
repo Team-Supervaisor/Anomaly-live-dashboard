@@ -72,12 +72,15 @@ const LiveAi = () => {
 
   const totalPeople = Object.values(regionMap).reduce((sum, people) => sum + people.length, 0);
 
+  useEffect(()=>{
   const handleStart = () => {
     if (ctrlSocketRef.current && !isTracking) {
       socketRef.current.emit("tracking_start");
       setIsTracking(true);
     }
   };
+  handleStart()
+},[])
 
   const handleReset = async () => {
     try { await fetch(`${import.meta.env.VITE_API_URL}/reset`, { method: 'GET' }); } catch (err) { console.error("Error calling /reset:", err); }
@@ -133,7 +136,7 @@ const LiveAi = () => {
         <h3 className="text-lg font-medium">People Count</h3>
         <span className="ml-auto bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium">Live</span>
       </div>
-      <div className="space-y-3 mb-4">
+      <div className="space-y-3 ">
         <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
           <span className="font-medium text-gray-700">Region 1</span>
           <span className="text-2xl font-bold text-blue-600">{regionMap["Region 1"]?.length || 0}</span>
@@ -153,32 +156,8 @@ const LiveAi = () => {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-[#F5F9FF] p-4 gap-4">
-      {/* Header unchanged */}
-      <header className="flex items-center p-4 bg-white shadow">
-        <Link to="/" className="flex-none">
-          <div className="flex items-center space-x-2">
-            <img className="h-8 w-8" src={logo} alt="Logo" />
-            <h2 className="text-xl font-medium text-black">Tracking Dashboard</h2>
-          </div>
-        </Link>
-        <div className="flex-1 flex justify-center items-center gap-3">
-          <button onClick={handleStart} disabled={isTracking} className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#717AEA] text-white disabled:opacity-50">
-            {isTracking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />} {isTracking ? "Started" : "Start"}
-          </button>
-          <button onClick={handleReset} className="flex items-center gap-2 px-4 py-2 border rounded-full text-gray-600 hover:bg-gray-100">
-            <RotateCcw className="w-4 h-4" /> Reset
-          </button>
-        </div>
-        <div className="flex items-center space-x-4">
-          <FullscreenToggle />
-          <button className="flex items-center gap-2 px-4 py-2 border border-red-600 bg-red-100 text-red-600 rounded-full">
-            <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75" /><span className="relative inline-flex rounded-full h-3 w-3 bg-red-600" /></span>
-            Live AI
-          </button>
-        </div>
-      </header>
-
+    <div className="flex flex-col min-h-screen bg-[#F5F9FF] p-4 gap-4">
+      <img src="/channelplay.svg" alt="channelplay logo" className="w-42" />
       <div className="flex flex-1 p-4 gap-4 overflow-hidden min-h-[500px]">
         <div className="flex flex-col flex-1 gap-4">
           <div className="bg-white rounded-2xl p-4 flex-1">
@@ -187,17 +166,16 @@ const LiveAi = () => {
               <h3 className="text-lg font-medium">Live Video Feeds</h3>
             </div>
             
-            {framesList.length >= 2 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-                {framesList.slice(0, 2).map((url, idx) => (
+            {framesList.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
+                {framesList.map((url, idx) => (
                   <div key={idx} className="relative bg-gray-50 rounded-xl overflow-hidden aspect-video">
                     <img src={url} alt={`Region ${idx + 1}`} className="w-full h-full object-cover" />
                     <div className="absolute top-3 left-3 bg-black/70 text-white px-3 py-1 text-sm rounded-full">
                       Region {idx + 1}
                     </div>
-                    {/* Green dots overlay for detected regions */}
                     <div className="absolute top-3 right-3 flex gap-1">
-                      {(regionMap[`Region ${idx + 1}`] || []).map((personId, i) => (
+                      {(regionMap[`Region ${idx + 1}`] || []).map((personId) => (
                         <div key={personId} className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                       ))}
                     </div>
@@ -215,9 +193,9 @@ const LiveAi = () => {
         </div>
 
       {/* Analytics Row */}
-      <div className="flex gap-4">
-        <HeatMap />
+      <div className="flex flex-col gap-4">
         <PeopleCount />
+        <HeatMap/>
       </div>
 
       {/* Logs */}
@@ -233,9 +211,7 @@ const LiveAi = () => {
               return (
                 <div key={idx} className="fade-in-down bg-gray-50 rounded-lg p-3 border-l-4 border-blue-400">
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      isEntry ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${isEntry ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                       {typeLabel}
                     </span>
                     <span className="text-xs text-gray-500">

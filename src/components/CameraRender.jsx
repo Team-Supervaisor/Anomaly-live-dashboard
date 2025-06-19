@@ -127,7 +127,7 @@ export default function CameraRender() {
           const regions = shapes.map((shape) => {
             if (shape.type === "rectangle") {
               return {
-                Region_name: "Region " + camIdx+1, 
+                Region_name: `Region ${camIdx+1}`, 
                 Region_Cords: {
                   vertices: [
                     [shape.x, shape.y],
@@ -139,7 +139,7 @@ export default function CameraRender() {
               };
             } else if (shape.type === "caligraphy") {
               return {
-                Region_name: shape.name || `Region ${camIdx+1}`,
+                Region_name: `Region ${camIdx+1}`,
                 Region_Cords: {
                   vertices: shape.points.map((point) => [point.x, point.y]),
                 },
