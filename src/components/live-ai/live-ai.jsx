@@ -1,10 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { io } from "socket.io-client";
-import logo from "../../assets/logo.png";
-import { Loader2, Play, RotateCcw, Users, Activity } from "lucide-react";
+import { Users, Activity } from "lucide-react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import FullscreenToggle from "../ui/Fullscreentoggle";
 import "./LiveAi.css";
 
 const LiveAi = () => {
@@ -47,6 +44,8 @@ const LiveAi = () => {
       setLogsList([]);
     };
   }, []);
+
+  console.log(logsList)
 
   const regionMap = useMemo(() => {
     const map = {};
@@ -95,8 +94,7 @@ const LiveAi = () => {
 
   // Components extracted for clarity
   const HeatMap = () => {
-    const width = 280;
-    const height = 200;
+   
     const regions = [
       { id: "R1", x: 70, y: 150, radius: Math.max((totalEntriesByRegion["Region 1"] || 0) * 8, 20) },
       { id: "R2", x: 200, y: 80, radius: Math.max((totalEntriesByRegion["Region 2"] || 0) * 8, 20) },
@@ -105,9 +103,9 @@ const LiveAi = () => {
       <div className="bg-white rounded-lg p-4 flex-1">
         <div className="flex items-center gap-2 mb-3">
           <Activity className="w-4 h-4 text-blue-600" />
-          <h3 className="text-sm font-medium text-gray-700">Heat Map</h3>
+          <h3 className="text-xl font-medium text-gray-700">Heat Map</h3>
         </div>
-        <svg width={width} height={height} className="border rounded">
+        <svg width="100%" height="100%" className="border rounded">
           <rect width="100%" height="100%" fill="#f0f9ff" />
           <defs>
             {regions.map((r) => (
@@ -129,31 +127,33 @@ const LiveAi = () => {
     );
   };
 
-  const PeopleCount = () => (
-    <div className="bg-white rounded-2xl p-4 flex-1">
-      <div className="flex items-center gap-2 mb-4">
-        <Users className="w-5 h-5 text-red-500" />
-        <h3 className="text-lg font-medium">People Count</h3>
-        <span className="ml-auto bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium">Live</span>
+const PeopleCount = () => (
+  <div className="bg-white rounded-2xl p-4 flex flex-col">
+    <div className="flex items-center gap-2 mb-4 border-b ">
+      <Users className="w-8 h-8 text-violet-700 pb-2" />
+      <h3 className="text-xl font-medium pb-2">People Count</h3>
+      <span className="ml-auto  text-sm text-red-500 font-medium pb-2">Live</span>
+    </div>
+    <div className="flex items-center w-full gap-4">
+      <div className="flex-col flex justify-between items-start w-1/2 p-3 bg-[#F5F9FF] rounded-lg text-left">
+        <span className="font-medium ">Region 1</span>
+        <span className="text-2xl font-bold ">{regionMap["Region 1"]?.length || 0}</span>
       </div>
-      <div className="space-y-3 ">
-        <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-          <span className="font-medium text-gray-700">Region 1</span>
-          <span className="text-2xl font-bold text-blue-600">{regionMap["Region 1"]?.length || 0}</span>
-        </div>
-        <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-          <span className="font-medium text-gray-700">Region 2</span>
-          <span className="text-2xl font-bold text-green-600">{regionMap["Region 2"]?.length || 0}</span>
-        </div>
-      </div>
-      <div className="border-t pt-3">
-        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-          <span className="font-medium text-gray-700">Total People</span>
-          <span className="text-3xl font-bold text-gray-800">{totalPeople}</span>
-        </div>
+      <div className="flex-col flex justify-between items-start w-1/2 p-3 bg-[#F5F9FF] rounded-lg text-left">
+        <span className="font-medium ">Region 2</span>
+        <span className="text-2xl font-bold">{regionMap["Region 2"]?.length || 0}</span>
       </div>
     </div>
-  );
+    <div className="border-t pt-3 mt-3">
+      <div className="flex justify-center  items-center">
+              <Users className="w-8 h-8 text-violet-700 pr-2" />
+        <span className="font-medium text-xl">Total People:</span>
+        <span className="text-3xl font-bold text-gray-800 pl-2">{totalPeople}</span>
+      </div>
+    </div>
+  </div>
+);
+
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F9FF] p-4 gap-4">
@@ -161,10 +161,7 @@ const LiveAi = () => {
       <div className="flex flex-1 p-4 gap-4 overflow-hidden min-h-[500px]">
         <div className="flex flex-col flex-1 gap-4">
           <div className="bg-white rounded-2xl p-4 flex-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <h3 className="text-lg font-medium">Live Video Feeds</h3>
-            </div>
+        
             
             {framesList.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
@@ -172,7 +169,7 @@ const LiveAi = () => {
                   <div key={idx} className="relative bg-gray-50 rounded-xl overflow-hidden aspect-video">
                     <img src={url} alt={`Region ${idx + 1}`} className="w-full h-full object-cover" />
                     <div className="absolute top-3 left-3 bg-black/70 text-white px-3 py-1 text-sm rounded-full">
-                      Region {idx + 1}
+                      Region {idx + 1}    
                     </div>
                     <div className="absolute top-3 right-3 flex gap-1">
                       {(regionMap[`Region ${idx + 1}`] || []).map((personId) => (
@@ -193,38 +190,9 @@ const LiveAi = () => {
         </div>
 
       {/* Analytics Row */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 lg:flex lg:flex-row">
         <PeopleCount />
         <HeatMap/>
-      </div>
-
-      {/* Logs */}
-      <div className="bg-white rounded-2xl p-4 flex-1 overflow-y-auto">
-        <h3 className="text-lg font-medium mb-4">Live Activity</h3>
-        {logsList.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No activity detected yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {logsList.map((log, idx) => {
-              const typeLabel = log.event_value.charAt(0).toUpperCase() + log.event_value.slice(1);
-              const isEntry = log.event_value === "entry";
-              return (
-                <div key={idx} className="fade-in-down bg-gray-50 rounded-lg p-3 border-l-4 border-blue-400">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${isEntry ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {typeLabel}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(log.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <p className="text-sm"><span className="font-medium">Person:</span> {log.person_id}</p>
-                  <p className="text-sm"><span className="font-medium">Location:</span> {log.roi || "Unknown"}</p>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
     </div>
   );
