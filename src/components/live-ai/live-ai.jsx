@@ -164,7 +164,7 @@ const PeopleCount = () => (
         
             
             {framesList.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
+              <div className="grid grid-cols-1  gap-4 h-full">
                 {framesList.map((url, idx) => (
                   <div key={idx} className="relative bg-gray-50 rounded-xl overflow-hidden aspect-video">
                     <img src={url} alt={`Region ${idx + 1}`} className="w-full h-full object-cover" />
@@ -190,7 +190,7 @@ const PeopleCount = () => (
         </div>
 
       {/* Analytics Row */}
-      <div className="flex flex-col gap-4 lg:flex lg:flex-row">
+      <div className="flex flex-col gap-4">
         <PeopleCount />
         <HeatMap/>
       </div>
