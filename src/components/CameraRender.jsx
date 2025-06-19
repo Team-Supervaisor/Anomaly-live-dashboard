@@ -115,18 +115,16 @@ export default function CameraRender() {
     setIsSaving(true);
     const apiUrl = import.meta.env.VITE_API_URL;
     const endpoint = `${apiUrl}/start-stream/`;
+    let cameraIndex = 1;
   
     try {
       if (activeTab === "cam") {
-        // Send one request per camera
         const requests = cameras.map(async (camera) => {
-          const wrapper = document.getElementById(`camera-${camera.id}`);
-          const canvasEl = wrapper?.querySelector("canvas");
-          const { width: canvas_width, height: canvas_height } =
-            canvasEl?.getBoundingClientRect() || { width: 0, height: 0 };
+          // const wrapper = document.getElementById(`camera-${camera.id}`);
+          // const canvasEl = wrapper?.querySelector("canvas");
+          // const { width: canvas_width, height: canvas_height } = canvasEl?.getBoundingClientRect() || { width: 0, height: 0 };
   
           const shapes = cameraShapes[camera.id] || [];
-          let cameraIndex = 1;
           const regions = shapes.map((shape) => {
             if (shape.type === "rectangle") {
               return {
