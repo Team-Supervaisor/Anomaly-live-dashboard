@@ -533,15 +533,6 @@ export default function VideoCanvas({
 
   const closeShapeDialog = () => setShapeDialog({ ...shapeDialog, isOpen: false });
 
-  // const handleShapeDialogSave = () => {
-  //   onShapesChange(shapes.map(s =>
-  //     s.id === shapeDialog.shapeId
-  //       ? { ...s, name: shapeDialog.name }
-  //       : s
-  //   ));
-  //   setShapeDialog({ ...shapeDialog, isOpen: false });
-  // };
-
   const handleShapeDialogSave = (name) => {  // Add name parameter here
     onShapesChange(shapes.map(s => {
       if (s.id === shapeDialog.shapeId) {

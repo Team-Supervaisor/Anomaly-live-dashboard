@@ -458,7 +458,7 @@ export default function VideoCanvas({
         return null
     }
 
-    // Handle mouse down event
+
     const handleMouseDown = (e) => {
         // Allow drawing when maximized or when there's only one stream (showMaximize is false)
         if (!selectedTool || (!isMaximized && showMaximize)) return
@@ -515,7 +515,6 @@ export default function VideoCanvas({
         }
     }
 
-    // Handle mouse move event
     const handleMouseMove = (e) => {
         const { x, y } = getCanvasCoordinates(e)
         
@@ -597,33 +596,6 @@ export default function VideoCanvas({
         }
     };
 
-    // Handle edit shape
-    // const handleEditShape = () => {
-    //     if (!hoveredShape) return
-        
-    //     // Calculate the center of the rectangle for dialog positioning
-    //     const normalizedRect = {
-    //         x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
-    //         y: hoveredShape.height < 0 ? hoveredShape.y + hoveredShape.height : hoveredShape.y,
-    //         width: Math.abs(hoveredShape.width),
-    //         height: Math.abs(hoveredShape.height)
-    //     }
-        
-    //     const centerX = normalizedRect.x + (normalizedRect.width / 2)
-    //     const centerY = normalizedRect.y + (normalizedRect.height / 2)
-        
-    //     setShapeDialog({
-    //         isOpen: true,
-    //         x: centerX,
-    //         y: centerY,
-    //         shapeId: hoveredShape.id,
-    //         name: hoveredShape.name || "",
-    //     })
-        
-    //     setSelectedShape(hoveredShape)
-    //     setHoveredShape(null)
-    // }
-
     const handleEditShape = () => {
         if (!hoveredShape) return;
         
@@ -645,29 +617,13 @@ export default function VideoCanvas({
         onShapesChange(updatedShapes)
         setHoveredShape(null)
     }
-    
-    // Handle shape dialog save
-    // const handleShapeDialogSave = () => {
-    //     // Update the shape with the new name
-    //     const updatedShapes = shapes.map(shape => 
-    //         shape.id === shapeDialog.shapeId
-    //             ? { ...shape, name: shapeDialog.name }
-    //             : shape
-    //     )
-        
-    //     onShapesChange(updatedShapes)
-    //     setShapeDialog({ ...shapeDialog, isOpen: false })
-    // }
-    
+       
     // Close shape dialog
     const closeShapeDialog = () => {
         setShapeDialog({ ...shapeDialog, isOpen: false })
     }
 
-    // Get cursor style based on selected tool
-    // const getCursorStyle = () => {
-    //     return cursorMap[selectedTool] || "";
-    // }
+ 
 
     const getCursorStyle = () => {
         if (selectedTool === "caligraphy" && nearStartPoint && polygonPoints.length >= 2) {
@@ -675,39 +631,6 @@ export default function VideoCanvas({
         }
         return cursorMap[selectedTool] || "";
     };
-    // const handleKeyPress = (e) => {
-    //     if (e.key === 'Enter') {
-    //         handleShapeDialogSave();
-    //     }
-    // };
-
-    // Calculate hover menu position
-    // const calculateHoverPosition = () => {
-    //     if (!hoveredShape || !canvasRef.current) return {};
-        
-    //     const canvas = canvasRef.current;
-        
-    //     // Calculate normalized position
-    //     const normalizedRect = {
-    //         x: hoveredShape.width < 0 ? hoveredShape.x + hoveredShape.width : hoveredShape.x,
-    //         y: hoveredShape.height < 0 ? hoveredShape.y + hoveredShape.height : hoveredShape.y,
-    //         width: Math.abs(hoveredShape.width),
-    //         height: Math.abs(hoveredShape.height)
-    //     };
-        
-    //     return {
-    //         position: "absolute",
-    //         left: hoveredShape.x + hoveredShape.width + 2 > canvas.width - 50 
-    //             ? hoveredShape.x - 33 
-    //             : hoveredShape.x + hoveredShape.width - 35,
-    //         top: hoveredShape.y + 2,
-    //         zIndex: 10,
-    //         display: "flex",
-    //         flexDirection: "column",
-    //         alignItems: "center",
-    //         gap: "8px",
-    //     };
-    // };
 
     const calculateHoverPosition = () => {
         if (!hoveredShape || !canvasRef.current) return {};
@@ -849,58 +772,7 @@ export default function VideoCanvas({
                 </div>
             )}
             
-            {/* Shape dialog for editing */}
-            {/* {shapeDialog.isOpen && (
-                <div
-                    className="absolute bg-white p-4 rounded-2xl shadow-xl w-[320px] z-100"
-                    style={{
-                      left: `${Math.max(175, Math.min(shapeDialog.x, canvasRef.current.width - 175))}px`,
-                      top:  `${Math.max(110, Math.min(shapeDialog.y - 50, canvasRef.current.height - 110))}px`,
-                        transform: "translate(-50%, -50%)",
-                        border: "1px solid #E5E7EB",
-                        backgroundColor: "#F8FAFC",
-                    }}
-                >
-                    <div className="flex flex-col gap-5">
-                        <div className="space-y-2">
-                            <label className="block font-medium text-gray-700 text-sm">
-                                Region Name
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Enter region name"
-                                value={shapeDialog.name}
-                                onKeyDown={handleKeyPress}
-                                onChange={e => setShapeDialog({ ...shapeDialog, name: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg 
-                                        focus:outline-none focus:border-[#6366F1] focus:ring-1 
-                                        focus:ring-[#6366F1] text-gray-800 text-sm
-                                        placeholder:text-gray-400 transition-colors"
-                            />
-                        </div>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                className="px-4 py-2 border border-gray-200 rounded-lg text-sm 
-                                        text-gray-700 hover:bg-gray-50 transition-colors
-                                        focus:outline-none focus:ring-2 focus:ring-offset-1
-                                        focus:ring-gray-200"
-                                onClick={closeShapeDialog}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="px-4 py-2 bg-[#6366F1] text-white rounded-lg text-sm
-                                        hover:bg-[#5558E3] transition-colors
-                                        focus:outline-none focus:ring-2 focus:ring-offset-1
-                                        focus:ring-[#6366F1]"
-                                onClick={handleShapeDialogSave}
-                            >
-                                Save
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )} */}
+           
 
             {shapeDialog.isOpen && (
                 <RegionModal
