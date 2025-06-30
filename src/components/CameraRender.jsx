@@ -1,22 +1,11 @@
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { useState, useRef, useEffect } from "react"; // Import useEffect
+import React, { useState, useRef, useEffect, Suspense } from "react"; // Import useEffect
 import ToolBar from "./tool-bar";
-import { Plus, X, Upload, Maximize2, Minimize2, Loader2 } from "lucide-react";
 import VideoCanvas from "./VideoCanvas";
 import VideoSection from "./VideoSection";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import FullscreenToggle from "./ui/Fullscreentoggle";
-
-import UploadIcon from "../assets/Upload.png";
+const VideoControls = React.lazy(() => import("./VideoControls"));
+const CameraControls = React.lazy(() => import("./CameraControls"));
 
 export default function CameraRender() {
   const [open, setOpen] = useState(false);
@@ -449,109 +438,21 @@ export default function CameraRender() {
           </div>
 
           {activeTab === "cam" && (
-            <div className="absolute flex items-center gap-3" style={{ top: "34px", right: "34px" }}>
-              <div className="p-4`space-x-0.5 ">
-                <FullscreenToggle />
-              </div>
-              {/* Always show Add Cam button */}
-              <Dialog
+            <Suspense fallback={null}>
+              <CameraControls
                 open={open}
-                onOpenChange={(isOpen) => {
-                  setOpen(isOpen);
-                  if (!isOpen) {
-                    setIsAdding(false);
-                    setCameraName("");
-                    setRtspUrl("");
-                  }
-                }}
-              >
-                <DialogTrigger asChild>
-                  <button
-                    style={{ padding: "12px 24px" }}
-                    className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
-                    onClick={() => open || setOpen(true)}
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Cam</span>
-                  </button>
-                </DialogTrigger>
-                <DialogContent
-                  style={{ borderRadius: "20px" }}
-                  className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[450px] overflow-hidden"
-                >
-                  <div className="flex justify-between items-center p-4 border-b border-[#0000001A]">
-                    <DialogTitle className="text-lg font-medium">Add Cam</DialogTitle>
-                  </div>
-
-                  <div className="p-4 space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Enter the camera name:</label>
-                      <Input
-                        value={cameraName}
-                        onChange={(e) => setCameraName(e.target.value)}
-                        className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
-                        placeholder="Camera name"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Enter the RTSP URL:</label>
-                      <Input
-                        value={rtspUrl}
-                        onChange={(e) => setRtspUrl(e.target.value)}
-                        className="w-full border border-[#0000001A] bg-white focus:ring-[#717AEA] focus:border-[#717AEA]"
-                        placeholder="rtsp://"
-                      />
-                    </div>
-
-                    <button
-                      onClick={handleSubmit}
-                      className="w-full py-2 px-4 bg-[#717AEA] text-white rounded-[4rem] hover:bg-[#717AEA] transition-colors mt-4 flex items-center justify-center gap-2"
-                      disabled={isAdding}
-                    >
-                      {isAdding ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Adding Camera...</span>
-                        </>
-                      ) : (
-                        "Add"
-                      )}
-                    </button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {hasShapesSaved && (
-                <button
-                  onClick={() => {
-                    const camId = selectedCamera;
-                    if (!camId) {
-                      alert(
-                        "Please select (or maximize) a camera first before going Live AI."
-                      );
-                      return;
-                    }
-                    navigate(`/live-ai/${camId}`, {
-                      state: { cameraId: camId },
-                    });
-                  }}
-                  style={{ padding: "14px 24px" }}
-                  className="flex items-center border  gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
-                >
-                  <img
-                    src="/live.svg"
-                    alt="live icon"
-                    className="w-4 h-4 mr-2"
-                    style={{
-                      filter:
-                        "invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(114%)",
-                    }}
-                  />
-                  Live AI
-                </button>
-              )}
-            </div>
+                setOpen={setOpen}
+                isAdding={isAdding}
+                cameraName={cameraName}
+                setCameraName={setCameraName}
+                rtspUrl={rtspUrl}
+                setRtspUrl={setRtspUrl}
+                handleSubmit={handleSubmit}
+                hasShapesSaved={hasShapesSaved}
+                selectedCamera={selectedCamera}
+                navigate={navigate}
+              />
+            </Suspense>
           )}
 
           {activeTab === "cam" && (
@@ -589,102 +490,19 @@ export default function CameraRender() {
 
           {/* Video tab and remaining JSX unchanged... */}
           {activeTab === "video" && (
-            <div className="absolute flex items-center gap-3" style={{ top: "34px", right: "34px" }}>
-              {/* Fullscreen */}
-              <div className="p-4space-x-0.5 ">
-                <FullscreenToggle />
-              </div>
-
-              <Dialog
-                open={uploadDialogOpen}
-                onOpenChange={setUploadDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <button
-                    onClick={() => {
-                      if (uploadedVideos.length >= 4) {
-                        alert("Maximum 4 videos allowed.");
-                        return;
-                      }
-                      setUploadDialogOpen(true);
-                    }}
-                    style={{ padding: "12px 24px" }}
-                    className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
-                  >
-                    <Upload className="w-4 h-4 text-black" />
-                    <span className="text-black">Upload</span>
-                  </button>
-                </DialogTrigger>
-
-                <DialogContent className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[664px] overflow-hidden rounded-3xl">
-                  <div className="flex justify-between items-center p-5 border-b border-[#0000001A]">
-                    <DialogTitle className="text-xl font-medium">
-                      Upload file
-                    </DialogTitle>
-                  </div>
-                  <div className="p-4 space-y-4">
-                    <div
-                      className="border-2 border-dashed border-[#717AEA] bg-[#717AEA1A] rounded-3xl flex items-center justify-center h-[200px] text-center cursor-pointer transition-colors duration-200"
-                      onClick={() =>
-                        document.getElementById("video-upload-input").click()
-                      }
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                    >
-                      <div>
-                        <img
-                          src={UploadIcon}
-                          className="mx-auto w-14 h-[42px] text-[#717AEA]"
-                        />
-                        <p className="text-[16px] font-medium mt-[10px] text-black">
-                          Drop your files here or{" "}
-                          <span className="text-[#717AEA66] underline">
-                            click to browse
-                          </span>
-                        </p>
-                      </div>
-                      <input
-                        id="video-upload-input"
-                        type="file"
-                        accept="video/*"
-                        className="hidden"
-                        onChange={handleVideoUpload}
-                        multiple
-                      />
-                    </div>
-
-                    <button
-                      className="w-full py-2 bg-[#717AEA] text-white rounded-full mt-3 text-xl"
-                      onClick={() => setUploadDialogOpen(false)}
-                    >
-                      Upload
-                    </button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {hasVideoShapesSaved && (
-                <button
-                  onClick={() =>
-                    navigate("/live-video")
-                  }
-                  style={{ padding: "14px 24px" }}
-                  className="flex items-center border gap-[10px] rounded-[100px] text-[16px] font-[500] text-[#F20A0A]"
-                >
-                  <img
-                    src="/live.svg"
-                    alt="live icon"
-                    className="w-4 h-4 mr-2"
-                    style={{
-                      filter:
-                        "invert(15%) sepia(95%) saturate(6932%) hue-rotate(358deg) brightness(95%) contrast(114%)",
-                    }}
-                  />
-                  Live AI
-                </button>
-              )}
-            </div>
+            <Suspense fallback={null}>
+            <VideoControls
+              uploadDialogOpen={uploadDialogOpen}
+              setUploadDialogOpen={setUploadDialogOpen}
+              uploadedVideos={uploadedVideos}
+              handleVideoUpload={handleVideoUpload}
+              handleDrop={handleDrop}
+              handleDragOver={handleDragOver}
+              handleDragLeave={handleDragLeave}
+              hasVideoShapesSaved={hasVideoShapesSaved}
+              navigate={navigate}
+            />
+          </Suspense>
           )}
 
           {activeTab === "video" && (
