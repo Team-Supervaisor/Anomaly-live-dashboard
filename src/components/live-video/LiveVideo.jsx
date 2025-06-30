@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
 import { io } from "socket.io-client";
-import logo from "../assets/logo.png";
-import ai from "../assets/ai.png";
+import logo from "../../assets/logo.png";
+import ai from "../../assets/ai.png";
 import { Link } from "react-router-dom";
 import { Loader2, Play } from "lucide-react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';

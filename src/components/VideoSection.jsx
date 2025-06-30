@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Maximize, Minimize, PencilIcon, Trash2 } from "lucide-react"
-import RegionModal from "./AddRegionModal";
+import RegionModal from "./modals/AddRegionModal";
 
 // Define cursor map similar to DrawCanvasDrawer
 const cursorMap = {
