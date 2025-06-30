@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, Suspense } from "react"; // Import useEffect
-import ToolBar from "./tool-bar";
-import VideoCanvas from "./VideoCanvas";
-import VideoSection from "./VideoSection";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import VideoCanvas from "./VideoCanvas";
+import VideoSection from "./VideoSection";
+import ToolBar from "./tool-bar";
+import TabButtons from "./TabButtons";
+
 const VideoControls = React.lazy(() => import("./VideoControls"));
 const CameraControls = React.lazy(() => import("./CameraControls"));
 
@@ -395,47 +397,7 @@ export default function CameraRender() {
       <div className="relative flex flex-col items-center w-screen h-screen">
         <div className="w-screen h-screen bg-white rounded-lg shadow-md relative ">
           {/* Tab buttons */}
-          <div className="absolute" style={{ top: "34px", left: "34px" }}>
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleTabChange("video")}
-                style={{ padding: "14px 24px" }}
-                className={`flex items-center gap-2 rounded-[8px] border text-[16px] font-[500] ${
-                  activeTab === "video"
-                    ? "bg-[#717AEA] text-white border-none"
-                    : "bg-white text-[#717171] "
-                }`}
-              >
-                <img
-                  src="/play.svg"
-                  className={`w-4 h-4 ${
-                    activeTab === "video" ? "brightness-0 invert" : ""
-                  }`}
-                  alt="video icon"
-                />
-                <span>Video</span>
-              </button>
-
-              <button
-                onClick={() => handleTabChange("cam")}
-                style={{ padding: "14px 24px" }}
-                className={`flex items-center gap-2   text-[16px] font-[500]  rounded-[8px] border ${
-                  activeTab === "cam"
-                    ? "bg-[#717AEA] text-white border-none"
-                    : "bg-white text-[#717171] "
-                }`}
-              >
-                <img
-                  src="/camera.svg"
-                  className={`w-4 h-4 ${
-                    activeTab === "cam" ? "brightness-0 invert" : ""
-                  }`}
-                  alt="cam icon"
-                />
-                <span>Cam</span>
-              </button>
-            </div>
-          </div>
+          <TabButtons activeTab={activeTab} onTabChange={handleTabChange} />
 
           {activeTab === "cam" && (
             <Suspense fallback={null}>
