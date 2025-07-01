@@ -4,7 +4,7 @@ import { Maximize, Minimize} from "lucide-react";
 import RegionModal from "./modals/AddRegionModal";
 import ShapeControls from "./ShapeControls";
 import FillColorPicker from "./FillColorPicker";
-import useCanvasDrawing from "./useCanvasDrawing";
+import useCanvasDrawing from "../lib/useCanvasDrawing";
 
 const cursorMap = {
   pointer: "cursor-pointer",
@@ -28,7 +28,7 @@ export default function MediaCanvas({
   shapes = [],
   onShapesChange,
 }) {
-  // --- Shared state ---
+  
   const canvasRef = useRef(null);
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
@@ -56,10 +56,8 @@ export default function MediaCanvas({
 
 
 
-  // --- Camera-specific: first frame image ---
   const firstFrameImageRef = useRef(null);
 
-  // --- Video-specific: canvas dimensions ---
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
 
   //helper functions
