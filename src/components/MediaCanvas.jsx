@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import { Maximize, Minimize, Trash2 } from "lucide-react";
 import RegionModal from "./modals/AddRegionModal";
+import ShapeControls from "./ShapeControls";
 
 const cursorMap = {
   pointer: "cursor-pointer",
@@ -661,36 +662,17 @@ const getCanvasCoordinates = (e) => {
         </div>
       )}
       {hoveredShape && selectedTool === "pointer" && (isMaximized || !showMaximize) && (
-        <div style={hoverStyle()}>
-          <div className="relative group">
-            <button
-              className="w-8 h-8 rounded-full flex items-center justify-center shadow-md"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditShape();
-              }}
-            >
-              <img src="/pen.svg" alt="edit" />
-            </button>
-            <div className="absolute w-[65px] left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded">
-              Edit Info.
-            </div>
-          </div>
-          <div className="relative group">
-            <button
-              className="w-7 h-7 rounded-full bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-center shadow-md"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteShape();
-              }}
-            >
-              <Trash2 className="text-indigo-400 w-4 h-4" />
-            </button>
-            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded">
-              Delete
-            </div>
-          </div>
-        </div>
+        <ShapeControls
+        hoverStyle={hoverStyle}
+        onEdit={(e) => {
+        e.stopPropagation();
+        handleEditShape();
+        }}
+        onDelete={(e) => {
+        e.stopPropagation();
+        handleDeleteShape();
+        }}
+    />
       )}
       {shapeDialog.isOpen && (
         <RegionModal
