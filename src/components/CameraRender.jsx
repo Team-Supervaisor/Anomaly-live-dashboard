@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect, Suspense } from "react"; // Import useEffect
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import VideoCanvas from "./VideoCanvas";
-import VideoSection from "./VideoSection";
 import ToolBar from "./tool-bar";
 import TabButtons from "./TabButtons";
+import MediaGrid from "./MediaGrid";
+import {
+  buildCameraPayload,
+  buildCameraRegions,
+  buildVideoShapesData,
+} from "@/lib/saveShapesUtils";
 
 const VideoControls = React.lazy(() => import("./VideoControls"));
 const CameraControls = React.lazy(() => import("./CameraControls"));
@@ -66,7 +70,7 @@ export default function CameraRender() {
         id: camera_id,
         name: cameraName,
         url: rtspUrl,
-        firstFrame: first_frame, 
+        firstFrame: first_frame,
       };
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setCameras((prev) => [...prev, newCamera]);
@@ -106,130 +110,56 @@ export default function CameraRender() {
     setIsSaving(true);
     const apiUrl = import.meta.env.VITE_API_URL;
     const endpoint = `${apiUrl}/start-stream/`;
-  
+
     try {
       if (activeTab === "cam") {
+        // Camera logic
         const requests = cameras.map(async (camera, camIdx) => {
-          // const wrapper = document.getElementById(`camera-${camera.id}`);
-          // const canvasEl = wrapper?.querySelector("canvas");
-          // const { width: canvas_width, height: canvas_height } = canvasEl?.getBoundingClientRect() || { width: 0, height: 0 };
-  
           const shapes = cameraShapes[camera.id] || [];
-          const regions = shapes.map((shape) => {
-            if (shape.type === "rectangle") {
-              return {
-                Region_name: `Region ${camIdx+1}`, 
-                Region_Cords: {
-                  vertices: [
-                    [shape.x, shape.y],
-                    [shape.x, shape.y + shape.height],
-                    [shape.x + shape.width, shape.y + shape.height],
-                    [shape.x + shape.width, shape.y],
-                  ],
-                },
-              };
-            } else if (shape.type === "caligraphy") {
-              return {
-                Region_name: `Region ${camIdx+1}`,
-                Region_Cords: {
-                  vertices: shape.points.map((point) => [point.x, point.y]),
-                },
-              };
-            }
-            return null;
-          }).filter(Boolean);
-  
-          const payload = {
-            camera_name: camera.name,
-            rtsp_url: camera.url,
-            first_frame: camera.firstFrame,
-            camera_id: camera.id,
-            roi_defs: [
-              {
-                type: "camera",
-                source: {
-                  id: camera.id,
-                  name: camera.name,
-                  url: camera.url,
-                },
-                regions,
-              },
-            ],
-            canvas_width: 1197,
-            canvas_height: 517,
-          };
-  
+          const regions = buildCameraRegions(camera, shapes, camIdx);
+          const payload = buildCameraPayload(camera, regions);
           return axios.post(endpoint, payload);
         });
-  
+
         await Promise.all(requests);
         setHasShapesSaved(true);
       } else {
+        // Video logic
         const videosWithoutShapes = uploadedVideos.filter(
-          (video) => !videoShapes[video.id] || videoShapes[video.id].length === 0
+          (video) =>
+            !videoShapes[video.id] || videoShapes[video.id].length === 0,
         );
-  
+
         if (videosWithoutShapes.length > 0) {
-          const videoNames = videosWithoutShapes.map((v) => v.file.name).join(", ");
-          alert(`Please draw at least one region for each video. Missing regions in: ${videoNames}`);
+          const videoNames = videosWithoutShapes
+            .map((v) => v.file.name)
+            .join(", ");
+          alert(
+            `Please draw at least one region for each video. Missing regions in: ${videoNames}`,
+          );
           setIsSaving(false);
           return;
         }
-  
+
         const formData = new FormData();
         uploadedVideos.forEach((video) => {
           formData.append("video", video.file);
         });
 
-        const videoShapesData = Object.entries(videoShapes).map(
-          ([videoId, shapes]) => {
-            const video = uploadedVideos.find((v) => v.id === videoId);
-            return {
-              type: "video",
-              source: {
-                id: video.id,
-                name: video.file.name,
-                url: video.url,
-              },
-              regions: shapes
-                .map((shape, index) => {
-                  const regionName = `Region ${index + 1}`;
-                  if (shape.type === "rectangle") {
-                    return {
-                      Region_name: regionName,
-                      Region_Cords: {
-                        vertices: [
-                          [shape.x, shape.y],
-                          [shape.x, shape.y + shape.height],
-                          [shape.x + shape.width, shape.y + shape.height],
-                          [shape.x + shape.width, shape.y],
-                        ],
-                      },
-                    };
-                  } else if (shape.type === "caligraphy") {
-                    return {
-                      Region_name: regionName,
-                      Region_Cords: {
-                        vertices: shape.points.map((point) => [point.x, point.y]),
-                      },
-                    };
-                  }
-                  return null;
-                })
-                .filter(Boolean),
-            };
-          }
+        const videoShapesData = buildVideoShapesData(
+          uploadedVideos,
+          videoShapes,
         );
 
         const wrapper = document.getElementById(`video-${selectedVideo}`);
         const canvasEl = wrapper.querySelector("canvas");
         const { width: canvas_width, height: canvas_height } =
           canvasEl.getBoundingClientRect();
-  
+
         formData.append("canvas_width", Math.round(canvas_width));
         formData.append("canvas_height", Math.round(canvas_height));
         formData.append("roi_defs", JSON.stringify(videoShapesData));
-  
+
         const res = await fetch(`${apiUrl}/tracking_details`, {
           method: "POST",
           body: formData,
@@ -418,94 +348,66 @@ export default function CameraRender() {
           )}
 
           {activeTab === "cam" && (
-            <div className="w-full h-full flex items-center justify-center">
-              <div key={gridKey} className={`grid ${getGridLayout(visibleCameras.length)}`}>
-                {cameras.map((camera) => {
-                  const isVisible = !maximizedCamera || camera.id === maximizedCamera;
-                  return (
-                    <div
-                      key={camera.id}
-                      id={`camera-${camera.id}`}
-                      className={`relative rounded-lg overflow-hidden ${
-                        isVisible ? "" : "hidden"
-                      }`}>
-                      <VideoCanvas
-                        cameraData={camera}
-                        isSelected={selectedCamera === camera.id}
-                        onSelect={setSelectedCamera}
-                        isMaximized={maximizedCamera === camera.id}
-                        onMaximize={() => handleMaximize(camera.id)}
-                        onMinimize={handleMinimize}
-                        showMaximize={cameras.length > 1}
-                        selectedTool={selectedTool}
-                        shapes={cameraShapes[camera.id] || []}
-                        onShapesChange={(shapes) =>
-                          updateShapesForCamera(camera.id, shapes)
-                        }
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <MediaGrid
+              items={cameras}
+              mediaType="camera"
+              maximizedId={maximizedCamera}
+              gridKey={gridKey}
+              getGridLayout={getGridLayout}
+              selectedId={selectedCamera}
+              setSelectedId={setSelectedCamera}
+              handleMaximize={handleMaximize}
+              handleMinimize={handleMinimize}
+              showMaximize={cameras.length > 1}
+              selectedTool={selectedTool}
+              shapesMap={cameraShapes}
+              onShapesChange={updateShapesForCamera}
+            />
           )}
 
           {/* Video tab and remaining JSX unchanged... */}
           {activeTab === "video" && (
             <Suspense fallback={null}>
-            <VideoControls
-              uploadDialogOpen={uploadDialogOpen}
-              setUploadDialogOpen={setUploadDialogOpen}
-              uploadedVideos={uploadedVideos}
-              handleVideoUpload={handleVideoUpload}
-              handleDrop={handleDrop}
-              handleDragOver={handleDragOver}
-              handleDragLeave={handleDragLeave}
-              hasVideoShapesSaved={hasVideoShapesSaved}
-              navigate={navigate}
-            />
-          </Suspense>
+              <VideoControls
+                uploadDialogOpen={uploadDialogOpen}
+                setUploadDialogOpen={setUploadDialogOpen}
+                uploadedVideos={uploadedVideos}
+                handleVideoUpload={handleVideoUpload}
+                handleDrop={handleDrop}
+                handleDragOver={handleDragOver}
+                handleDragLeave={handleDragLeave}
+                hasVideoShapesSaved={hasVideoShapesSaved}
+                navigate={navigate}
+              />
+            </Suspense>
           )}
 
           {activeTab === "video" && (
-            <div className="w-full h-full flex items-center justify-center">
-              <div key={gridKey} className={`grid ${getGridLayout(visibleVideos.length)}`}>
-                {uploadedVideos.map((video) => {
-                  const isVisible =
-                    !maximizedVideo || video.id === maximizedVideo;
-
-                  return (
-                    <div
-                      key={video.id}
-                      id={`video-${video.id}`}
-                      className={`relative rounded-lg overflow-visible ${
-                        isVisible ? "" : "hidden"
-                      }`}>
-                      <VideoSection
-                        videoData={video}
-                        isSelected={selectedVideo === video.id}
-                        onSelect={setSelectedVideo}
-                        isMaximized={maximizedVideo === video.id}
-                        onMaximize={() => handleVideoMaximize(video.id)}
-                        onMinimize={handleVideoMinimize}
-                        showMaximize={uploadedVideos.length > 1}
-                        selectedTool={selectedTool}
-                        shapes={videoShapes[video.id] || []}
-                        onShapesChange={(shapes) =>
-                          updateShapesForVideo(video.id, shapes)
-                        }
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <MediaGrid
+              items={uploadedVideos}
+              mediaType="video"
+              maximizedId={maximizedVideo}
+              gridKey={gridKey}
+              getGridLayout={getGridLayout}
+              selectedId={selectedVideo}
+              setSelectedId={setSelectedVideo}
+              handleMaximize={handleVideoMaximize}
+              handleMinimize={handleVideoMinimize}
+              showMaximize={uploadedVideos.length > 1}
+              selectedTool={selectedTool}
+              shapesMap={videoShapes}
+              onShapesChange={updateShapesForVideo}
+            />
           )}
 
           {/* Toolbar */}
           <div
             className="fixed"
-            style={{ bottom: "25px", left: "50%", transform: "translateX(-50%)" }}
+            style={{
+              bottom: "25px",
+              left: "50%",
+              transform: "translateX(-50%)",
+            }}
           >
             <ToolBar
               selectedTool={selectedTool}
@@ -522,7 +424,8 @@ export default function CameraRender() {
                       (maximizedCamera &&
                         cameraShapes[maximizedCamera]?.length > 0)
                   : (selectedVideo && videoShapes[selectedVideo]?.length > 0) ||
-                      (maximizedVideo && videoShapes[maximizedVideo]?.length > 0)
+                      (maximizedVideo &&
+                        videoShapes[maximizedVideo]?.length > 0),
               )}
               isSaving={isSaving}
               activeTab={activeTab}

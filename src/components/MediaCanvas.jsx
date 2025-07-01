@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import { Maximize, Minimize} from "lucide-react";
+import { Maximize, Minimize } from "lucide-react";
 import RegionModal from "./modals/AddRegionModal";
 import ShapeControls from "./ShapeControls";
 import FillColorPicker from "./FillColorPicker";
@@ -15,6 +15,12 @@ const cursorMap = {
 
 const playbackPositions = {};
 
+const getPolygonCenter = (points) => {
+  const x = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+  const y = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+  return { x, y };
+};
+
 export default function MediaCanvas({
   mediaType, // "camera" or "video"
   mediaData, // cameraData or videoData
@@ -28,7 +34,6 @@ export default function MediaCanvas({
   shapes = [],
   onShapesChange,
 }) {
-  
   const canvasRef = useRef(null);
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
@@ -54,50 +59,47 @@ export default function MediaCanvas({
   const [previewPoint, setPreviewPoint] = useState(null);
   const [nearStartPoint, setNearStartPoint] = useState(false);
 
-
-
   const firstFrameImageRef = useRef(null);
 
-  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
+  const [canvasDimensions, setCanvasDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
 
   //helper functions
-    const {
-        handleMouseDown,
-        handleMouseMove,
-        handleMouseUp,
-    } = useCanvasDrawing({
-        mediaType,
-        canvasRef,
-        videoRef,
-        firstFrameImageRef,
-        shapes,
-        isMaximized,
-        showMaximize,
-        drawingState,
-        setDrawingState,
-        selectedShape,
-        setSelectedShape,
-        hoveredShape,
-        setHoveredShape,
-        polygonPoints,
-        setPolygonPoints,
-        isDrawingPolygon,
-        setIsDrawingPolygon,
-        previewPoint,
-        setPreviewPoint,
-        nearStartPoint,
-        setNearStartPoint,
-        selectedTool,
-        fillColor,
-        onShapesChange,
-        nextId,
-        setNextId,
-        canvasDimensions,
-        animationFrameRef
-    });
-
-
-
+  const { handleMouseDown, handleMouseMove, handleMouseUp } = useCanvasDrawing({
+    mediaType,
+    canvasRef,
+    videoRef,
+    firstFrameImageRef,
+    shapes,
+    isMaximized,
+    showMaximize,
+    drawingState,
+    setDrawingState,
+    selectedShape,
+    setSelectedShape,
+    hoveredShape,
+    setHoveredShape,
+    polygonPoints,
+    setPolygonPoints,
+    isDrawingPolygon,
+    setIsDrawingPolygon,
+    previewPoint,
+    setPreviewPoint,
+    nearStartPoint,
+    setNearStartPoint,
+    selectedTool,
+    fillColor,
+    onShapesChange,
+    nextId,
+    setNextId,
+    canvasDimensions,
+    animationFrameRef,
+    setShapeDialog,
+    shapeDialog,
+    getPolygonCenter,
+  });
 
   // --- Setup for camera (HLS or base64) ---
   useEffect(() => {
@@ -156,12 +158,11 @@ export default function MediaCanvas({
     }
   }, [mediaType, mediaData.hlsUrl, mediaData.id, mediaData.firstFrame]);
 
-
   useEffect(() => {
     if (mediaType !== "camera") return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-  
+
     const resizeCanvas = () => {
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width;
@@ -171,7 +172,6 @@ export default function MediaCanvas({
     window.addEventListener("resize", resizeCanvas);
     return () => window.removeEventListener("resize", resizeCanvas);
   }, [mediaType]);
-
 
   // --- Setup for video (uploaded) ---
   useEffect(() => {
@@ -189,11 +189,14 @@ export default function MediaCanvas({
       }
     };
     video.addEventListener("loadedmetadata", handleVideoMetadata);
-    return () => video.removeEventListener("loadedmetadata", handleVideoMetadata);
-  }, [mediaType, mediaData.url, canvasDimensions.width, canvasDimensions.height]);
-
-
-
+    return () =>
+      video.removeEventListener("loadedmetadata", handleVideoMetadata);
+  }, [
+    mediaType,
+    mediaData.url,
+    canvasDimensions.width,
+    canvasDimensions.height,
+  ]);
 
   // --- Keyboard Escape to minimize ---
   useEffect(() => {
@@ -231,11 +234,6 @@ export default function MediaCanvas({
     };
   }, [mediaData.id]);
 
-
-
-  
-
-
   // --- Edit/Delete handlers ---
   const handleEditShape = () => {
     if (!hoveredShape) return;
@@ -255,42 +253,44 @@ export default function MediaCanvas({
   };
 
   // --- Modal handlers ---
-  const closeShapeDialog = () => setShapeDialog({ ...shapeDialog, isOpen: false });
+  const closeShapeDialog = () =>
+    setShapeDialog({ ...shapeDialog, isOpen: false });
   const handleShapeDialogSave = (name) => {
     onShapesChange(
       shapes.map((s) =>
-        s.id === shapeDialog.shapeId ? { ...s, name: name } : s
-      )
+        s.id === shapeDialog.shapeId ? { ...s, name: name } : s,
+      ),
     );
     setShapeDialog({ ...shapeDialog, isOpen: false });
   };
 
   // --- Cursor style ---
   const getCursorStyle = () => {
-    if (selectedTool === "caligraphy" && nearStartPoint && polygonPoints.length >= 2) {
+    if (
+      selectedTool === "caligraphy" &&
+      nearStartPoint &&
+      polygonPoints.length >= 2
+    ) {
       return "cursor-pointer";
     }
     return cursorMap[selectedTool] || "";
   };
 
   // --- Hover controls style ---
-  const getPolygonCenter = (points) => {
-    const x = points.reduce((sum, p) => sum + p.x, 0) / points.length;
-    const y = points.reduce((sum, p) => sum + p.y, 0) / points.length;
-    return { x, y };
-  };
+
   const hoverStyle = () => {
     if (!canvasRef.current || !videoRef.current || !hoveredShape) return {};
     const rect = canvasRef.current.getBoundingClientRect();
-    let vw = rect.width, vh = rect.height;
+    let vw = rect.width,
+      vh = rect.height;
     if (mediaType === "video" && videoRef.current) {
       vw = videoRef.current.videoWidth;
       vh = videoRef.current.videoHeight;
     }
     if (hoveredShape.type === "rectangle") {
-      const cssX = hoveredShape.x / vw * rect.width;
-      const cssY = hoveredShape.y / vh * rect.height;
-      const cssW = hoveredShape.width / vw * rect.width;
+      const cssX = (hoveredShape.x / vw) * rect.width;
+      const cssY = (hoveredShape.y / vh) * rect.height;
+      const cssW = (hoveredShape.width / vw) * rect.width;
       return {
         position: "absolute",
         right: `${rect.width - (cssX + cssW) + 12}px`,
@@ -303,8 +303,8 @@ export default function MediaCanvas({
       };
     } else if (hoveredShape.type === "caligraphy") {
       const center = getPolygonCenter(hoveredShape.points);
-      const cssX = center.x / vw * rect.width;
-      const cssY = center.y / vh * rect.height;
+      const cssX = (center.x / vw) * rect.width;
+      const cssY = (center.y / vh) * rect.height;
       return {
         position: "absolute",
         left: `${cssX + 12}px`,
@@ -325,21 +325,23 @@ export default function MediaCanvas({
       onClick={() => onSelect(mediaData.id)}
     >
       <canvas
-    ref={canvasRef}
-    className={`w-full h-full bg-black rounded-lg ${getCursorStyle()}`}
-    style={{
-        aspectRatio:
-        (mediaType === "video" && canvasDimensions.width && canvasDimensions.height)
-            ? `${canvasDimensions.width}/${canvasDimensions.height}`
-            : (mediaType === "camera" && firstFrameImageRef.current)
-            ? `${firstFrameImageRef.current.width}/${firstFrameImageRef.current.height}`
-            : 'auto'
-    }}
-    onMouseDown={handleMouseDown}
-    onMouseMove={handleMouseMove}
-    onMouseUp={handleMouseUp}
-    onMouseLeave={handleMouseUp}
-    />
+        ref={canvasRef}
+        className={`w-full h-full bg-black rounded-lg ${getCursorStyle()}`}
+        style={{
+          aspectRatio:
+            mediaType === "video" &&
+            canvasDimensions.width &&
+            canvasDimensions.height
+              ? `${canvasDimensions.width}/${canvasDimensions.height}`
+              : mediaType === "camera" && firstFrameImageRef.current
+                ? `${firstFrameImageRef.current.width}/${firstFrameImageRef.current.height}`
+                : "auto",
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      />
       <video
         ref={videoRef}
         src={mediaType === "video" ? mediaData.url : undefined}
@@ -369,22 +371,26 @@ export default function MediaCanvas({
           )}
         </button>
       )}
-      {selectedTool === "fill" && isSelected && (isMaximized || !showMaximize) && (
-        <FillColorPicker fillColor={fillColor} setFillColor={setFillColor} />
-      )}
-      {hoveredShape && selectedTool === "pointer" && (isMaximized || !showMaximize) && (
-        <ShapeControls
-        hoverStyle={hoverStyle}
-        onEdit={(e) => {
-        e.stopPropagation();
-        handleEditShape();
-        }}
-        onDelete={(e) => {
-        e.stopPropagation();
-        handleDeleteShape();
-        }}
-    />
-      )}
+      {selectedTool === "fill" &&
+        isSelected &&
+        (isMaximized || !showMaximize) && (
+          <FillColorPicker fillColor={fillColor} setFillColor={setFillColor} />
+        )}
+      {hoveredShape &&
+        selectedTool === "pointer" &&
+        (isMaximized || !showMaximize) && (
+          <ShapeControls
+            hoverStyle={hoverStyle}
+            onEdit={(e) => {
+              e.stopPropagation();
+              handleEditShape();
+            }}
+            onDelete={(e) => {
+              e.stopPropagation();
+              handleDeleteShape();
+            }}
+          />
+        )}
       {shapeDialog.isOpen && (
         <RegionModal
           isOpen={shapeDialog.isOpen}

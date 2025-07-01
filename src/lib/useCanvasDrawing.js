@@ -29,7 +29,10 @@ export default function useCanvasDrawing({
   nextId,
   setNextId,
   canvasDimensions,
-  animationFrameRef
+  animationFrameRef,
+  setShapeDialog,
+  shapeDialog,
+  getPolygonCenter
 
 }) {
   // --- Draw shapes ---
