@@ -3,6 +3,7 @@ import Hls from "hls.js";
 import { Maximize, Minimize, Trash2 } from "lucide-react";
 import RegionModal from "./modals/AddRegionModal";
 import ShapeControls from "./ShapeControls";
+import FillColorPicker from "./FillColorPicker";
 
 const cursorMap = {
   pointer: "cursor-pointer",
@@ -651,15 +652,7 @@ const getCanvasCoordinates = (e) => {
         </button>
       )}
       {selectedTool === "fill" && isSelected && (isMaximized || !showMaximize) && (
-        <div className="absolute top-4 left-4 bg-white p-2 rounded shadow-md z-10 flex items-center">
-          <label className="text-sm font-medium text-gray-700">Fill Color:</label>
-          <input
-            type="color"
-            value={fillColor}
-            onChange={(e) => setFillColor(e.target.value)}
-            className="ml-2 w-8 h-8 border-none cursor-pointer"
-          />
-        </div>
+        <FillColorPicker fillColor={fillColor} setFillColor={setFillColor} />
       )}
       {hoveredShape && selectedTool === "pointer" && (isMaximized || !showMaximize) && (
         <ShapeControls
