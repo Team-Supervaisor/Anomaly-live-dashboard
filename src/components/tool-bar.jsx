@@ -1,16 +1,9 @@
 "use client";
 import React from "react";
-import { useRef } from "react";
+
 import {
-  MousePointer,
   Square,
-  BrickWall,
-  Undo,
-  Redo,
-  CircleFadingPlus,
-  Circle,
   Loader2,
-  MousePointer2, 
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 
@@ -19,14 +12,13 @@ export default function ToolBar({
   setSelectedTool,
   clearCanvas,
   saveShapes,
-  isOpenSpaceMode,  // Add this prop
-  setIsOpenSpaceMode, // Add this prop
+  isOpenSpaceMode,  
+  setIsOpenSpaceMode,
   handleImage,
-  // Add these new props
   hasMaximizedOrSelected,
   hasShapes,
-  isSaving, // Add this prop
-  activeTab // Add this new prop
+  isSaving, 
+  activeTab 
 }) {
   const tools = [
     {
@@ -52,7 +44,7 @@ export default function ToolBar({
           src="/cross-hit.svg"
           style={{
             filter: selectedTool === "caligraphy"
-              ? "brightness(0) invert(1)" // This will make the icon white when selected
+              ? "brightness(0) invert(1)" 
               : "none",
           }}
           size={18}

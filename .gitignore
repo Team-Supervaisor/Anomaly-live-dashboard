@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 *.env.local
 *.env
+./lib/data/test.json
+src/lib/data/test.json
