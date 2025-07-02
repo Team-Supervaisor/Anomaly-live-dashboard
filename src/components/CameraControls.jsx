@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Plus, Loader2 } from "lucide-react";
 import FullscreenToggle from "./ui/Fullscreentoggle";
+import { useAlert } from "./AlertsComponent";
 
 export default function CameraControls({
   open,
@@ -16,6 +17,7 @@ export default function CameraControls({
   selectedCamera,
   navigate,
 }) {
+   const { showAlert } = useAlert();
   return (
     <div className="absolute flex items-center gap-3" style={{ top: "34px", right: "34px" }}>
       <div className="p-4space-x-0.5 ">
@@ -89,7 +91,7 @@ export default function CameraControls({
           onClick={() => {
             const camId = selectedCamera;
             if (!camId) {
-              alert("Please select (or maximize) a camera first before going Live AI.");
+              showAlert("Please select (or maximize) a camera first before going Live AI.", "error");
               return;
             }
             navigate(`/live-ai/${camId}`, {

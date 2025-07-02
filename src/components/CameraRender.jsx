@@ -9,6 +9,7 @@ import {
   buildCameraRegions,
   buildVideoShapesData,
 } from "@/lib/saveShapesUtils";
+import { useAlert } from "./AlertsComponent";
 
 const VideoControls = React.lazy(() => import("./VideoControls"));
 const CameraControls = React.lazy(() => import("./CameraControls"));
@@ -31,6 +32,7 @@ export default function CameraRender() {
   const [hasShapesSaved, setHasShapesSaved] = useState(false);
   const [hasVideoShapesSaved, setHasVideoShapesSaved] = useState(false);
   const [videoConfigData, setVideoConfigData] = useState(null);
+  const { showAlert } = useAlert();
 
   // Add this state to track the next video number
   const [nextVideoNumber, setNextVideoNumber] = useState(1);
@@ -134,9 +136,7 @@ export default function CameraRender() {
           const videoNames = videosWithoutShapes
             .map((v) => v.file.name)
             .join(", ");
-          alert(
-            `Please draw at least one region for each video. Missing regions in: ${videoNames}`,
-          );
+          showAlert( `Please draw at least one region for each video. Missing regions in: ${videoNames}`, 'error');
           setIsSaving(false);
           return;
         }
@@ -201,7 +201,7 @@ export default function CameraRender() {
     if (!file) return;
 
     if (uploadedVideos.length >= 4) {
-      alert("You can upload a maximum of 4 videos.");
+      showAlert('You can upload a maximum of 4 videos.', 'error');
       return;
     }
 
@@ -268,11 +268,11 @@ export default function CameraRender() {
     const videoFiles = files.filter((file) => file.type.startsWith("video/"));
 
     if (videoFiles.length === 0) {
-      alert("Please drop video files only");
+      showAlert('Please drop video files only', 'error');
       return;
     }
     if (uploadedVideos.length + videoFiles.length > 4) {
-      alert("You can upload a maximum of 4 videos.");
+      showAlert('You can upload a maximum of 4 videos.', 'error');
       return;
     }
 

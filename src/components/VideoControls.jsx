@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/
 import { Upload } from "lucide-react";
 import FullscreenToggle from "./ui/Fullscreentoggle";
 import UploadIcon from "../assets/Upload.png";
+import { useAlert } from "./AlertsComponent";
 
 export default function VideoControls({
   uploadDialogOpen,
@@ -14,6 +15,7 @@ export default function VideoControls({
   hasVideoShapesSaved,
   navigate,
 }) {
+    const { showAlert } = useAlert();
   return (
     <div className="absolute flex items-center gap-3" style={{ top: "34px", right: "34px" }}>
       {/* Fullscreen */}
@@ -22,22 +24,20 @@ export default function VideoControls({
       </div>
 
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogTrigger asChild>
-          <button
-            onClick={() => {
-              if (uploadedVideos.length >= 4) {
-                alert("Maximum 4 videos allowed.");
-                return;
-              }
-              setUploadDialogOpen(true);
-            }}
-            style={{ padding: "12px 24px" }}
-            className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
-          >
-            <Upload className="w-4 h-4 text-black" />
-            <span className="text-black">Upload</span>
-          </button>
-        </DialogTrigger>
+        <button
+          onClick={() => {
+            if (uploadedVideos.length >= 4) {
+              showAlert("Maximum 4 videos allowed.", "error");
+              return;
+            }
+            setUploadDialogOpen(true);
+          }}
+          style={{ padding: "12px 24px" }}
+          className="flex items-center gap-[10px] rounded-[100px] text-[16px] font-[500] border transition-colors"
+        >
+          <Upload className="w-4 h-4 text-black" />
+          <span className="text-black">Upload</span>
+        </button>
 
         <DialogContent className="bg-[#F4F8FF] border border-[#0000001A] p-0 w-[664px] overflow-hidden rounded-3xl">
           <div className="flex justify-between items-center p-5 border-b border-[#0000001A]">
